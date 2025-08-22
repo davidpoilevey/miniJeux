@@ -1,8 +1,9 @@
 {
   "files": {
-    "main.css": "/miniJeux/static/css/main.9842eff6.css",
-    "main.js": "/miniJeux/static/js/main.246d9b0a.js",
+    "main.css": "/miniJeux/static/css/main.a1d204f6.css",
+    "main.js": "/miniJeux/static/js/main.3d28c743.js",
     "static/js/453.05c9ce93.chunk.js": "/miniJeux/static/js/453.05c9ce93.chunk.js",
+    "static/media/montagne.jpg": "/miniJeux/static/media/montagne.45784c69ce9ef322837f.jpg",
     "static/media/sonar.wav": "/miniJeux/static/media/sonar.b34c4b74891db3f244db.wav",
     "static/media/fondPanel.png": "/miniJeux/static/media/fondPanel.04ed8852059d848c4822.png",
     "static/media/mur.jpg": "/miniJeux/static/media/mur.69142b6ebafc3a535741.jpg",
@@ -179,6 +180,7 @@
     "static/media/bact3.png": "/miniJeux/static/media/bact3.7606e62122fe10774e5b.png",
     "static/media/layer1.png": "/miniJeux/static/media/layer1.12a8ee890f7d87dec908.png",
     "static/media/centreGenetique.png": "/miniJeux/static/media/centreGenetique.d94f4bc9a08ac831c118.png",
+    "static/media/dices.png": "/miniJeux/static/media/dices.af518cda832178ff38ed.png",
     "static/media/Walk.png": "/miniJeux/static/media/Walk.65595b8417f5bbc1f40e.png",
     "static/media/verger.png": "/miniJeux/static/media/verger.bdb92ce52ef59eb4121e.png",
     "static/media/vaisseau1.png": "/miniJeux/static/media/vaisseau1.e4429fc61daeb5c104e4.png",
@@ -231,12 +233,12 @@
     "static/media/sonPet4.mp3": "/miniJeux/static/media/sonPet4.b3530edd2fe95e48aec6.mp3",
     "static/media/sonPet5.mp3": "/miniJeux/static/media/sonPet5.b3530edd2fe95e48aec6.mp3",
     "index.html": "/miniJeux/index.html",
-    "main.9842eff6.css.map": "/miniJeux/static/css/main.9842eff6.css.map",
-    "main.246d9b0a.js.map": "/miniJeux/static/js/main.246d9b0a.js.map",
+    "main.a1d204f6.css.map": "/miniJeux/static/css/main.a1d204f6.css.map",
+    "main.3d28c743.js.map": "/miniJeux/static/js/main.3d28c743.js.map",
     "453.05c9ce93.chunk.js.map": "/miniJeux/static/js/453.05c9ce93.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.9842eff6.css",
-    "static/js/main.246d9b0a.js"
+    "static/css/main.a1d204f6.css",
+    "static/js/main.3d28c743.js"
   ]
 }
