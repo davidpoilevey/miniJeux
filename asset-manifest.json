@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/miniJeux/static/css/main.a1d204f6.css",
-    "main.js": "/miniJeux/static/js/main.3d28c743.js",
+    "main.js": "/miniJeux/static/js/main.3af85dc5.js",
     "static/js/453.05c9ce93.chunk.js": "/miniJeux/static/js/453.05c9ce93.chunk.js",
     "static/media/montagne.jpg": "/miniJeux/static/media/montagne.45784c69ce9ef322837f.jpg",
     "static/media/sonar.wav": "/miniJeux/static/media/sonar.b34c4b74891db3f244db.wav",
@@ -30,6 +30,7 @@
     "static/media/dosDeCarte.png": "/miniJeux/static/media/dosDeCarte.3deace44fa4af42d85ee.png",
     "static/media/serpent.jpg": "/miniJeux/static/media/serpent.9cb6776525603a90b333.jpg",
     "static/media/fondroulant.jpg": "/miniJeux/static/media/fondroulant.7f539e00e9a201e0aa81.jpg",
+    "static/media/voitures.png": "/miniJeux/static/media/voitures.b05cf2f5b5fb9fc774de.png",
     "static/media/coussin.png": "/miniJeux/static/media/coussin.2791a11bb39a4c66fffb.png",
     "static/media/joueur.png": "/miniJeux/static/media/joueur.2033c30f6dd7765ef63a.png",
     "static/media/pissotiere.png": "/miniJeux/static/media/pissotiere.8940713a24af4e1d9384.png",
@@ -211,6 +212,7 @@
     "static/media/imgVous.png": "/miniJeux/static/media/imgVous.c5bd7e1dcbe07a5b0616.png",
     "static/media/pouff.gif": "/miniJeux/static/media/pouff.5c083123219a053b53ff.gif",
     "static/media/imgNatacha.png": "/miniJeux/static/media/imgNatacha.ea986d0cb786522c9a72.png",
+    "static/media/wayout.png": "/miniJeux/static/media/wayout.045e5e1f678613e23222.png",
     "static/media/imgJohn.png": "/miniJeux/static/media/imgJohn.5d31a6acea93065ac8e3.png",
     "static/media/archer.png": "/miniJeux/static/media/archer.212dfff707b01d60edae.png",
     "static/media/zone.png": "/miniJeux/static/media/zone.a479217817d759eb6c16.png",
@@ -234,11 +236,11 @@
     "static/media/sonPet5.mp3": "/miniJeux/static/media/sonPet5.b3530edd2fe95e48aec6.mp3",
     "index.html": "/miniJeux/index.html",
     "main.a1d204f6.css.map": "/miniJeux/static/css/main.a1d204f6.css.map",
-    "main.3d28c743.js.map": "/miniJeux/static/js/main.3d28c743.js.map",
+    "main.3af85dc5.js.map": "/miniJeux/static/js/main.3af85dc5.js.map",
     "453.05c9ce93.chunk.js.map": "/miniJeux/static/js/453.05c9ce93.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.a1d204f6.css",
-    "static/js/main.3d28c743.js"
+    "static/js/main.3af85dc5.js"
   ]
 }
