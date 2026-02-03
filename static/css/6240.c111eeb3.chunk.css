@@ -1,0 +1,2 @@
+.star{background-color:#fff;border-radius:50%;position:absolute}@keyframes starAnimation{0%{transform:translateY(0) translateZ(0)}to{transform:translateY(100vh) translateZ(0)}}@keyframes starFlicker{0%,to{opacity:.9}50%{opacity:.5}}
+/*# sourceMappingURL=6240.c111eeb3.chunk.css.map*/

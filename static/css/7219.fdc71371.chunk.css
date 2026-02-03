@@ -1,0 +1,2 @@
+.cell{background-color:red;height:20px;position:absolute;width:20px}.cell.morte{background-color:initial}.cell.morte:before{transform:rotate(45deg)}.cell.morte:after,.cell.morte:before{background-color:#000;content:"";height:2px;left:0;position:absolute;top:50%;width:100%}.cell.morte:after{transform:rotate(-45deg)}
+/*# sourceMappingURL=7219.fdc71371.chunk.css.map*/
