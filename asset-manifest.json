@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/miniJeux/static/css/main.a099b63f.css",
-    "main.js": "/miniJeux/static/js/main.ea4c130e.js",
+    "main.js": "/miniJeux/static/js/main.f150ee2c.js",
     "static/js/1591.787b0166.chunk.js": "/miniJeux/static/js/1591.787b0166.chunk.js",
     "static/js/8609.ed25a67f.chunk.js": "/miniJeux/static/js/8609.ed25a67f.chunk.js",
     "static/js/7962.6840dd3e.chunk.js": "/miniJeux/static/js/7962.6840dd3e.chunk.js",
@@ -19,7 +19,7 @@
     "static/js/2368.608e4417.chunk.js": "/miniJeux/static/js/2368.608e4417.chunk.js",
     "static/js/9294.487c26ec.chunk.js": "/miniJeux/static/js/9294.487c26ec.chunk.js",
     "static/js/1340.c1873c48.chunk.js": "/miniJeux/static/js/1340.c1873c48.chunk.js",
-    "static/js/8964.3fa27c7d.chunk.js": "/miniJeux/static/js/8964.3fa27c7d.chunk.js",
+    "static/js/850.34a76715.chunk.js": "/miniJeux/static/js/850.34a76715.chunk.js",
     "static/css/9436.295471f8.chunk.css": "/miniJeux/static/css/9436.295471f8.chunk.css",
     "static/js/9436.8e195cf5.chunk.js": "/miniJeux/static/js/9436.8e195cf5.chunk.js",
     "static/js/9362.ba3f74ae.chunk.js": "/miniJeux/static/js/9362.ba3f74ae.chunk.js",
@@ -56,6 +56,7 @@
     "static/js/8141.f91f71a3.chunk.js": "/miniJeux/static/js/8141.f91f71a3.chunk.js",
     "static/js/4166.aade1b5a.chunk.js": "/miniJeux/static/js/4166.aade1b5a.chunk.js",
     "static/js/3406.efe8c508.chunk.js": "/miniJeux/static/js/3406.efe8c508.chunk.js",
+    "static/js/9074.cb22739f.chunk.js": "/miniJeux/static/js/9074.cb22739f.chunk.js",
     "static/js/1917.3625db26.chunk.js": "/miniJeux/static/js/1917.3625db26.chunk.js",
     "static/js/9313.57fc90a4.chunk.js": "/miniJeux/static/js/9313.57fc90a4.chunk.js",
     "static/js/2293.75b3d4bc.chunk.js": "/miniJeux/static/js/2293.75b3d4bc.chunk.js",
@@ -149,7 +150,7 @@
     "static/js/2883.d0d087df.chunk.js": "/miniJeux/static/js/2883.d0d087df.chunk.js",
     "static/js/9499.a67b3e15.chunk.js": "/miniJeux/static/js/9499.a67b3e15.chunk.js",
     "static/js/9276.6a4889cf.chunk.js": "/miniJeux/static/js/9276.6a4889cf.chunk.js",
-    "static/js/7965.594cb221.chunk.js": "/miniJeux/static/js/7965.594cb221.chunk.js",
+    "static/js/5060.eccea5cf.chunk.js": "/miniJeux/static/js/5060.eccea5cf.chunk.js",
     "static/js/5940.6d083c45.chunk.js": "/miniJeux/static/js/5940.6d083c45.chunk.js",
     "static/media/sonar.wav": "/miniJeux/static/media/sonar.b34c4b74891db3f244db.wav",
     "static/media/plusdeau.wav": "/miniJeux/static/media/plusdeau.fa4a9eb5ee2f89c392d6.wav",
@@ -275,6 +276,7 @@
     "static/media/jiping.png": "/miniJeux/static/media/jiping.b9a830d434c10c673a04.png",
     "static/media/bite.png": "/miniJeux/static/media/bite.786d2b98157e46612e6c.png",
     "static/media/bat.png": "/miniJeux/static/media/bat.8327deeef77b485befbc.png",
+    "static/media/fondTel.jpg": "/miniJeux/static/media/fondTel.4db5dda33681aaad7a59.jpg",
     "static/media/bougieEteinte.png": "/miniJeux/static/media/bougieEteinte.91c6dca6314d4e36322a.png",
     "static/media/nadia.png": "/miniJeux/static/media/nadia.5440115d8b927d7a3c82.png",
     "static/media/chatRoux.jpg": "/miniJeux/static/media/chatRoux.1f99dc33beb51f2ccc4b.jpg",
@@ -590,7 +592,7 @@
     "static/media/sonPet4.mp3": "/miniJeux/static/media/sonPet4.b3530edd2fe95e48aec6.mp3",
     "static/media/sonPet5.mp3": "/miniJeux/static/media/sonPet5.b3530edd2fe95e48aec6.mp3",
     "main.a099b63f.css.map": "/miniJeux/static/css/main.a099b63f.css.map",
-    "main.ea4c130e.js.map": "/miniJeux/static/js/main.ea4c130e.js.map",
+    "main.f150ee2c.js.map": "/miniJeux/static/js/main.f150ee2c.js.map",
     "1591.787b0166.chunk.js.map": "/miniJeux/static/js/1591.787b0166.chunk.js.map",
     "8609.ed25a67f.chunk.js.map": "/miniJeux/static/js/8609.ed25a67f.chunk.js.map",
     "7962.6840dd3e.chunk.js.map": "/miniJeux/static/js/7962.6840dd3e.chunk.js.map",
@@ -608,7 +610,7 @@
     "2368.608e4417.chunk.js.map": "/miniJeux/static/js/2368.608e4417.chunk.js.map",
     "9294.487c26ec.chunk.js.map": "/miniJeux/static/js/9294.487c26ec.chunk.js.map",
     "1340.c1873c48.chunk.js.map": "/miniJeux/static/js/1340.c1873c48.chunk.js.map",
-    "8964.3fa27c7d.chunk.js.map": "/miniJeux/static/js/8964.3fa27c7d.chunk.js.map",
+    "850.34a76715.chunk.js.map": "/miniJeux/static/js/850.34a76715.chunk.js.map",
     "9436.295471f8.chunk.css.map": "/miniJeux/static/css/9436.295471f8.chunk.css.map",
     "9436.8e195cf5.chunk.js.map": "/miniJeux/static/js/9436.8e195cf5.chunk.js.map",
     "9362.ba3f74ae.chunk.js.map": "/miniJeux/static/js/9362.ba3f74ae.chunk.js.map",
@@ -644,6 +646,7 @@
     "8141.f91f71a3.chunk.js.map": "/miniJeux/static/js/8141.f91f71a3.chunk.js.map",
     "4166.aade1b5a.chunk.js.map": "/miniJeux/static/js/4166.aade1b5a.chunk.js.map",
     "3406.efe8c508.chunk.js.map": "/miniJeux/static/js/3406.efe8c508.chunk.js.map",
+    "9074.cb22739f.chunk.js.map": "/miniJeux/static/js/9074.cb22739f.chunk.js.map",
     "1917.3625db26.chunk.js.map": "/miniJeux/static/js/1917.3625db26.chunk.js.map",
     "9313.57fc90a4.chunk.js.map": "/miniJeux/static/js/9313.57fc90a4.chunk.js.map",
     "2293.75b3d4bc.chunk.js.map": "/miniJeux/static/js/2293.75b3d4bc.chunk.js.map",
@@ -734,11 +737,11 @@
     "6259.cdadaa47.chunk.js.map": "/miniJeux/static/js/6259.cdadaa47.chunk.js.map",
     "2883.d0d087df.chunk.js.map": "/miniJeux/static/js/2883.d0d087df.chunk.js.map",
     "9276.6a4889cf.chunk.js.map": "/miniJeux/static/js/9276.6a4889cf.chunk.js.map",
-    "7965.594cb221.chunk.js.map": "/miniJeux/static/js/7965.594cb221.chunk.js.map",
+    "5060.eccea5cf.chunk.js.map": "/miniJeux/static/js/5060.eccea5cf.chunk.js.map",
     "5940.6d083c45.chunk.js.map": "/miniJeux/static/js/5940.6d083c45.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.a099b63f.css",
-    "static/js/main.ea4c130e.js"
+    "static/js/main.f150ee2c.js"
   ]
 }
