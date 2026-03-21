@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/miniJeux/static/css/main.a099b63f.css",
-    "main.js": "/miniJeux/static/js/main.f331d38f.js",
+    "main.js": "/miniJeux/static/js/main.0dc98338.js",
     "static/js/6601.653e235c.chunk.js": "/miniJeux/static/js/6601.653e235c.chunk.js",
     "static/js/8609.ed25a67f.chunk.js": "/miniJeux/static/js/8609.ed25a67f.chunk.js",
     "static/js/7962.6840dd3e.chunk.js": "/miniJeux/static/js/7962.6840dd3e.chunk.js",
@@ -605,7 +605,7 @@
     "static/media/sonPet4.mp3": "/miniJeux/static/media/sonPet4.b3530edd2fe95e48aec6.mp3",
     "static/media/sonPet5.mp3": "/miniJeux/static/media/sonPet5.b3530edd2fe95e48aec6.mp3",
     "main.a099b63f.css.map": "/miniJeux/static/css/main.a099b63f.css.map",
-    "main.f331d38f.js.map": "/miniJeux/static/js/main.f331d38f.js.map",
+    "main.0dc98338.js.map": "/miniJeux/static/js/main.0dc98338.js.map",
     "6601.653e235c.chunk.js.map": "/miniJeux/static/js/6601.653e235c.chunk.js.map",
     "8609.ed25a67f.chunk.js.map": "/miniJeux/static/js/8609.ed25a67f.chunk.js.map",
     "7962.6840dd3e.chunk.js.map": "/miniJeux/static/js/7962.6840dd3e.chunk.js.map",
@@ -754,6 +754,6 @@
   },
   "entrypoints": [
     "static/css/main.a099b63f.css",
-    "static/js/main.f331d38f.js"
+    "static/js/main.0dc98338.js"
   ]
 }
