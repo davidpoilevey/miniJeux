@@ -1,14 +1,14 @@
 {
   "files": {
     "main.css": "/miniJeux/static/css/main.a099b63f.css",
-    "main.js": "/miniJeux/static/js/main.465bc071.js",
+    "main.js": "/miniJeux/static/js/main.50e70ba0.js",
     "static/js/6601.653e235c.chunk.js": "/miniJeux/static/js/6601.653e235c.chunk.js",
     "static/js/8609.9fc26a7f.chunk.js": "/miniJeux/static/js/8609.9fc26a7f.chunk.js",
     "static/js/7962.6840dd3e.chunk.js": "/miniJeux/static/js/7962.6840dd3e.chunk.js",
     "static/js/7923.163f835e.chunk.js": "/miniJeux/static/js/7923.163f835e.chunk.js",
     "static/js/1388.df400f1f.chunk.js": "/miniJeux/static/js/1388.df400f1f.chunk.js",
     "static/js/623.25a2d4c6.chunk.js": "/miniJeux/static/js/623.25a2d4c6.chunk.js",
-    "static/js/3606.ded9c6ed.chunk.js": "/miniJeux/static/js/3606.ded9c6ed.chunk.js",
+    "static/js/3606.4f6d96e9.chunk.js": "/miniJeux/static/js/3606.4f6d96e9.chunk.js",
     "static/css/4546.b3a3265e.chunk.css": "/miniJeux/static/css/4546.b3a3265e.chunk.css",
     "static/js/4546.27bf4ff8.chunk.js": "/miniJeux/static/js/4546.27bf4ff8.chunk.js",
     "static/js/1088.409a95a3.chunk.js": "/miniJeux/static/js/1088.409a95a3.chunk.js",
@@ -20,7 +20,7 @@
     "static/js/2368.608e4417.chunk.js": "/miniJeux/static/js/2368.608e4417.chunk.js",
     "static/js/9294.82f02bd1.chunk.js": "/miniJeux/static/js/9294.82f02bd1.chunk.js",
     "static/js/1340.c1873c48.chunk.js": "/miniJeux/static/js/1340.c1873c48.chunk.js",
-    "static/js/8964.3fa27c7d.chunk.js": "/miniJeux/static/js/8964.3fa27c7d.chunk.js",
+    "static/js/850.34a76715.chunk.js": "/miniJeux/static/js/850.34a76715.chunk.js",
     "static/css/9436.295471f8.chunk.css": "/miniJeux/static/css/9436.295471f8.chunk.css",
     "static/js/9436.8e195cf5.chunk.js": "/miniJeux/static/js/9436.8e195cf5.chunk.js",
     "static/js/9362.ba3f74ae.chunk.js": "/miniJeux/static/js/9362.ba3f74ae.chunk.js",
@@ -608,14 +608,14 @@
     "static/media/sonPet4.mp3": "/miniJeux/static/media/sonPet4.b3530edd2fe95e48aec6.mp3",
     "static/media/sonPet5.mp3": "/miniJeux/static/media/sonPet5.b3530edd2fe95e48aec6.mp3",
     "main.a099b63f.css.map": "/miniJeux/static/css/main.a099b63f.css.map",
-    "main.465bc071.js.map": "/miniJeux/static/js/main.465bc071.js.map",
+    "main.50e70ba0.js.map": "/miniJeux/static/js/main.50e70ba0.js.map",
     "6601.653e235c.chunk.js.map": "/miniJeux/static/js/6601.653e235c.chunk.js.map",
     "8609.9fc26a7f.chunk.js.map": "/miniJeux/static/js/8609.9fc26a7f.chunk.js.map",
     "7962.6840dd3e.chunk.js.map": "/miniJeux/static/js/7962.6840dd3e.chunk.js.map",
     "7923.163f835e.chunk.js.map": "/miniJeux/static/js/7923.163f835e.chunk.js.map",
     "1388.df400f1f.chunk.js.map": "/miniJeux/static/js/1388.df400f1f.chunk.js.map",
     "623.25a2d4c6.chunk.js.map": "/miniJeux/static/js/623.25a2d4c6.chunk.js.map",
-    "3606.ded9c6ed.chunk.js.map": "/miniJeux/static/js/3606.ded9c6ed.chunk.js.map",
+    "3606.4f6d96e9.chunk.js.map": "/miniJeux/static/js/3606.4f6d96e9.chunk.js.map",
     "4546.b3a3265e.chunk.css.map": "/miniJeux/static/css/4546.b3a3265e.chunk.css.map",
     "4546.27bf4ff8.chunk.js.map": "/miniJeux/static/js/4546.27bf4ff8.chunk.js.map",
     "1088.409a95a3.chunk.js.map": "/miniJeux/static/js/1088.409a95a3.chunk.js.map",
@@ -627,7 +627,7 @@
     "2368.608e4417.chunk.js.map": "/miniJeux/static/js/2368.608e4417.chunk.js.map",
     "9294.82f02bd1.chunk.js.map": "/miniJeux/static/js/9294.82f02bd1.chunk.js.map",
     "1340.c1873c48.chunk.js.map": "/miniJeux/static/js/1340.c1873c48.chunk.js.map",
-    "8964.3fa27c7d.chunk.js.map": "/miniJeux/static/js/8964.3fa27c7d.chunk.js.map",
+    "850.34a76715.chunk.js.map": "/miniJeux/static/js/850.34a76715.chunk.js.map",
     "9436.295471f8.chunk.css.map": "/miniJeux/static/css/9436.295471f8.chunk.css.map",
     "9436.8e195cf5.chunk.js.map": "/miniJeux/static/js/9436.8e195cf5.chunk.js.map",
     "9362.ba3f74ae.chunk.js.map": "/miniJeux/static/js/9362.ba3f74ae.chunk.js.map",
@@ -759,6 +759,6 @@
   },
   "entrypoints": [
     "static/css/main.a099b63f.css",
-    "static/js/main.465bc071.js"
+    "static/js/main.50e70ba0.js"
   ]
 }
