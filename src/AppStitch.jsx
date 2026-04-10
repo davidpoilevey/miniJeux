@@ -14,7 +14,7 @@ const APPBAR_HEIGHT = 64;
 
 function findGameById(id) {
   for (const cat of GAMES_DATA) {
-    const found = cat.jeux?.find(g => g.id === id);
+    const found = cat.jeux?.find(g => g.id === id || g.name === id);
     if (found) return found;
   }
   return null;
@@ -60,7 +60,7 @@ const AppStitch = () => {
 
   useEffect(() => {
     if (selectedApp) {
-      const url = selectedApp.id ? `?game=${selectedApp.id}` : '';
+      const url = `?game=${encodeURIComponent(selectedApp.id || selectedApp.name)}`;
       window.history.pushState({ minijeuxGame: true }, '', url);
       const onPop = () => {
         sendCloseEvent(selectedApp);

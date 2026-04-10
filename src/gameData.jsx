@@ -820,6 +820,7 @@ export const GAMES_DATA = [
       {
         name: 'Cul-Clicker',
         component: Clicker ,
+        id:'culClicker',
         favori:0.5,
         image:'https://img.itch.zone/aW1nLzExMDQxNjgzLnBuZw==/315x250%23c/EqNd4V.png',
         icon: 'TouchApp',
@@ -839,6 +840,7 @@ export const GAMES_DATA = [
       },
       {
         name: 'Chi-Fu-Mi',
+        id: 'ChiFuMi' ,
         component: ChiFuMi ,
         image:'https://ssaft.com/Blog/dotclear/public/WindowsLiveWriter/Shifumi_14CFE/image_4.png',
         icon: 'BackHand',
