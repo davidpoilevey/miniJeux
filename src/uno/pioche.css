@@ -1,0 +1,49 @@
+/* Styles pour le texte */
+.flash-text {
+  font-size: 50px;
+  font-weight: bold;
+  text-shadow: 0 0 10px rgb(255, 255, 255);
+  position: absolute;
+  top: -50px;
+  left: 50%;
+  transform: translate(50%, -50%);
+  animation: shake 1s infinite;
+}
+
+
+/* Animation de clignotement */
+@keyframes flash {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Animation de tremblement */
+@keyframes shake {
+    0% {
+      transform: translate(-50%, -50%) rotate(0deg);
+      opacity: 1;
+    }
+    25% {
+      transform: translate(-50%, -50%) rotate(-5deg);
+      opacity: 0.5;
+    }
+    50% {
+      transform: translate(-50%, -50%) rotate(0deg);
+      opacity: 1;
+    }
+    75% {
+      transform: translate(-50%, -50%) rotate(5deg);
+      opacity: 0.3;
+    }
+    100% {
+      transform: translate(-50%, -50%) rotate(0deg);
+      opacity: 1;
+    }
+  }

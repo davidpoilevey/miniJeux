@@ -1,0 +1,241 @@
+{
+  "enemies": [
+    {
+      "id": "skeleton-warrior",
+      "name": "Guerrier Squelette",
+      "description": "Un squelette animé par une magie sombre, brandissant une épée rouillée.",
+      "sprite": "skeleton-warrior",
+      "stats": {
+        "health": 50,
+        "maxHealth": 50,
+        "mana": 0,
+        "maxMana": 0,
+        "attack": 8,
+        "defense": 3,
+        "speed": 5
+      },
+      "behavior": {
+        "type": "aggressive",
+        "detectionRange": 400,
+        "attackRange": 100,
+        "attackCooldown": 1500,
+        "moveSpeed": 2
+      },
+      "attacks": [
+        {
+          "id": "slash",
+          "name": "Coup d'Épée",
+          "damage": 8,
+          "manaCost": 0,
+          "cooldown": 1500,
+          "type": "physical"
+        }
+      ],
+      "loot": [
+        {
+          "itemId": "bone-fragment",
+          "dropRate": 0.7
+        },
+        {
+          "itemId": "potion-health-small",
+          "dropRate": 0.3
+        }
+      ],
+      "xpReward": 20
+    },
+    {
+      "id": "stone-guardian",
+      "name": "Gardien de Pierre",
+      "description": "Une statue animée d'une puissance redoutable. Ses mouvements sont lents mais dévastateurs.",
+      "sprite": "stone-guardian",
+      "stats": {
+        "health": 120,
+        "maxHealth": 120,
+        "mana": 30,
+        "maxMana": 30,
+        "attack": 15,
+        "defense": 10,
+        "speed": 2
+      },
+      "behavior": {
+        "type": "guardian",
+        "detectionRange": 400,
+        "attackRange": 120,
+        "attackCooldown": 2500,
+        "moveSpeed": 1.5,
+        "patrolArea": {
+          "centerX": 450,
+          "radius": 100
+        }
+      },
+      "attacks": [
+        {
+          "id": "stone-slam",
+          "name": "Frappe de Pierre",
+          "damage": 15,
+          "manaCost": 0,
+          "cooldown": 2500,
+          "type": "physical",
+          "knockback": 20
+        },
+        {
+          "id": "stone-shield",
+          "name": "Bouclier de Pierre",
+          "damage": 0,
+          "manaCost": 10,
+          "cooldown": 5000,
+          "type": "buff",
+          "effect": {
+            "type": "defense",
+            "amount": 5,
+            "duration": 3000
+          }
+        }
+      ],
+      "loot": [
+        {
+          "itemId": "stone-core",
+          "dropRate": 1.0
+        },
+        {
+          "itemId": "potion-mana",
+          "dropRate": 0.5
+        }
+      ],
+      "xpReward": 50
+    },
+    {
+      "id": "shadow-demon",
+      "name": "Démon d'Ombre",
+      "description": "Une créature éthérée qui se fond dans l'obscurité. Ses attaques magiques sont vicieuses.",
+      "sprite": "shadow-demon",
+      "stats": {
+        "health": 70,
+        "maxHealth": 70,
+        "mana": 50,
+        "maxMana": 50,
+        "attack": 12,
+        "defense": 4,
+        "speed": 7
+      },
+      "behavior": {
+        "type": "ranged",
+        "detectionRange": 500,
+        "attackRange": 250,
+        "attackCooldown": 2000,
+        "moveSpeed": 3,
+        "keepDistance": 150
+      },
+      "attacks": [
+        {
+          "id": "shadow-bolt",
+          "name": "Éclair d'Ombre",
+          "damage": 12,
+          "manaCost": 5,
+          "cooldown": 2000,
+          "type": "magic",
+          "projectile": true,
+          "speed": 8
+        },
+        {
+          "id": "teleport",
+          "name": "Téléportation",
+          "damage": 0,
+          "manaCost": 15,
+          "cooldown": 8000,
+          "type": "utility",
+          "effect": {
+            "type": "teleport",
+            "range": 200
+          }
+        }
+      ],
+      "loot": [
+        {
+          "itemId": "shadow-essence",
+          "dropRate": 0.8
+        },
+        {
+          "itemId": "spell-scroll-shadow",
+          "dropRate": 0.2
+        }
+      ],
+      "xpReward": 40
+    }
+    ,{
+  "id": "bat-shadow",
+  "name": "Chauve-souris d'Ombre",
+  "description": "Une petite créature volante rapide et agaçante.",
+  "sprite": "bat-shadow",
+  "stats": {
+    "health": 25,
+    "maxHealth": 25,
+    "mana": 0,
+    "maxMana": 0,
+    "attack": 5,
+    "defense": 1,
+    "speed": 8
+  },
+  "behavior": {
+    "type": "flying",
+    "detectionRange": 400,
+    "attackRange": 80,
+    "attackCooldown": 1200,
+    "moveSpeed": 4,
+    "flightHeight": 200
+  },
+  "attacks": [
+    {
+      "id": "swoop",
+      "name": "Piqué",
+      "damage": 5,
+      "manaCost": 0,
+      "cooldown": 1200,
+      "type": "physical"
+    }
+  ],
+  "loot": [
+    { "itemId": "shadow-essence", "dropRate": 0.6 }
+  ],
+  "xpReward": 15
+},
+{
+  "id": "golem-heavy",
+  "name": "Golem Lourd",
+  "description": "Une créature massive et lente mais extrêmement résistante.",
+  "sprite": "golem-heavy",
+  "stats": {
+    "health": 200,
+    "maxHealth": 200,
+    "mana": 0,
+    "maxMana": 0,
+    "attack": 25,
+    "defense": 15,
+    "speed": 1
+  },
+  "behavior": {
+    "type": "aggressive",
+    "detectionRange": 350,
+    "attackRange": 100,
+    "attackCooldown": 3000,
+    "moveSpeed": 0.8
+  },
+  "attacks": [
+    {
+      "id": "ground-slam",
+      "name": "Frappe Sismique",
+      "damage": 25,
+      "manaCost": 0,
+      "cooldown": 3000,
+      "type": "physical",
+      "knockback": 30
+    }
+  ],
+  "loot": [
+    { "itemId": "stone-core", "dropRate": 1.0 },
+    { "itemId": "potion-health", "dropRate": 0.7 }
+  ],
+  "xpReward": 80
+}
+  ]
+}

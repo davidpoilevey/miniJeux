@@ -1,0 +1,55 @@
+{
+  "obstacles": [
+    {
+      "id": "stone-wall",
+      "name": "Mur de Pierre",
+      "type": "obstacle", "walkable": true, 
+      "sprite": "stone-wall",
+      "collision": true,
+      "destructible": false,
+      "health": null
+    }, {
+      "id": "magic-barriere",
+      "name": "Barriere magique",
+  "requiredItem": "stone-core",
+      "type": "obstacle", "walkable": true, 
+      "sprite": "stone-wall",
+      "collision": true,
+      "destructible": false,
+      "health": null
+    },
+    {
+      "id": "wooden-crate",
+      "name": "Caisse en Bois",
+      "type": "obstacle",
+      "sprite": "coffre",
+      "collision": true,
+      "destructible": true,
+      "health": 30, "walkable": true, 
+      "loot": [
+        { "itemId": "potion-health-small", "dropRate": 0.5 },
+        { "itemId": "bone-fragment", "dropRate": 0.3 }
+      ]
+    },
+    {
+      "id": "tree",
+      "name": "Arbre",
+      "type": "obstacle",
+      "sprite": "tree",
+      "collision": true,
+      "destructible": true, "walkable": false, 
+      "health": 50,
+      "burnable": true,
+      "burnedSprite": "tree-burning",
+      "burnDamage": 10
+    },
+    {
+      "id": "boulder",
+      "name": "Rocher",
+      "type": "obstacle",
+      "sprite": "boulder", "walkable": true, 
+      "collision": true,
+      "destructible": false
+    }
+  ]
+}

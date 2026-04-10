@@ -1,0 +1,268 @@
+{
+  "items": [
+    {
+      "id": "potion-health-small",
+      "name": "Petite Potion de Vie",
+      "description": "Restaure 25 points de vie.",
+      "type": "consumable",
+      "sprite": "potion-red-small",
+      "effect": {
+        "type": "heal",
+        "amount": 25
+      },
+      "stackable": true,
+      "maxStack": 10
+    },
+    {
+      "id": "potion-health",
+      "name": "Potion de Vie",
+      "description": "Restaure 50 points de vie.",
+      "type": "consumable",
+      "sprite": "potion-red",
+      "effect": {
+        "type": "heal",
+        "amount": 50
+      },
+      "stackable": true,
+      "maxStack": 5
+    },
+    {
+      "id": "potion-mana",
+      "name": "Potion de Mana",
+      "description": "Restaure 30 points de mana.",
+      "type": "consumable",
+      "sprite": "potion-blue",
+      "effect": {
+        "type": "mana",
+        "amount": 30
+      },
+      "stackable": true,
+      "maxStack": 5
+    },
+    {
+      "id": "ancient-key",
+      "name": "Clé Ancienne",
+      "description": "Une clé ornée de runes mystérieuses. Elle semble ouvrir une porte importante.",
+      "type": "key",
+      "sprite": "key-ancient",
+      "stackable": false
+    },
+    {
+      "id": "bone-fragment",
+      "name": "Fragment d'Os",
+      "description": "Un morceau d'os ancien. Peut être utilisé pour l'artisanat.",
+      "type": "material",
+      "sprite": "bone",
+      "stackable": true,
+      "maxStack": 99
+    },
+    {
+      "id": "stone-core",
+      "name": "Cœur de Pierre",
+      "description": "Le noyau énergétique d'un gardien de pierre. Pulse d'une énergie magique.",
+      "type": "material",
+      "sprite": "core-stone",
+      "stackable": true,
+      "maxStack": 10
+    },
+    {
+      "id": "shadow-essence",
+      "name": "Essence d'Ombre",
+      "description": "Une substance éthérée capturée d'un démon d'ombre. Utile pour la magie noire.",
+      "type": "material",
+      "sprite": "essence-shadow",
+      "stackable": true,
+      "maxStack": 20
+    },
+    {
+      "id": "spell-scroll-fireball",
+      "name": "Parchemin - Boule de Feu",
+      "description": "Un parchemin ancien contenant les connaissances du sort Boule de Feu.",
+      "type": "spell-scroll",
+      "sprite": "scroll-fire",
+      "stackable": false,
+      "learnSpell": "fireball"
+    },
+    {
+      "id": "spell-scroll-shadow",
+      "name": "Parchemin - Lame d'Ombre",
+      "description": "Enseigne le sort Lame d'Ombre, une attaque furtive dévastatrice.",
+      "type": "spell-scroll",
+      "sprite": "scroll-shadow",
+      "stackable": false,
+      "learnSpell": "shadow-blade"
+    },
+
+
+
+    {
+      "id": "spell-scroll-soin",
+      "name": "Parchemin de soin",
+      "description": "Sort de base pour tout noob qui se respecte",
+      "type": "spell-scroll",
+      "sprite": "scroll",
+      "stackable": false,
+      "learnSpell": "healing-light"
+    },
+    {
+      "id": "spell-scroll-shield",
+      "name": "Parchemin - Bouclier magique",
+      "description": "Enseigne le sort Bouclier magique. protection supplementaire",
+      "type": "spell-scroll",
+      "sprite": "scroll",
+      "stackable": false,
+      "learnSpell": "mana-shield"
+    },
+    {
+      "id": "spell-scroll-freeze",
+      "name": "Parchemin - Immobilisation",
+      "description": "Enseigne le sort d'immobilization, plus personne ne bouge",
+      "type": "spell-scroll",
+      "sprite": "scroll",
+      "stackable": false,
+      "learnSpell": "time-freeze"
+    },
+    {
+      "id": "spell-scroll-teleport",
+      "name": "Parchemin - Teleportation",
+      "description": "Enseigne le sort Teleportation ??",
+      "type": "spell-scroll",
+      "sprite": "scroll",
+      "stackable": false,
+      "learnSpell": "teleport"
+    },
+    {
+      "id": "spell-scroll-meteor",
+      "name": "Parchemin -Tempete de meteores",
+      "description": "Enseigne le sort Tempete de meteores, une attaque dévastatrice. Reservee aux fins du monde",
+      "type": "spell-scroll",
+      "sprite": "scroll-shadow",
+      "stackable": false,
+      "learnSpell": "meteor-storm"
+    },
+    {
+      "id": "spell-scroll-ice",
+      "name": "Parchemin - Freezer",
+      "description": "Enseigne le sort de Glace, qui freeze vos ennemis.",
+      "type": "spell-scroll",
+      "sprite": "scroll",
+      "stackable": false,
+      "learnSpell": "ice-shard"
+    },
+    {
+      "id": "spell-scroll-ghost",
+      "name": "Parchemin - Passer a travers les murs",
+      "description": "Permet de devenir invincible et vaporeux pendant 5 sec.",
+      "type": "spell-scroll",
+      "sprite": "scroll",
+      "stackable": false,
+      "learnSpell": "ghost-walk"
+    },
+
+
+
+
+
+    {
+  "id": "sword-iron",
+  "name": "Épée de Fer",
+  "description": "Une épée simple mais efficace.",
+  "type": "weapon",
+  "sprite": "sword-iron",
+  "stats": {
+    "attack": 5,
+    "speed": 1.0
+  },
+  "range": 50,
+  "width": 60,
+  "attackSpeed": 400,
+  "stackable": false
+},
+    {
+      "id": "staff-apprentice",
+      "name": "Bâton d'Apprenti",
+      "description": "Un bâton basique qui amplifie légèrement les sorts.",
+      "type": "weapon",
+      "sprite": "staff-wood",
+      "stats": {
+        "attack": 3,
+        "magicPower": 5,
+        "manaRegen": 1
+      },
+      "stackable": false
+    }, {
+  "id": "chest-wooden",
+  "name": "Coffre en Bois",
+  "description": "Un vieux coffre fermé à clé.",
+  "type": "container",
+  "sprite": "coffre",
+  "stackable": false,
+  "locked": true,
+  "requiredKey": "ancient-key",
+  "contains": [
+    { "itemId": "potion-health", "quantity": 2 },
+    { "itemId": "bone-fragment", "quantity": 5 }
+  ]
+},
+{
+  "id": "spikes-floor",
+  "name": "Piques au Sol",
+  "description": "Des piques acérées qui sortent du sol.",
+  "type": "dangerous",
+  "sprite": "spikes",
+  "damage": 20,
+  "damageInterval": 1000
+},
+{
+  "id": "brazier-fire",
+  "name": "Brasier",
+  "description": "Un brasier enflammé. La chaleur est intense.",
+  "type": "dangerous",
+  "sprite": "flamme",
+  "damage": 15,
+  "damageInterval": 500,
+  "element": "fire"
+},{
+  "id": "healing-pot",
+  "name": "Marmite de Soin",
+  "description": "Une marmite fumante qui restaure la santé.",
+  "type": "regenerative",
+  "sprite": "healing-pot",
+  "healPerSecond": 5,
+  "resourceType": "health"
+},
+{
+  "id": "mana-fountain",
+  "name": "Fontaine de Mana",
+  "description": "Une fontaine mystique qui régénère le mana.",
+  "type": "regenerative",
+  "sprite": "mana-fountain",
+  "healPerSecond": 10,
+  "resourceType": "mana"
+}, {
+  "id": "leather-armor",
+  "name": "Armure de Cuir",
+  "description": "Une armure légère mais résistante.",
+  "type": "armor",
+  "sprite": "armor-leather",
+  "stats": {
+    "defense": 5,
+    "speed": 0
+  },
+  "stackable": false
+},
+{
+  "id": "iron-armor",
+  "name": "Armure de Fer",
+  "description": "Une armure lourde qui offre une excellente protection.",
+  "type": "armor",
+  "sprite": "armor-iron",
+  "stats": {
+    "defense": 12,
+    "speed": -2
+  },
+  "stackable": false
+}
+
+  ]
+}

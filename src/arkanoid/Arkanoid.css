@@ -1,0 +1,147 @@
+/* Arkanoid.css */
+
+.arkanoid-container {
+    position: relative;
+    border: 1px solid black;
+    background: linear-gradient(to right, #fbd9d9, #f5e058, #ed7fce, #fbd9d9);
+    background-size: 200% 100%;
+    animation: wave 10s linear infinite;
+    margin: auto;
+  }
+  
+  @keyframes wave {
+    0% {
+      background-position: 0 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  
+  
+  .paddle {
+    position: absolute;
+    height: 20px;
+    background-size: contain;
+    border-radius: 5px;
+  }
+  .bumper {
+    position: absolute;
+    height: 40px;width:10px;
+    bottom: 0px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+    background-color: #8e530f;
+    border-radius: 5px;
+  }
+  .missile{
+     background-color: #929ba2;
+    border: 1px double black;
+    width: 3px;
+    height: 11px;
+  }
+  
+ .collante{
+    /* background-color: #93b5a3; */
+
+ }
+ .fire{
+    background-color: #f19d2f;
+
+ }
+ .effect{
+    background-color: #31cf1c;
+
+ }
+
+  .ball {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background-color: #0095dd;
+    border-radius: 50%;
+  }
+  /* Arkanoid.css */
+/* Vies.css */
+
+.vies-container {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.vie {
+  width: 20px;
+  height: 20px;
+  background-color: rgb(247, 218, 32);
+  margin: 5px;
+  border-radius: 50%;
+}
+
+/* ... Styles pour les  briques ... */
+/* Brique.css */
+
+  .bricks-row {
+    position: absolute;
+    display: flex;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+.brique {
+    margin: 2px;
+    position: absolute;
+    border: 1px solid black;
+  }
+  
+
+/* Style pour le mode 'fire' */
+.paddle.fire {
+  background-color: #ff0000; /* Couleur rouge pour le mode 'fire' */
+  /* Positionnement des canons */
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    width: 7px;
+    height: 35px;
+    background-color: #000000; /* Couleur noire pour les canons */
+    border-radius: 4px;
+  }
+  /* Positionnement du canon de gauche */
+  &::before {
+    bottom: 50%;
+    left: -5px;
+    transform: translateY(50%);
+  }
+  /* Positionnement du canon de droite */
+  &::after {
+    bottom: 50%;
+    right: -5px;
+    transform: translateY(50%);
+  }
+}
+/* styles.css (ou votre fichier CSS local) */
+
+
+.message-flottant {
+  color: rgb(30, 9, 220);
+  position: absolute;
+  bottom: 200px;
+  left:50%;
+  width: fit-content;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-size: 36px;
+  font-weight: bold;
+  filter: blur(1px);
+  animation: defiler 2s  alternate 2;
+  animation-iteration-count: 2;
+}
+
+@keyframes defiler {
+  0% {
+    transform: translateX(50%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}

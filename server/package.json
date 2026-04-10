@@ -1,0 +1,14 @@
+{
+  "name": "c14-server",
+  "version": "1.0.0",
+  "description": "Serveur de simulation autonome pour Carbonifère 14",
+  "type": "module",
+  "main": "c14-server.mjs",
+  "scripts": {
+    "start": "node c14-server.mjs",
+    "dev": "node --watch c14-server.mjs"
+  },
+  "dependencies": {
+    "pocketbase": "^0.21.0"
+  }
+}

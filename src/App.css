@@ -1,38 +1,106 @@
-.App {
+
+
+.left-panel {
+  position: relative;
+  flex: 1;
+  transition: flex 0.5s;
+  overflow-y: auto;
+}
+
+.closed {
+  flex: 0;
+}
+
+.center-panel {
+  flex: 3;
+  background-color: #fff;
+  overflow-y: hidden;
+  position: relative;
+}
+
+.toggle-button {
+  position: relative;
+  align-self: flex-end;
+  bottom: 10px;
+  left: -5px;
+  height: 34px;
+  width: 0px;
+  overflow: visible;
+  color: #000;
+  font-size: 24px;
+  z-index: 10;
+  border-radius: 15px;
+}
+.tab-button {
+  background-color: #dddddd;
+  border: 1px solid #ccc;
+  border-radius: 5px 5px 0 0;
+  padding: 5px!important;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  height: 40px;
+
+  color: #333;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.tab-button:hover {
+  background-color: #e0e0e0;
+}
+
+.tab-button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #007bff; /* Mettez la couleur de votre choix ici */
+}
+.reglesInfo {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  cursor: pointer;
+  z-index: 10;
+  /* Ajoutez d'autres styles si nécessaire */
+  display: flex;
+  background-color: darkblue;
+  color:#e0e0e0;
+  border-radius: 5px;
+  border: 5px ridge red;
+}
+
+.regleText {
+  padding: 5px;
+  max-width: 300px;
+  font-style: oblique;
+  cursor: text;
+  /* Ajoutez d'autres styles si nécessaire */
+  background-color: #007bff;
+  color: #dddd00;
+}
+
+
+.app-container {
+  display: flex;
+  height: 100vh;
+}
+.main-title {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(120deg, #fff 30%, #ffd700 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            animation: glow 2s ease-in-out infinite alternate;
+            margin-bottom: 0.5rem;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 5px rgba(255, 215, 0, 0.4)); }
+            to { filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8)); }
+        }
+
+.app-panel {
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}

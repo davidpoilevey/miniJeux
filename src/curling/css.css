@@ -1,0 +1,179 @@
+.curling-field {
+    width: 100%;
+    height: 500px;
+    background-image: radial-gradient(circle at center, #E0F5FF 10%, #C3E5FC 50%, #A1D4FA 80%);
+  }
+  
+
+.circle-container {
+    position:relative;
+}
+
+.broom {
+    position:sticky;
+    width: 5px;
+    height: 5px;
+    font-size: 40px;
+
+}
+.circle-limit {
+    position:absolute;
+    top:0px;
+    left:350px;
+    height: 500px;
+    width: 2px;
+    background-color: rgb(130, 145, 145);
+}
+.circle-red  {
+    position: absolute;
+    top: 250px;
+    right: 150px;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background-color: red;
+  }
+  
+  .circle-white  {
+    position: absolute;
+    top: 225px;
+    right: 125px;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background-color: white;
+  }
+  
+  .circle-blue  {
+    position: absolute;
+    top: 200px;
+    right: 100px;
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background-color: blue;
+  }
+  
+
+.stone {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background-color: gray;
+    text-align: center;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+  }
+  
+  .stone:hover {
+    background-color: rgb(237, 186, 85);
+  }
+.summary {
+    display: flex;
+}
+
+  .stoneIcon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    margin: 5px;
+  }
+  
+  .game-header {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+ 
+  .game-title {
+    font-size: 24px;
+    animation: flamboyant 2s infinite;
+    transition: box-shadow 0.5s ease-in-out;
+  }
+  
+  @keyframes flamboyant {
+    0% {
+      box-shadow: 0 0 10px #4c9aff, 0 0 20px #4c9aff;
+    }
+    50% {
+      box-shadow: 0 0 20px #4c9aff, 0 0 40px #4c9aff;
+    }
+    100% {
+      box-shadow: 0 0 10px #4c9aff, 0 0 20px #4c9aff;
+    }
+  }
+  
+  
+  
+  .reset-button {
+    background-color: #efc051;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    font-size: 16px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-left: 10px;
+  }
+  
+  .current-tour {
+    font-size: 18px;
+    font-weight: bold;
+  }
+  
+  .summary {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  
+  .team-summary {
+    display: flex;
+    align-items: center;
+  }
+  
+  .team-color {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    border-radius: 50%;
+  }
+  
+  .rouge {
+    background-color: #ff4c4c;
+  }
+  
+  .bleu {
+    background-color: #4c9aff;
+  }
+  
+  .stone-count {
+    font-size: 18px;
+    font-weight: bold;
+  }
+  
+  .spectators {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    height: 200px; /* Ajustez la hauteur selon vos besoins */
+  }
+  
+  .row {
+    display: flex;
+    justify-content: center;
+  }
+  
+  .spectator {
+    width: 10px;
+    height: 20px;
+    background-color: #000;
+    margin: 2px;
+    border-radius: 50%;
+  }
+  
+

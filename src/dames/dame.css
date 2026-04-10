@@ -1,0 +1,52 @@
+/* styles.css (ou tout autre nom de fichier de style de ton choix) */
+
+.boardDame {
+    display: grid;
+  }
+  
+  
+  /* Alterne les couleurs des cases pour créer un motif échiquier */
+.white {
+    background-color: #f2f0e6;
+  }
+  
+ .black {
+    background-color: #000000;
+  }
+.highlighted {
+  animation: border-flash 0.5s ease;
+  border: 6px solid red;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+@keyframes border-flash {
+  0% {
+    border-color: red;
+  }
+  50% {
+    border-color: #ff9999;
+  }
+  100% {
+    border-color: transparent;
+  }
+}
+
+
+  /* Styles pour les pions (ajoute tes propres styles pour les pions) */
+  .piece {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+  }
+ 
+
+  /* Exemple de styles pour les pions rouges et blancs */
+  .piece.red {
+    background-color: #ff0000;
+  }
+  
+  .piece.white {
+    background-color: #ffffff;
+  }
+  

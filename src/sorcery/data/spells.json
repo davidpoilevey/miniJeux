@@ -1,0 +1,331 @@
+{
+  "spells": [
+    {
+      "id": "fireball",
+      "name": "Boule de Feu",
+      "description": "Lance une boule de feu explosive qui inflige des dégâts de zone.",
+      "icon": "spell-fireball",
+      "type": "offensive",
+      "element": "fire",
+      "stats": {
+        "damage": 30,
+        "manaCost": 15,
+        "cooldown": 3000
+      },
+      "casting": {
+        "castTime": 800,
+        "range": 400,
+        "areaOfEffect": 60
+      },
+      "projectile": {
+        "speed": 6,
+        "sprite": "fireball-projectile",
+        "explosionSprite": "fire-explosion"
+      },
+      "effects": [
+        {
+          "type": "damage",
+          "amount": 30,
+          "damageType": "magic"
+        },
+        {
+          "type": "burn",
+          "duration": 3000,
+          "tickDamage": 3,
+          "tickRate": 1000
+        }
+      ]
+    },
+    {
+      "id": "ice-shard",
+      "name": "Éclat de Glace",
+      "description": "Projette un éclat de glace acéré qui ralentit l'ennemi.",
+      "icon": "spell-ice",
+      "type": "offensive",
+      "element": "ice",
+      "stats": {
+        "damage": 20,
+        "manaCost": 10,
+        "cooldown": 2000
+      },
+      "casting": {
+        "castTime": 500,
+        "range": 350,
+        "areaOfEffect": 0
+      },
+      "projectile": {
+        "speed": 8,
+        "sprite": "ice-shard-projectile",
+        "hitSprite": "ice-impact"
+      },
+      "effects": [
+        {
+          "type": "damage",
+          "amount": 20,
+          "damageType": "magic"
+        },
+        {
+          "type": "slow",
+          "duration": 2000,
+          "slowAmount": 0.5
+        }
+      ]
+    },
+    {
+      "id": "lightning-strike",
+      "name": "Éclair Foudroyant",
+      "description": "Invoque un éclair qui frappe instantanément la cible.",
+      "icon": "spell-lightning",
+      "type": "offensive",
+      "element": "lightning",
+      "stats": {
+        "damage": 40,
+        "manaCost": 20,
+        "cooldown": 4000
+      },
+      "casting": {
+        "castTime": 1000,
+        "range": 300,
+        "areaOfEffect": 0
+      },
+      "projectile": null,
+      "instant": true,
+      "effects": [
+        {
+          "type": "damage",
+          "amount": 40,
+          "damageType": "magic"
+        },
+        {
+          "type": "stun",
+          "duration": 1000
+        }
+      ],
+      "visualEffect": "lightning-bolt"
+    },
+    {
+      "id": "shadow-blade",
+      "name": "Lame d'Ombre",
+      "description": "Crée une lame d'énergie sombre qui traverse les ennemis.",
+      "icon": "spell-shadow",
+      "type": "offensive",
+      "element": "shadow",
+      "stats": {
+        "damage": 35,
+        "manaCost": 18,
+        "cooldown": 3500
+      },
+      "casting": {
+        "castTime": 600,
+        "range": 450,
+        "areaOfEffect": 0
+      },
+      "projectile": {
+        "speed": 10,
+        "sprite": "shadow-blade-projectile",
+        "piercing": true,
+        "maxPierce": 3
+      },
+      "effects": [
+        {
+          "type": "damage",
+          "amount": 35,
+          "damageType": "magic"
+        }
+      ]
+    },
+    {
+      "id": "healing-light",
+      "name": "Lumière Curative",
+      "description": "Canalise une lumière divine pour restaurer la santé.",
+      "icon": "spell-heal",
+      "type": "support",
+      "element": "light",
+      "stats": {
+        "damage": 0,
+        "manaCost": 25,
+        "cooldown": 5000
+      },
+      "casting": {
+        "castTime": 1200,
+        "range": 0,
+        "areaOfEffect": 0,
+        "targetSelf": true
+      },
+      "projectile": null,
+      "effects": [
+        {
+          "type": "heal",
+          "amount": 50
+        }
+      ],
+      "visualEffect": "light-aura"
+    },
+    {
+      "id": "mana-shield",
+      "name": "Bouclier de Mana",
+      "description": "Crée un bouclier magique qui absorbe les dégâts.",
+      "icon": "spell-shield",
+      "type": "support",
+      "element": "arcane",
+      "stats": {
+        "damage": 0,
+        "manaCost": 20,
+        "cooldown": 10000
+      },
+      "casting": {
+        "castTime": 400,
+        "range": 0,
+        "areaOfEffect": 0,
+        "targetSelf": true
+      },
+      "projectile": null,
+      "effects": [
+        {
+          "type": "shield",
+          "duration": 8000
+        }
+      ],
+      "visualEffect": "arcane-shield"
+    },
+    {
+      "id": "teleport",
+      "name": "Téléportation",
+      "description": "Se téléporte instantanément à courte distance.",
+      "icon": "spell-teleport",
+      "type": "utility",
+      "element": "arcane",
+      "stats": {
+        "damage": 0,
+        "manaCost": 15,
+        "cooldown": 6000
+      },
+      "casting": {
+        "castTime": 200,
+        "range": 200,
+        "areaOfEffect": 0,
+        "targetSelf": true
+      },
+      "projectile": null,
+      "effects": [
+        {
+          "type": "teleport",
+          "maxDistance": 200
+        }
+      ],
+      "visualEffect": "teleport-effect"
+    },
+    {
+  "id": "time-freeze",
+  "name": "Gel du Temps",
+  "description": "Immobilise tous les ennemis pendant quelques secondes.",
+  "icon": "spell-freeze",
+  "type": "utility",
+  "element": "arcane",
+  "stats": {
+    "damage": 0,
+    "manaCost": 35,
+    "cooldown": 15000
+  },
+  "casting": {
+    "castTime": 800,
+    "range": 0,
+    "areaOfEffect": 500,
+        "targetSelf": true
+  },
+  "projectile": null,
+  "effects": [
+    {
+      "type": "freeze-all",
+      "duration": 5000
+    }
+  ],
+  "visualEffect": "time-freeze-wave"
+},
+{
+  "id": "ghost-walk",
+  "name": "Marche Fantôme",
+  "description": "Devient intangible et traverse les murs pendant 3 secondes.",
+  "icon": "spell-ghost",
+  "type": "utility",
+  "element": "shadow",
+  "stats": {
+    "damage": 0,
+    "manaCost": 40,
+    "cooldown": 20000
+  },
+  "casting": {
+    "castTime": 400,
+    "range": 0,
+    "targetSelf": true
+  },
+  "projectile": null,
+  "effects": [
+    {
+      "type": "ghost",
+      "duration": 3000
+    }
+  ]
+},
+    {
+      "id": "meteor-storm",
+      "name": "Pluie de Météores",
+      "description": "Invoque une pluie de météores dévastatrice. Sort ultime.",
+      "icon": "spell-meteor",
+      "type": "ultimate",
+      "element": "fire",
+      "stats": {
+        "damage": 80,
+        "manaCost": 50,
+        "cooldown": 20000
+      },
+      "casting": {
+        "castTime": 2000,
+        "range": 500,
+        "areaOfEffect": 150
+      },
+      "projectile": null,
+      "effects": [
+        {
+          "type": "damage",
+          "amount": 80,
+          "damageType": "magic"
+        },
+        {
+          "type": "burn",
+          "duration": 5000,
+          "tickDamage": 5,
+          "tickRate": 1000
+        }
+      ],
+      "visualEffect": "meteor-rain",
+      "meteorCount": 5
+    }
+  ],
+  "combos": [
+    {
+      "id": "fire-ice-combo",
+      "name": "Explosion de Vapeur",
+      "description": "Combiner Boule de Feu et Éclat de Glace crée une explosion de vapeur.",
+      "spells": ["fireball", "ice-shard"],
+      "window": 2000,
+      "bonusDamage": 20,
+      "bonusEffect": {
+        "type": "knockback",
+        "force": 30
+      }
+    },
+    {
+      "id": "lightning-shadow-combo",
+      "name": "Foudre Noire",
+      "description": "Éclair Foudroyant + Lame d'Ombre = dégâts critiques garantis.",
+      "spells": ["lightning-strike", "shadow-blade"],
+      "window": 1500,
+      "bonusDamage": 30,
+      "bonusEffect": {
+        "type": "critical",
+        "multiplier": 1.5
+      }
+    }
+  ]
+}

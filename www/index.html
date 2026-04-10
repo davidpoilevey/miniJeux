@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>David Poilevey</title>
+  <script src="https://cdn.jsdelivr.net/npm/pocketbase/dist/pocketbase.umd.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f1a;
+      color: white;
+      min-height: 100vh;
+    }
+
+    /* HERO */
+    .hero {
+      background: url('assets/imgMaison.jpg') center/cover no-repeat;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+      position: relative;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 15, 26, 0.65);
+    }
+
+    .hero > * { position: relative; z-index: 1; }
+
+    .hero img {
+      width: 240px;
+      height: 240px;
+      border-radius: 50%;
+      border: 4px solid #7c3aed;
+      margin-bottom: 1.25rem;
+      object-fit: cover;
+    }
+
+    .hero h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      background: linear-gradient(135deg, #7c3aed, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .tagline {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+      max-width: 340px;
+      line-height: 1.5;
+      font-style: italic;
+      min-height: 3em;
+    }
+
+    .chuck-credit {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 0.5rem;
+    }
+
+    /* LINKS */
+    .section {
+      padding: 2rem 1.25rem;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .section h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #64748b;
+      margin-bottom: 1rem;
+    }
+
+    .card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      background: #1e1e2e;
+      border-radius: 16px;
+      margin-bottom: 0.75rem;
+      text-decoration: none;
+      color: white;
+      border: 1px solid #2d2d3f;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+
+    .card:active { transform: scale(0.97); }
+    .card:hover { border-color: #7c3aed; }
+
+    .card-icon {
+      font-size: 1.75rem;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      flex-shrink: 0;
+    }
+
+    .card-text { flex: 1; }
+    .card-title { font-weight: 600; font-size: 1rem; }
+    .card-sub { font-size: 0.8rem; color: #94a3b8; margin-top: 2px; }
+
+    .badge-private {
+      font-size: 0.65rem;
+      background: #7c3aed22;
+      color: #a78bfa;
+      border: 1px solid #7c3aed44;
+      padding: 2px 8px;
+      border-radius: 99px;
+      flex-shrink: 0;
+    }
+
+    .c-purple { background: #7c3aed22; }
+    .c-blue   { background: #2563eb22; }
+    .c-green  { background: #16a34a22; }
+    .c-orange { background: #ea580c22; }
+    .c-pink   { background: #db277722; }
+    .c-yellow { background: #ca8a0422; }
+
+    /* NEWS */
+    .news-card {
+      background: #1e1e2e;
+      border: 1px solid #2d2d3f;
+      border-radius: 16px;
+      padding: 1.25rem;
+    }
+
+    .news-empty {
+      color: #475569;
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 1rem 0;
+    }
+
+    /* VIDEO */
+    .video-section {
+      padding: 2rem 1.25rem 3rem;
+      max-width: 480px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .video-section h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #64748b;
+      margin-bottom: 1rem;
+    }
+
+    .video-section p {
+      font-size: 0.8rem;
+      color: #475569;
+      margin-bottom: 1rem;
+    }
+
+    video {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid #2d2d3f;
+    }
+
+    .rip {
+      margin-top: 2rem;
+      font-size: 0.75rem;
+      color: #334155;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HERO -->
+  <section class="hero">
+    <img src="assets/homelabLogo.png" alt="David Poilevey">
+    <h1>David Poilevey</h1>
+    <p class="tagline" id="tagline">Chargement d'un Chuck Norris fact...</p>
+    <p class="chuck-credit" id="chuck-credit"></p>
+  </section>
+
+  <!-- LIENS -->
+  <section class="section">
+    <h2>Mes liens</h2>
+
+    <a class="card" href="https://davidpoilevey.github.io/miniJeux" target="_blank">
+      <div class="card-icon c-purple">🎮</div>
+      <div class="card-text">
+        <div class="card-title">Mini Jeux</div>
+        <div class="card-sub">85 jeux en React</div>
+      </div>
+    </a>
+
+    <a class="card" href="https://ezio.poilevey.org" target="_blank">
+      <div class="card-icon c-blue">🏠</div>
+      <div class="card-text">
+        <div class="card-title">Hub familial</div>
+        <div class="card-sub">ezio.poilevey.org</div>
+      </div>
+      <span class="badge-private">🔒 Privé</span>
+    </a>
+
+    <a class="card" href="https://photos.poilevey.org" target="_blank">
+      <div class="card-icon c-green">📸</div>
+      <div class="card-text">
+        <div class="card-title">Photos famille</div>
+        <div class="card-sub">photos.poilevey.org</div>
+      </div>
+      <span class="badge-private">🔒 Privé</span>
+    </a>
+
+    <a class="card" href="https://paperless.poilevey.org" target="_blank">
+      <div class="card-icon c-orange">📄</div>
+      <div class="card-text">
+        <div class="card-title">Paperless</div>
+        <div class="card-sub">Gestion documentaire</div>
+      </div>
+      <span class="badge-private">🔒 Privé</span>
+    </a>
+
+    <a class="card" href="assets/cv2023.pdf" download>
+      <div class="card-icon c-yellow">📥</div>
+      <div class="card-text">
+        <div class="card-title">Mon CV</div>
+        <div class="card-sub">Télécharger en PDF</div>
+      </div>
+    </a>
+  </section>
+
+  <!-- NEWS -->
+  <!-- <section class="section">
+    <h2>📰 News</h2>
+    <div class="news-card">
+      <p class="news-empty">Rien de nouveau pour l'instant... revenez bientôt !</p>
+    </div>
+  </section> -->
+
+  <section class="section">
+    <h2>🌿 À découvrir</h2>
+    <a class="card" href="http://davidpoilevey.github.io/miniJeux/?game=carbonifere14" target="_blank">
+      <div class="card-icon c-green">🦕</div>
+      <div class="card-text">
+        <div class="card-title">Carbonifère 14</div>
+        <div class="card-sub">3 mondes vivants — évolution en temps réel</div>
+      </div>
+    </a>
+  </section>
+  <section class="section">
+  <h2>💬 Commentaires</h2>
+  
+  <div id="comments-list" style="margin-bottom: 1rem;">
+    <p style="font-size:13px; color: var(--color-text-tertiary, #475569); text-align:center; padding: 1rem 0;">
+      Chargement...
+    </p>
+  </div>
+
+  <div class="news-card" style="background:#1e1e2e; border:1px solid #2d2d3f; border-radius:16px; padding:1.25rem;">
+    <p style="font-size:12px; color:#64748b; margin-bottom:0.75rem;">Laisse un mot ✍️</p>
+    <input 
+      id="comment-author" 
+      type="text" 
+      placeholder="Ton prénom" 
+      style="width:100%; background:#0f0f1a; border:1px solid #2d2d3f; border-radius:10px; padding:0.6rem 0.875rem; color:white; font-size:13px; margin-bottom:0.5rem; outline:none;"
+    >
+    <textarea 
+      id="comment-message" 
+      placeholder="Ton commentaire..." 
+      rows="3"
+      style="width:100%; background:#0f0f1a; border:1px solid #2d2d3f; border-radius:10px; padding:0.6rem 0.875rem; color:white; font-size:13px; margin-bottom:0.75rem; outline:none; resize:none; font-family:inherit;"
+    ></textarea>
+    <button 
+      id="comment-submit"
+      style="width:100%; background:#7c3aed; border:none; border-radius:10px; padding:0.7rem; color:white; font-size:13px; font-weight:500; cursor:pointer;"
+    >
+      Envoyer 🚀
+    </button>
+    <p id="comment-feedback" style="font-size:12px; color:#64748b; text-align:center; margin-top:0.5rem; min-height:1.2em;"></p>
+  </div>
+</section>
+
+  <!-- VIDEO EASTER EGG -->
+  <section class="video-section">
+    <h2>🎬 Vous l'avez mérité</h2>
+    <p>Pour les curieux qui scrollent jusqu'ici...</p>
+    <video autoplay loop muted playsinline>
+      <source src="assets/vidFail.mp4" type="video/mp4">
+    </video>
+    <p class="rip">En hommage à Chuck Norris (1940 - 2026) 🥋</p>
+  </section>
+
+  <script>
+    // Chuck Norris Facts API
+    async function loadChuckFact() {
+      try {
+        const res = await fetch('https://api.chucknorris.io/jokes/random');
+        const data = await res.json();
+        document.getElementById('tagline').textContent = data.value;
+        document.getElementById('chuck-credit').textContent = 
+          '— Chuck Norris Fact · En hommage (1940-2026)';
+      } catch {
+        document.getElementById('tagline').textContent = 
+          'Dev, papa, geek — et fier de l\'être.';
+      }
+    }
+
+    loadChuckFact();
+    // Commentaires Pocketbase
+const pb = new PocketBase('https://bdd.poilevey.org');
+
+async function loadComments() {
+  try {
+    const result = await pb.collection('comments').getList(1, 3, {
+      sort: '@random'
+    });
+    
+    const container = document.getElementById('comments-list');
+    
+    if (result.items.length === 0) {
+      container.innerHTML = `<p style="font-size:13px; color:#475569; text-align:center; padding:1rem 0;">Sois le premier à commenter 👋</p>`;
+      return;
+    }
+
+    container.innerHTML = result.items.map(c => `
+      <div style="background:#1e1e2e; border:1px solid #2d2d3f; border-radius:12px; padding:0.875rem 1rem; margin-bottom:0.5rem;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+          <span style="font-size:13px; font-weight:500; color:white;">${escapeHtml(c.author)}</span>
+          <span style="font-size:11px; color:#475569;">${new Date(c.date).toLocaleDateString('fr-FR')}</span>
+        </div>
+        <p style="font-size:13px; color:#94a3b8; margin:0; line-height:1.5;">${escapeHtml(c.message)}</p>
+      </div>
+    `).join('');
+  } catch(e) {
+    console.error('Erreur commentaires', e);
+  }
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+document.getElementById('comment-submit').addEventListener('click', async () => {
+  const author = document.getElementById('comment-author').value.trim();
+  const message = document.getElementById('comment-message').value.trim();
+  const feedback = document.getElementById('comment-feedback');
+
+  if (!author || !message) {
+    feedback.style.color = '#f87171';
+    feedback.textContent = 'Merci de remplir les deux champs 🙏';
+    return;
+  }
+
+  try {
+    document.getElementById('comment-submit').disabled = true;
+    await pb.collection('comments').create({ author, message });
+    document.getElementById('comment-author').value = '';
+    document.getElementById('comment-message').value = '';
+    feedback.style.color = '#4ade80';
+    feedback.textContent = 'Commentaire envoyé, merci ! 🎉';
+    await loadComments();
+  } catch(e) {
+    feedback.style.color = '#f87171';
+    feedback.textContent = 'Erreur lors de l\'envoi 😕';
+  } finally {
+    document.getElementById('comment-submit').disabled = false;
+  }
+});
+
+loadComments();
+  </script>
+
+</body>
+</html>

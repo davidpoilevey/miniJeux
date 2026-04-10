@@ -1,0 +1,27 @@
+
+/* Créez une classe pour représenter les étoiles */
+.star {
+    position: absolute;
+    background-color: white;
+    border-radius: 50%;
+
+  }
+  
+  /* Animation pour faire défiler les étoiles */
+  @keyframes starAnimation {
+    from {
+      transform: translateY(0) translateZ(0) ;
+    }
+    to {
+      transform: translateY(100vh) translateZ(0);
+    }
+  }
+  /* Animation pour le scintillement */
+  @keyframes starFlicker {
+    0%, 100% {
+        opacity: 0.9; /* Opacité normale */
+      }
+      50% {
+        opacity: 0.5; /* Opacité réduite pour le scintillement */
+      }
+  }

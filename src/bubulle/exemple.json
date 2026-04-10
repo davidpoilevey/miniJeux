@@ -1,0 +1,39 @@
+{
+  "attractionRapport": {
+    "feu": {
+      "eau": 4.981579229548551
+    },
+    "air": {
+      "eau": 4,
+      "feu": 4
+    },
+    "eau": {
+      "terre": 2.5
+    },
+    "terre": {
+      "feu": 5
+    }
+  },
+  "repulsionRapport": {
+    "feu": {
+      "terre": 2.5,
+      "air": 2.5
+    },
+    "air": {
+      "terre": 1.8204097488084647
+    },
+    "eau": {
+      "feu": 1.0290502286409287,
+      "air": 1.4164425410308124
+    },
+    "terre": {
+      "eau": 1.8901027206675869,
+      "air": 4.978662501779998
+    }
+  },
+  "NB_YEUX": 15,
+  "NB_AIR": 79,
+  "NB_EAU": 57,
+  "NB_FEU": 36,
+  "NB_TERRE": 88
+}

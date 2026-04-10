@@ -1,0 +1,124 @@
+
+/*   
+  .board-row {\background: linear-gradient(to bottom, #efe7de, #807979);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 10px;
+  } 
+  
+  */
+  .rowdisabled {
+
+    filter: grayscale(70%);
+    pointer-events: none;
+  }
+  
+  .current-player-indicator {
+    width: 20vw;
+    height: 30px;
+    background-color: #bf7f1f; /* Couleur du joueur Up */
+    border-radius: 40%;
+    border: 1px groove black;
+    text-align: center;
+  }
+  
+  .board-hole {
+    flex-wrap: wrap;
+    flex-basis: 20%;
+    /* Ajustez la valeur en fonction du nombre de trous par rangée */
+  
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer; /* 
+    background-color: #c2a67f;Couleur de fond brun
+    background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.3) 25%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.3) 75%, rgba(255, 255, 255, 0.3)), linear-gradient(45deg, rgba(0, 0, 0, 0.1) 25%, transparent 25%, transparent 75%, rgba(0, 0, 0, 0.1) 75%, rgba(0, 0, 0, 0.1)); Texture de bois
+     */
+     
+     box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
+    transition: background-color 0.3s ease-in-out;
+  }
+  
+  .board-hole:hover {
+    background-color: #a89166; /* Couleur de fond brun au survol */
+  }
+  
+  /* Optionnel : ajustez la position de l'image au besoin */
+  .seed img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    position: absolute;
+    left:-10px;
+    top:-10px;
+  }
+  .seed {
+    position: relative; /* Ajoutez cette ligne */
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    margin: 2px;
+  }
+  .seed-text {
+    padding: 5px;
+    font-size: 24px;
+    border-radius: 40%;
+    background-color: #f1dbb3;
+  }
+  
+  .player-house {
+    width: min(200px, 90vw);
+    background-color: #D4C5B5;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 18px;
+    font-weight: bold;
+    padding: 10px;
+    margin: 0 10px;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16);
+    border-radius: 30px;
+  }
+  
+  /* Style pour le panneau des scores */
+.score-panel {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: bold;
+}
+/* Style pour la carte (Card) */
+.card {
+  max-width: 345px;
+  margin-bottom: 20px;
+   background-color: #dfc48b;
+}
+
+/* Style pour l'en-tête de la carte (CardHeader) */
+.card-header {
+  background-color: #f5f5f5;
+  padding: 10px;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* Style pour le contenu de la carte (CardContent) */
+.card-content {
+  padding: 10px;
+}
+
+/* Style pour les boutons dans la carte (CardActions) */
+.card-actions {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+}

@@ -1,0 +1,224 @@
+{
+  "id": "level-1",
+  "name": "Les Catacombes Oubliées",
+  "description": "Un dédale souterrain où règnent les ombres et les secrets anciens.",
+  "startRoom": "room-1",
+  "rooms": [
+    {
+      "id": "room-1",
+      "name": "Entrée des Catacombes",
+      "description": "Une salle humide aux murs de pierre moussue. Une torche vacillante éclaire faiblement les lieux.",
+      "width": 800,
+      "height": 400,
+      "color":"#466e31",
+      "background": "catacomb-entrance",
+      "exits": [
+        {
+          "direction": "right",
+          "toRoom": "room-2",
+          "x": 770,
+          "y": 250,
+          "width": 30,
+          "height": 100
+        }
+      ],
+      "entities": [
+        {
+          "type": "item",
+          "id": "mana-fountain",
+          "x": 350,
+          "y": 320
+        }, {
+          "type": "item",
+          "id": "sword-iron",
+          "x": 150,
+          "y": 320
+        }, {
+          "type": "item",
+          "id": "spell-scroll-ghost",
+          "x": 200,
+          "y": 320,
+          "width":60,
+          "height":60
+        }, {
+          "type": "obstacle",
+          "id": "tree",
+          "x": 430,
+          "y": 120,
+          "height":260,
+          "width":90
+        },  {
+          "type": "enemy",
+          "id": "skeleton-warrior-1",
+          "x": 640,
+          "y": 220,
+          "enemyType": "skeleton-warrior"
+        }
+      ],
+      "platforms": [
+        {
+          "x": 0,
+          "y": 350,
+          "width": 800,
+          "height": 50
+        }
+      ]
+    },
+    {
+      "id": "room-2",
+      "name": "Couloir des Ombres",
+      "description": "Un long couloir où résonnent d'étranges murmures.",
+      "width": 1000,
+      "height": 400,
+       "color":"#66be41",
+      "background": "catacomb-corridor",
+      "exits": [
+        {
+          "direction": "left",
+          "toRoom": "room-1",
+          "x": 0,
+          "y": 250,
+          "width": 30,
+          "height": 100
+        },
+        {
+          "direction": "right",
+          "toRoom": "room-3",
+          "x": 970,
+          "y": 250,
+          "width": 30,
+          "height": 100
+        },
+        {
+          "direction": "top",
+          "toRoom": "room-3",
+          "x": 450,
+          "y": 0,
+          "width": 100,
+          "height": 30
+        }
+      ],
+      "entities": [
+        {
+          "type": "enemy",
+          "id": "guardian-1",
+          "x": 450,
+          "y": 250,
+          "enemyType": "shadow-demon"
+        }
+      ],
+      "platforms": [
+        {
+          "x": 0,
+          "y": 350,
+          "width": 1000,
+          "height": 50
+        }
+      ]
+    },
+    {
+      "id": "room-3",
+      "name": "Salle du Gardien",
+      "description": "Une grande salle circulaire. Au centre, un piédestal vide attend son offrande.",
+      "width": 900,
+      "height": 500,
+       "color":"#56ce51",
+      "background": "catacomb-guardian",
+      "exits": [
+        {
+          "direction": "left",
+          "toRoom": "room-2",
+          "x": 0,
+          "y": 350,
+          "width": 30,
+          "height": 100
+        },
+        {
+          "direction": "right",
+          "toRoom": "room-4",
+          "x": 870,
+          "y": 250,
+          "width": 30,
+          "height": 100
+        }
+      ],
+      "entities": [
+        {
+          "type": "con",
+          "id": "door-lock-1",
+          "x": 850,
+          "y": 250,
+          "puzzleType": "key-door",
+          "requiredItem": "ancient-key"
+        }, {
+          "type": "enemy",
+          "id": "skeleton-warrior-1",
+          "x": 500,
+          "y": 320,
+          "enemyType": "skeleton-warrior"
+        },
+        {
+          "type": "enemy",
+          "id": "guardian-1",
+          "x": 450,
+          "y": 380,
+          "enemyType": "stone-guardian"
+        }
+      ],
+      "platforms": [
+        {
+          "x": 0,
+          "y": 450,
+          "width": 900,
+          "height": 50
+        },
+        {
+          "x": 350,
+          "y": 350,
+          "width": 200,
+          "height": 20
+        }
+      ]
+    },
+    {
+      "id": "room-4",
+      "name": "Trésor Ancien",
+      "description": "La salle finale. Un coffre doré trône au milieu de la pièce.",
+      "width": 600,
+      "height": 400,
+      "background": "catacomb-treasure",
+      "exits": [
+        {
+          "direction": "left",
+          "toRoom": "room-3",
+          "x": 0,
+          "y": 250,
+          "width": 30,
+          "height": 100
+        }
+      ],
+      "entities": [
+        {
+          "type": "item",
+          "id": "ancient-key",
+          "x": 300,
+          "y": 320
+        },
+        {
+          "type": "item",
+          "id": "spell-scroll-fireball",
+          "x": 400,
+          "y": 320
+        }
+      ],
+      "platforms": [
+        {
+          "x": 0,
+          "y": 350,
+          "width": 600,
+          "height": 50
+        }
+      ]
+    }
+  ]
+}
