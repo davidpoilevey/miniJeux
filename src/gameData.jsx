@@ -110,8 +110,9 @@ const GameBoardScopa = lazy(() => import( './scopa/Scopa'));
 const GameBoardTrouduc = lazy(() => import( './scopa/trouduc'));
 const PokerGame = lazy(() => import( './poker/PokerClaude'));
 const MaqCity = lazy(() => import( './gangCity/GangCity'));
+const FootballCoach = lazy(() => import('./football/TacticalCommand'));
 
-//tags : iaInside 
+//tags : iaInside
 export const GAMES_DATA = [
   {
     categorie: 'Une partie contre une IA ?',
@@ -1045,13 +1046,24 @@ export const GAMES_DATA = [
         tags: [ 'evolution', 'humour', 'original', 'zeroJoueur']
       }, 
       {
-        name:"War game", 
+        name:"War game",
         id:'wargame',
         component: WarGame ,
         icon: 'RocketLaunch',
         description: "Tentative de war game... loin d'etre finie",
         status: 'warning',
         tags: [ 'strategie',  'ambitieux', 'workInProgress']
+      },
+      {
+        name: 'Football Entraîneur',
+        id: 'footballCoach',
+        component: FootballCoach,
+        icon: 'SportsSoccer',
+        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Football_Pallo_valmiina-cropped.jpg/800px-Football_Pallo_valmiina-cropped.jpg',
+        description: "Sois l'entraîneur ! Dicte les tactiques en temps réel pendant que les joueurs jouent",
+        regle: "Touches tactiques : [A] Attaque  [D] Défense  [T] Tacle  [G] Garder  [P] Presse haute  [F] Fuite  [C] Centre  [X] Dribble dangereux  [R] Repli  [M] Marquage  [Z] Zone  [H] Haut rythme  [S] Substitution. Le match dure 90 minutes (3 min réelles).",
+        status: 'warning',
+        tags: ['action', 'strategie', 'clavier', 'ambitieux', 'workInProgress']
       }
     ]
   }
