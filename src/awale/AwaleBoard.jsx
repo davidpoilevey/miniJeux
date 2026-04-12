@@ -1,8 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import './awale.css'; // Importation du fichier CSS
-import africaImg from './africa.png';
 import { BoardRow, PlayerHouse } from './BoardRow';
-import { Box, Button, Card, CardActions, CardContent, CardHeader, Typography } from '@mui/material';
+import { Box, Button, Typography } from '@mui/material';
 import { GameOver } from '../ChuckNorrisFact';
 import { useIsMobile } from '../hookGame';
 
@@ -135,12 +134,12 @@ const isMobile = useIsMobile();
     }, [currentPlayer, board,playerDown, handleHoleClick, abandonGame]);
 
     return (
-        <Box sx={{  backgroundImage:`url(${africaImg})`, backgroundSize:'contain', display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100dvh', padding: { xs: '10px', md: '20px' }}} >
+        <Box sx={{ background: '#fff9eb', display: 'flex', flexDirection: 'column', alignItems: 'center', minHeight: '100dvh', padding: { xs: '10px', md: '20px' }}} >
             {/* Panneau des scores */}
               <GameOver open={gameOver} score={score}  gameName="Awale"
                 handleClose={() => { setGameOver(false) }} handleRestart={restartGame} />
-            <Box display={'flex'} 
-            width={'100%'} justifyContent={'space-evenly'} alignItems={'center'}>
+            <Box display={'flex'}
+            width={'100%'} justifyContent={'space-evenly'} alignItems={'center'} gap={3}>
 
                {onFinish==null && !isMobile && <ScoreCard flex={1} playerUpScore={playerUpScore} playerDownScore={playerDownScore} abandonGame={abandonGame}
                     gameStatus={gameStatus} restartGame={restartGame} />
@@ -174,30 +173,51 @@ const isMobile = useIsMobile();
 export default AwaleBoard;
 
 const ScoreCard = ({ playerUpScore, playerDownScore, abandonGame, gameStatus, restartGame, ...props }) => {
-    return <Card sx={{backgroundColor:'#dfc48b', height:'fit-content'}} {...props}>
-        <CardHeader sx={{backgroundColor:'#b5954fff'}}
-         title="Score" subheader={gameStatus==='ended'?'FIN de partie':''} />
-        <CardContent className="card-content">
-            <Box display={'flex'} flexDirection={'column'} >
-                <Box display={'flex'} flexDirection={'row'} alignItems={'center'}>
-                    Mamadou: <Typography padding={4} variant='h6' color="secondary"> {playerUpScore} </Typography> Victoires
-                </Box>
-                <Box display={'flex'} flexDirection={'row'} alignItems={'center'}>
-                    Vous: <Typography padding={4} variant='h6' color="secondary"> {playerDownScore} </Typography>  Victoires
-                </Box>
-
+    return (
+        <Box sx={{ background: '#f3eddf', borderRadius: 3, p: 3,
+            border: '1px solid rgba(139,113,106,0.2)', display: 'flex',
+            flexDirection: 'column', gap: 2, height: 'fit-content', minWidth: 180 }} {...props}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Typography sx={{ fontWeight: 800, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.15em', color: '#58423c' }}>
+                    Score
+                </Typography>
+                {gameStatus === 'ended' && (
+                    <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: '#914723', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                        Fin de partie
+                    </Typography>
+                )}
             </Box>
-        </CardContent>
-        {/* Boutons d'abandonner et recommencer */}
-        <CardActions className="card-actions">
-            <Button variant="outlined" onClick={abandonGame} disabled={gameStatus === 'ended'}>
-                Abandonner
-            </Button>
-            <Button variant="outlined" onClick={restartGame} disabled={gameStatus === 'ongoing'}>
-                Recommencer
-            </Button>
-        </CardActions>
-    </Card>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    background: '#eee8da', borderRadius: 2, px: 2, py: 1 }}>
+                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#58423c' }}>Mamadou</Typography>
+                    <Typography sx={{ fontSize: '1.5rem', fontWeight: 800, color: '#914723', lineHeight: 1 }}>{playerUpScore}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    background: 'rgba(145,71,35,0.08)', borderRadius: 2, px: 2, py: 1,
+                    outline: '1px solid rgba(145,71,35,0.2)' }}>
+                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 600, color: '#58423c' }}>Vous</Typography>
+                    <Typography sx={{ fontSize: '1.5rem', fontWeight: 800, color: '#914723', lineHeight: 1 }}>{playerDownScore}</Typography>
+                </Box>
+            </Box>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Button fullWidth onClick={restartGame} disabled={gameStatus === 'ongoing'}
+                    sx={{ py: 1.5, borderRadius: 2, background: '#914723', color: '#fff9eb',
+                        fontWeight: 700, fontSize: '0.875rem', textTransform: 'none',
+                        '&:hover': { background: '#76320f' },
+                        '&.Mui-disabled': { background: '#e8e2d4', color: '#8b716a' } }}>
+                    Recommencer
+                </Button>
+                <Button fullWidth onClick={abandonGame} disabled={gameStatus === 'ended'}
+                    sx={{ py: 1, color: '#914723', fontWeight: 700, fontSize: '0.875rem',
+                        textTransform: 'none', opacity: 0.75,
+                        '&:hover': { opacity: 1, background: 'rgba(145,71,35,0.06)' },
+                        '&.Mui-disabled': { color: '#8b716a' } }}>
+                    Abandonner
+                </Button>
+            </Box>
+        </Box>
+    );
 }
 const simulatePlayerUp = ({ board, play }) => {
     // Copiez le plateau actuel pour effectuer la simulation

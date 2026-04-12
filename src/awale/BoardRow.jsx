@@ -3,7 +3,9 @@ import './awale.css';
 import imgSeed from './seed.png';
 import imgBois from './bois.jpg';
 import boardRowImg from './boardRow.jpg';
-import { Box } from '@mui/material';
+import mamadouImg from './mamadou.jpeg';
+import playerImg from '../apple-icon-144x144.png';
+import { Box, Typography } from '@mui/material';
 import {makeStyles} from '@mui/styles';
 import { useIsMobile } from '../hookGame';
 
@@ -71,15 +73,40 @@ const classes = useStyles();
 
 
 export const PlayerHouse = ({ playerName, collectedSeeds }) => {
+  const isVous = playerName === 'Vous';
   return (
-    <div className="player-house">
-      <h2>{playerName}</h2>
-      <div className="seeds-container" style={{display:'flex', flexWrap:'wrap'}}>{collectedSeeds}
-        {[...Array(collectedSeeds)].map((_, index) => (
-           <Seed key={index} />
-        ))}
-      </div>
-    </div>
+    <Box sx={{
+      display: 'flex', alignItems: 'center', gap: 2,
+      background: isVous ? 'rgba(145,71,35,0.08)' : '#f3eddf',
+      border: `1px solid ${isVous ? 'rgba(145,71,35,0.25)' : 'rgba(139,113,106,0.18)'}`,
+      borderRadius: 3, px: 2.5, py: 1.5,
+    }}>
+      <Box sx={{
+        width: 56, height: 56, borderRadius: '50%', overflow: 'hidden', flexShrink: 0,
+        border: `2px solid ${isVous ? 'rgba(145,71,35,0.3)' : 'rgba(139,113,106,0.25)'}`,
+        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+      }}>
+        <img src={isVous ? playerImg : mamadouImg} alt={playerName}
+          style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+      </Box>
+      <Box>
+        <Typography sx={{ fontWeight: 800, fontSize: '1.05rem', color: '#1d1c13', lineHeight: 1 }}>
+          {playerName}
+        </Typography>
+        <Box sx={{
+          display: 'inline-flex', alignItems: 'center', mt: 0.75,
+          bgcolor: isVous ? 'rgba(145,71,35,0.12)' : '#eee8da',
+          borderRadius: 99, px: 1.5, py: 0.4,
+        }}>
+          <Typography sx={{ fontSize: '1rem', fontWeight: 800, color: '#914723', letterSpacing: '-0.01em' }}>
+            {collectedSeeds}
+          </Typography>
+          <Typography sx={{ fontSize: '0.7rem', fontWeight: 600, color: '#58423c', ml: 0.6, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            graines
+          </Typography>
+        </Box>
+      </Box>
+    </Box>
   );
 };
 

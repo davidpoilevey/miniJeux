@@ -194,53 +194,103 @@ const Damier = ({ reset, gameOver, setScore }) => {
   const isMobile = useIsMobile();
   const CASE_SIZE = isMobile ? Math.floor((window.innerWidth - 28) / taille) : 70;
 
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5, py: 2 }}>
 
-  return (<Box sx={{display:'flex', flexDirection:isMobile?'column':'row'}}>
-    <Box>
+      {/* Titre */}
+      <Typography sx={{
+        color: '#835425',
+        fontWeight: 800,
+        fontSize: { xs: '2rem', md: '2.6rem' },
+        letterSpacing: '-0.02em',
+        textTransform: 'uppercase',
+        lineHeight: 1,
+      }}>
+        Jeu de Dames
+      </Typography>
 
-      <Typography variant='h4'>Jeu de Dames</Typography>
-      <AIBubble text={bubble.text} visible={bubble.visible} />
-      <Avatar src={avatar} sx={{marginLeft:'auto', height:80, width:80}}/>
-    </Box>
+      {/* Label de tour */}
+      <Typography sx={{
+        fontSize: '0.72rem',
+        fontWeight: 700,
+        textTransform: 'uppercase',
+        letterSpacing: '0.1em',
+        color: '#5c605c',
+        mb: 0.5,
+      }}>
+        {tourBlancs ? 'Votre tour' : "Tour de l'IA"}
+      </Typography>
 
-    <Box
-      className="boardDame"
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: `repeat(${taille}, ${CASE_SIZE}px)`,
-        gridTemplateRows: `repeat(${taille}, ${CASE_SIZE}px)`,
-      }}
-    > 
-   
-      {/* Affiche les cases du plateau avec les pions */}
-      {cases.map((row, x) =>
-        row.map((pion, y) => {
-          const moveFrom =
-            pion && lastMove?.id === pion.id ? lastMove?.from : null;
+      {/* Bulle + Avatar IA */}
+      <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2, mt: 0}}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.75 }}>
+          <Box sx={{ position: 'relative' }}>
+            <Avatar src={avatar} sx={{
+              width: 72, height: 72,
+              border: '2px solid #e6e9e4',
+              filter: 'grayscale(20%) brightness(1.05)',
+            }} />
+            <Box sx={{
+              position: 'absolute', bottom: 1, right: 1,
+              width: 13, height: 13,
+              borderRadius: '50%',
+              bgcolor: '#835425',
+              border: '2px solid #faf9f6',
+            }} />
+          </Box>
+          <Typography sx={{
+            fontSize: '0.72rem',
+            fontWeight: 700,
+            textTransform: 'uppercase',
+            letterSpacing: '0.1em',
+            color: '#5c605c',
+          }}>
+            Master IA
+          </Typography>
+        </Box>
+          <AIBubble text={bubble.text} visible={bubble.visible} />
+      
+      </Box>
+
+      {/* Plateau */}
+      <Box
+        className="boardDame"
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${taille}, ${CASE_SIZE}px)`,
+          gridTemplateRows: `repeat(${taille}, ${CASE_SIZE}px)`,
+          borderRadius: 2,
+          overflow: 'hidden',
+          boxShadow: '0 8px 32px rgba(131, 84, 37, 0.12)',
+        }}
+      >
+        {cases.map((row, x) =>
+          row.map((pion, y) => {
+            const moveFrom = pion && lastMove?.id === pion.id ? lastMove?.from : null;
             const pionSelected = pionSelectionne != null && pionSelectionne.x == x && pionSelectionne.y === y;
-          const pionJouable = pionSelected && caseJouable != null && caseJouable.length > 0;
-          return <Case key={`${x}-${y}`}
-            x={x} y={y} pion={pion}
-            size={CASE_SIZE}
-            pionSelectionne={pionSelectionne}
-            highlighted={highlightedCase?.x === x && highlightedCase?.y === y}
-            caseJouable={caseJouable}
-            moveFrom={moveFrom}
-            onClick={() => handleClickCase(x, y)}>
-            <Pion
-              pion={pion}
-              x={x}
-              y={y}
+            const pionJouable = pionSelected && caseJouable != null && caseJouable.length > 0;
+            return <Case key={`${x}-${y}`}
+              x={x} y={y} pion={pion}
               size={CASE_SIZE}
+              pionSelectionne={pionSelectionne}
+              highlighted={highlightedCase?.x === x && highlightedCase?.y === y}
+              caseJouable={caseJouable}
               moveFrom={moveFrom}
-              selected={pionSelectionne?.x === x && pionSelectionne?.y === y}
-              jouable={pionJouable}/>
+              onClick={() => handleClickCase(x, y)}>
+              <Pion
+                pion={pion}
+                x={x}
+                y={y}
+                size={CASE_SIZE}
+                moveFrom={moveFrom}
+                selected={pionSelectionne?.x === x && pionSelectionne?.y === y}
+                jouable={pionJouable} />
             </Case>
-        }
-        )
-      )}
+          })
+        )}
+      </Box>
+
     </Box>
-   </Box>
   );
 };
 

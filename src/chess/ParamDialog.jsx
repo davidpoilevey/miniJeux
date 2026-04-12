@@ -11,12 +11,22 @@ import {
   Tooltip,
   Divider
 } from '@mui/material';
+import { Close as CloseIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
 import { useChess } from './ChessContext';
 import { DIFFICULTY_CONFIGS } from './reflexions';
 import { useEffect, useState } from 'react';
 import { FAMOUS_OPENINGS } from './Ouvertures';
 import Piece from './Piece';
 import { CHESS_PUZZLES } from './PuzzleManager';
+
+const LABEL_SX = {
+  fontSize: '0.62rem',
+  fontWeight: 700,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  color: '#5c605c',
+  display: 'block',
+};
 
 const difficultySliders = [
   { key: 'depth', label: 'Profondeur de recherche', min: 1, max: 5, step: 1 },
@@ -62,401 +72,321 @@ useEffect(() => {
     DIFFICULTY_CONFIGS[0][key] = value; // Mettre à
   };
 
+  const maxDifficulty = Object.keys(DIFFICULTY_CONFIGS).length - 1;
+  const sliderDifficulte = Math.max(1, difficulte);
+
   return (
-    <Dialog open={open} onClose={handleClose}
-      sx={{ backgroundSize: 'cover', backgroundImage: 'url(https://lelephant-larevue.fr/wp-content/uploads/2016/04/Capture-d%E2%80%99e%CC%81cran-2017-05-23-a%CC%80-10.51.42-1024x681.png)' }} fullWidth>
-      <DialogTitle sx={{ background: 'linear-gradient(90deg, #f8f9fbff, #e2e7bcff)',}}>Configurer la partie</DialogTitle>
-      <DialogContent  sx={{ background: 'linear-gradient(135deg, #f8f9fbff, #e2e7bcff)',}}>
-
-        {/* Choix de la durée */}
-        <Box textAlign={'center'}>
-    <Box sx={{display: 'flex', justifyContent: 'center', mb: 2, gap:5}}>
-      <Button variant="contained" color={joueurEstBlanc?"success":"inherit"} 
-      onClick={()=>{changeCouleurJoueur('white')}}>
-        <Piece piece={{ type: 'pion', couleur: 'white' }} 
-     />
-      </Button>
-      
-      
-      <Button variant="contained" color={!joueurEstBlanc?"success":"inherit"} 
-      onClick={()=>{changeCouleurJoueur('black')}}>
-        <Piece piece={{ type: 'pion', couleur: 'black' }} 
-     />
-      </Button>
-    
-    </Box>
-          <Stack direction="row" spacing={2} justifyContent={'center'} sx={{ mb: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            ⏱ Durée de la partie
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      fullWidth
+      maxWidth="md"
+      PaperProps={{
+        sx: {
+          borderRadius: 4,
+          background: '#faf9f6',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.18)',
+          overflow: 'hidden',
+          m: 2,
+        }
+      }}
+    >
+      {/* ── Header ── */}
+      <Box sx={{
+        px: 4, py: 3,
+        borderBottom: '1px solid rgba(175,179,174,0.12)',
+        background: '#ffffff',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+      }}>
+        <Box>
+          <Typography sx={{ fontSize: '1.4rem', fontWeight: 800, color: '#2f3430', lineHeight: 1.2 }}>
+            Configuration de la partie
           </Typography>
-            {DURATIONS.map((minutes) => (
-              <Button
-                key={minutes} size="small"
-                variant={minutes === dureeJeu ? 'contained' : 'outlined'}
-                color="primary"
-                onClick={() => setDureeJeu(minutes)}
-                sx={{
-                  borderRadius: 2,
-                  fontWeight: 'bold',
-                }}
-              >
-                {minutes} min
-              </Button>
-            ))}
-          </Stack>
+          <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#5c605c', mt: 0.5 }}>
+            Échecs
+          </Typography>
         </Box>
-        <Stack spacing={2} textAlign={'center'} sx={{ mb: 3 }}>
-          <Button
-            variant="outlined"
-            onClick={() => setShowOpenings(prev => !prev)}
-            fullWidth
-            sx={{ mt: 2 }}
-          >
-            {showOpenings ? '🔒 Fermer les ouvertures' : '📖 Choisir une ouverture'}
-          </Button>
+        <IconButton onClick={handleClose} size="small" sx={{ color: '#5c605c' }}>
+          <CloseIcon fontSize="small" />
+        </IconButton>
+      </Box>
 
-          <OpeningSelector
-            open={showOpenings}
-            selectedOpening={selectedOpening}
-            onSelect={setSelectedOpening}
-          />
-          <Button
-            variant="outlined"
-            onClick={() => setShowLevel(prev => !prev)}
-            fullWidth
-            sx={{ mt: 2 }}
-          >
-            {showLevel ? "🤖 Choisissez votre force" : `🤖 Difficulté de l'IA:  ${DIFFICULTY_CONFIGS[difficulte].name}`}
-          </Button>
-          
-          <Collapse in={difficulte === 0} timeout="auto" unmountOnExit sx={{ mb: 3 }}>
-            <Typography variant="subtitle1" sx={{ mt: 1, mb: 2 }}>
-              Réglage fin de l’IA personnalisée
-            </Typography>
-            <Table size="small">
-              <TableBody>
-                {difficultySliders.map(({ key, label, min, max, step }) => (
-                  <TableRow key={key}>
-                    <TableCell sx={{ whiteSpace: 'nowrap' }}>{label}</TableCell>
-                    <TableCell sx={{ minWidth: 200 }}>
-                      <Slider
-                        size="small"
-                        value={customConfig[key]}
-                        min={min}
-                        max={max}
-                        step={step}
-                        onChange={(e, val) => setCustomDifficulty(key, val)}
-                        valueLabelDisplay="auto"
-                      />
-                    </TableCell>
-                  </TableRow>
+      {/* ── Body ── */}
+      <DialogContent sx={{ p: 4, background: '#faf9f6' }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' }, gap: { xs: 4, md: 6 } }}>
+
+          {/* ── Colonne gauche ── */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+
+            {/* Couleur */}
+            <Box>
+              <Typography sx={LABEL_SX}>Couleur des pièces</Typography>
+              <Box sx={{ display: 'flex', gap: 2, mt: 1.5 }}>
+                {[
+                  { couleur: 'white', label: 'Les Blancs', isSelected: joueurEstBlanc },
+                  { couleur: 'black', label: 'Les Noirs',  isSelected: !joueurEstBlanc },
+                ].map(({ couleur, label, isSelected }) => (
+                  <Box
+                    key={couleur}
+                    onClick={() => changeCouleurJoueur(couleur)}
+                    sx={{
+                      flex: 1, py: 3, px: 2,
+                      borderRadius: 3,
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1.5,
+                      cursor: 'pointer',
+                      background: isSelected ? '#835425' : '#ffffff',
+                      border: `1px solid ${isSelected ? '#835425' : 'rgba(175,179,174,0.25)'}`,
+                      boxShadow: isSelected ? '0 0 0 3px rgba(131,84,37,0.12)' : 'none',
+                      transition: 'all 0.2s',
+                    }}
+                  >
+                    <Piece piece={{ type: 'pion', couleur }} />
+                    <Typography sx={{ fontSize: '0.875rem', fontWeight: 700, color: isSelected ? '#fff6f1' : '#2f3430' }}>
+                      {label}
+                    </Typography>
+                  </Box>
                 ))}
-              </TableBody>
-            </Table>
-          </Collapse>
-          <Collapse in={showLevel} timeout="auto" unmountOnExit sx={{ mb: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 2 }}>
-            {Object.entries(DIFFICULTY_CONFIGS).map(([level, config]) => (
-              <Card
-                key={level}
-                variant={+level === difficulte ? 'outlined' : 'elevation'}
-                onClick={() => setDifficulte(+level)}
-                sx={{
-                  width: 200,
-                  cursor: 'pointer',
-                  border: +level === difficulte ? '3px solid #1976d2' : '1px solid #ccc',
-                  boxShadow: +level === difficulte ? 6 : 1,
-                  background: 'linear-gradient(135deg, #d8d9dcff, #e5ebf6ff)',
-                  transition: 'transform 0.2s',
-                  '&:hover': {
-                    transform: 'scale(1.05)',
-                  }
-                }}
-              >
-                <Typography variant="h6" fontWeight="bold" gutterBottom>
-                  {config.name}
+              </Box>
+            </Box>
+
+            {/* Durée */}
+            <Box>
+              <Typography sx={LABEL_SX}>Durée de la partie (minutes)</Typography>
+              <Box sx={{ display: 'flex', gap: 1, mt: 1.5 }}>
+                {DURATIONS.map(d => (
+                  <Box
+                    key={d}
+                    onClick={() => setDureeJeu(d)}
+                    sx={{
+                      flex: 1, py: 1.5,
+                      borderRadius: 2,
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem', fontWeight: 700,
+                      background: d === dureeJeu ? '#D2B48C' : '#f4f4f0',
+                      color: d === dureeJeu ? '#ffffff' : '#2f3430',
+                      transition: 'background 0.15s',
+                      '&:hover': { background: d === dureeJeu ? '#C8A882' : '#e6e9e4' },
+                      userSelect: 'none',
+                    }}
+                  >
+                    {d}
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+
+            {/* Difficulté IA */}
+            <Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography sx={LABEL_SX}>Difficulté de l'IA</Typography>
+                <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#D2B48C' }}>
+                  {DIFFICULTY_CONFIGS[sliderDifficulte]?.name} • {DIFFICULTY_CONFIGS[sliderDifficulte]?.estimatedElo} Elo
                 </Typography>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  {config.description}
-                </Typography>
-                <Typography variant="caption" fontStyle="italic" color="text.secondary">
-                  Niveau estimé : {config.estimatedElo}
-                </Typography>
-              </Card>
-            ))}
+              </Box>
+              <Box sx={{ background: '#f4f4f0', borderRadius: 3, p: 3, mt: 1.5 }}>
+                <Slider
+                  value={sliderDifficulte}
+                  min={1}
+                  max={maxDifficulty}
+                  step={1}
+                  onChange={(_, val) => setDifficulte(val)}
+                  sx={{
+                    color: '#D2B48C',
+                    '& .MuiSlider-thumb': { bgcolor: '#835425', width: 16, height: 16 },
+                    '& .MuiSlider-track': { height: 4 },
+                    '& .MuiSlider-rail': { height: 4, opacity: 0.3 },
+                    mb: 0.5,
+                  }}
+                />
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 0.5 }}>
+                  {['Initié', 'Intermédiaire', 'Maître'].map(t => (
+                    <Typography key={t} sx={{ fontSize: '0.58rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#5c605c' }}>
+                      {t}
+                    </Typography>
+                  ))}
+                </Box>
+                {DIFFICULTY_CONFIGS[difficulte]?.description && (
+                  <Typography sx={{ fontSize: '0.75rem', color: '#5c605c', fontStyle: 'italic', mt: 2, lineHeight: 1.5 }}>
+                    "{DIFFICULTY_CONFIGS[difficulte].description}"
+                  </Typography>
+                )}
+              </Box>
+              {/* Réglages personnalisés (niveau 0) */}
+              <Collapse in={difficulte === 0} timeout="auto" unmountOnExit>
+                <Box sx={{ mt: 2, p: 3, background: '#f4f4f0', borderRadius: 3 }}>
+                  <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: '#2f3430', mb: 2 }}>
+                    Réglage personnalisé
+                  </Typography>
+                  <Table size="small">
+                    <TableBody>
+                      {difficultySliders.map(({ key, label, min, max, step }) => (
+                        <TableRow key={key}>
+                          <TableCell sx={{ whiteSpace: 'nowrap', fontSize: '0.72rem', border: 'none', py: 0.5, color: '#5c605c' }}>{label}</TableCell>
+                          <TableCell sx={{ minWidth: 120, border: 'none', py: 0.5 }}>
+                            <Slider
+                              size="small"
+                              value={customConfig[key]}
+                              min={min} max={max} step={step}
+                              onChange={(e, val) => setCustomDifficulty(key, val)}
+                              valueLabelDisplay="auto"
+                              sx={{ color: '#D2B48C' }}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </Box>
+              </Collapse>
+            </Box>
           </Box>
 
-          </Collapse>
+          {/* ── Colonne droite ── */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
 
+            {/* Ouvertures */}
+            <Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                <Typography sx={LABEL_SX}>Sélection de l'Ouverture</Typography>
+                <Typography
+                  onClick={() => setShowOpenings(p => !p)}
+                  sx={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#D2B48C', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                >
+                  {showOpenings ? 'Réduire' : 'Voir tout'}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                {Object.entries(FAMOUS_OPENINGS)
+                  .slice(0, showOpenings ? undefined : 3)
+                  .map(([key, opening]) => {
+                    const isSelected = selectedOpening === key;
+                    return (
+                      <Box
+                        key={key}
+                        onClick={() => setSelectedOpening(isSelected ? null : key)}
+                        sx={{
+                          display: 'flex', alignItems: 'center', gap: 1.5,
+                          p: 1.5, borderRadius: 2,
+                          background: '#ffffff',
+                          border: `1px solid ${isSelected ? '#D2B48C' : 'rgba(175,179,174,0.15)'}`,
+                          boxShadow: isSelected ? '0 2px 8px rgba(210,180,140,0.2)' : 'none',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s',
+                          '&:hover': { borderColor: 'rgba(210,180,140,0.4)' },
+                        }}
+                      >
+                        <Box sx={{
+                          width: 40, height: 40, borderRadius: 1.5,
+                          background: '#e6e9e4', flexShrink: 0,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: '1.1rem',
+                        }}>
+                          ♟
+                        </Box>
+                        <Box sx={{ flex: 1, minWidth: 0 }}>
+                          <Typography sx={{ fontSize: '0.875rem', fontWeight: 700, color: '#2f3430' }} noWrap>
+                            {opening.name}
+                          </Typography>
+                          <Typography sx={{ fontSize: '0.68rem', color: '#5c605c', fontStyle: 'italic' }} noWrap>
+                            {opening.description?.slice(0, 50)}{opening.description?.length > 50 ? '…' : ''}
+                          </Typography>
+                        </Box>
+                        {isSelected && <CheckCircleIcon sx={{ color: '#D2B48C', fontSize: '1.1rem', flexShrink: 0 }} />}
+                      </Box>
+                    );
+                  })}
+              </Box>
+              {selectedOpening && (
+                <Box sx={{ mt: 1.5, px: 2, py: 1, background: 'rgba(210,180,140,0.12)', borderRadius: 2, border: '1px solid rgba(210,180,140,0.3)' }}>
+                  <Typography sx={{ fontSize: '0.75rem', color: '#835425', fontWeight: 600 }}>
+                    ✓ {FAMOUS_OPENINGS[selectedOpening]?.name} sélectionnée
+                  </Typography>
+                </Box>
+              )}
+            </Box>
 
-          <Button
-            variant="outlined"
-            onClick={() => setShowPuzzle(prev => !prev)}
-            fullWidth
-            sx={{ mt: 2 }}
-          >
-            {showPuzzle ? "🤖 Fermer lez enigmes" : `🤖 Choississez une enigme`}
-          </Button>
-             <Collapse in={showPuzzle} timeout="auto" unmountOnExit sx={{ mb: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'center', flexWrap: 'wrap', gap: 2 }}>
-      {Object.entries(CHESS_PUZZLES).map(([id, p]) => (
-        <Card
-          key={id}
+            {/* Puzzles */}
+            <Box>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                <Typography sx={LABEL_SX}>Entraînement Tactique</Typography>
+                <Typography
+                  onClick={() => setShowPuzzle(p => !p)}
+                  sx={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#D2B48C', cursor: 'pointer', '&:hover': { textDecoration: 'underline' } }}
+                >
+                  {showPuzzle ? 'Réduire' : 'Voir tout'}
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
+                {Object.entries(CHESS_PUZZLES)
+                  .slice(0, showPuzzle ? undefined : 4)
+                  .map(([id, p]) => (
+                    <Box
+                      key={id}
+                      onClick={() => { startPuzzle(id); handleClose(); }}
+                      sx={{
+                        p: 2, borderRadius: 2,
+                        background: '#f4f4f0',
+                        cursor: 'pointer',
+                        display: 'flex', flexDirection: 'column', gap: 0.5,
+                        transition: 'background 0.15s',
+                        '&:hover': { background: '#e6e9e4' },
+                      }}
+                    >
+                      <Typography sx={{ fontSize: '1.1rem', lineHeight: 1 }}>
+                        {getDifficultyInfo(p.difficulty).emoji}
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: '#2f3430', mt: 0.5 }} noWrap>
+                        {p.name}
+                      </Typography>
+                      <Typography sx={{ fontSize: '0.65rem', color: '#5c605c' }}>
+                        {typeLabel(p.type)}
+                      </Typography>
+                    </Box>
+                  ))}
+              </Box>
+            </Box>
+          </Box>
+        </Box>
+      </DialogContent>
+
+      {/* ── Footer ── */}
+      <Box sx={{
+        px: 4, py: 3,
+        borderTop: '1px solid rgba(175,179,174,0.12)',
+        background: '#ffffff',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5,
+      }}>
+        <Button
+          fullWidth
+          onClick={restart}
           sx={{
-            width: 240,
-            cursor: 'pointer',
-            border: '1px solid #ccc',
-            borderRadius: 2,
-            boxShadow: 2,
-            background: 'linear-gradient(135deg, #d7f7dfff 0%, #eef3fb 100%)',
-            transition: 'transform .15s',
-            '&:hover': { transform: 'scale(1.03)', boxShadow: 4 }
-          }}
-          onClick={() => {
-            startPuzzle?.(id);
-            handleClose();
+            py: 2, borderRadius: 3,
+            background: '#835425',
+            color: '#fff6f1',
+            fontWeight: 800, fontSize: '1rem',
+            boxShadow: '0 4px 16px rgba(131,84,37,0.25)',
+            textTransform: 'none',
+            '&:hover': { background: '#75481a', boxShadow: '0 6px 20px rgba(131,84,37,0.3)' },
           }}
         >
-          <CardContent sx={{ p: 2 }}>
-            <Stack spacing={1}>
-              <Typography variant="h6" fontWeight="bold" noWrap>
-                {p.name}
-              </Typography>
-
-              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-                <Chip
-                  size="small"
-                  sx={{color:getDifficultyInfo(p.difficulty).color}}
-                  label={`${getDifficultyInfo(p.difficulty).emoji} ${difficultyLabel(p.difficulty)}`}
-                />
-                <Chip
-                  size="small"
-                  variant="outlined"
-                  label={`♟ ${typeLabel(p.type)}`}
-                />
-              </Stack>
-
-              <Tooltip title={p.description} placement="top" arrow>
-                <Typography variant="body2" color="text.secondary">
-                  {p.description}
-                </Typography>
-              </Tooltip>
-
-              {p.theme && (
-                <Typography variant="caption" color="text.secondary">
-                  🎯 Thème : {p.theme.replace(/_/g, ' ')}
-                </Typography>
-              )}
-            </Stack>
-          </CardContent>
-
-        </Card>
-      ))}
-    </Box>
-        </Collapse>
-        </Stack>
-      </DialogContent>
-      <DialogActions sx={{ background: 'linear-gradient(135deg, #e2e7bcff, #d4daa9ff)',}}>
-        <Button onClick={restart} variant="contained">Recommencer une partie</Button>
-        <Button onClick={handleClose} variant="contained">Continuer la partie</Button>
-      </DialogActions>
+          Commencer la partie
+        </Button>
+        <Button
+          onClick={handleClose}
+          sx={{ color: '#777c77', fontSize: '0.75rem', textTransform: 'none', fontWeight: 500 }}
+          size="small"
+        >
+          Continuer la partie en cours
+        </Button>
+        <Typography sx={{ mt: 0.5, fontSize: '0.6rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#afb3ae' }}>
+          Bonne chance, grand maître.
+        </Typography>
+      </Box>
     </Dialog>
   );
 }
-const OpeningSelector = ({ open, selectedOpening, onSelect }) => {
-  return (
-    <Collapse in={open} timeout="auto" unmountOnExit sx={{ mt: 3 }}>
-      <Box sx={{ mb: 3 }}>
-        <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-          🎯 <span>Choisir une ouverture</span>
-        </Typography>
-        
-        <Box sx={{ 
-          display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', 
-          gap: 1.5,
-          maxHeight: '400px',
-          overflowY: 'auto',
-          pr: 1,
-          '&::-webkit-scrollbar': {
-            width: '6px',
-          },
-          '&::-webkit-scrollbar-track': {
-            background: '#f1f1f1',
-            borderRadius: '3px',
-          },
-          '&::-webkit-scrollbar-thumb': {
-            background: '#c1c1c1',
-            borderRadius: '3px',
-          },
-        }}>
-          {Object.entries(FAMOUS_OPENINGS).map(([key, opening]) => {
-            const diffInfo = getDifficultyInfo(opening.difficulty);
-            const isSelected = selectedOpening === key;
-            
-            return (
-              <Box
-                key={key}
-                onClick={() => onSelect(key)}
-                sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  border: `2px solid ${isSelected ? diffInfo.color : 'transparent'}`,
-                  background: isSelected 
-                    ? `linear-gradient(135deg, ${diffInfo.bg} 0%, ${diffInfo.color}15 100%)`
-                    : '#fafafa',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  '&:hover': {
-                    transform: 'translateY(-2px)',
-                    boxShadow: `0 8px 25px ${diffInfo.color}30`,
-                    background: isSelected 
-                      ? `linear-gradient(135deg, ${diffInfo.bg} 0%, ${diffInfo.color}25 100%)`
-                      : `linear-gradient(135deg, #ffffff 0%, ${diffInfo.bg} 100%)`,
-                  },
-                  '&::before': isSelected ? {
-                    content: '""',
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    height: '3px',
-                    background: `linear-gradient(90deg, ${diffInfo.color}, ${diffInfo.color}aa)`,
-                  } : {},
-                }}
-              >
-                {/* Header avec nom et sélection */}
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
-                  <Typography 
-                    variant="subtitle1" 
-                    sx={{ 
-                      fontWeight: 600,
-                      color: isSelected ? diffInfo.color : 'text.primary',
-                      flex: 1,
-                      mr: 1
-                    }}
-                  >
-                    {opening.name} ({opening.moves.length} coups)
-                  </Typography>
-                  {isSelected && (
-                    <Box sx={{ 
-                      background: diffInfo.color,
-                      color: 'white',
-                      borderRadius: '50%',
-                      width: 20,
-                      height: 20,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '12px'
-                    }}>
-                      ✓
-                    </Box>
-                  )}
-                </Box>
 
-                {/* Description */}
-                <Typography 
-                  variant="body2" 
-                  sx={{ 
-                    color: 'text.secondary',
-                    mb: 1.5,
-                    lineHeight: 1.4,
-                    fontSize: '0.85rem'
-                  }}
-                >
-                  {opening.description}
-                </Typography>
-
-                {/* Tags compacts */}
-                <Box sx={{ display: 'flex', gap: 1, mb: 1.5}}>
-                  <Chip
-                    size="small"
-                    label={`${diffInfo.emoji} ${difficultyLabel(opening.difficulty)}`}
-                    sx={{
-                      background: diffInfo.bg,
-                      color: diffInfo.color,
-                      fontWeight: 500,
-                      height: 24,
-                      fontSize: '0.75rem',
-                      '& .MuiChip-label': { px: 1 }
-                    }}
-                  />
-                  <Chip
-                    size="small"
-                    label={`📅 ${opening.century}`}
-                    sx={{
-                      background: '#f5f5f5',
-                      color: 'text.secondary',
-                      height: 24,
-                      fontSize: '0.75rem',
-                      '& .MuiChip-label': { px: 1 }
-                    }}
-                  />
-                  {/* Maîtres */}
-                <Box>
-                  <Typography 
-                    variant="caption" 
-                    sx={{ 
-                      color: 'text.secondary',
-                      fontWeight: 500,
-                      display: 'block',
-                      mb: 0.5
-                    }}
-                  >
-                    🏆 Maîtres célèbres
-                  </Typography>
-                  <Typography 
-                    variant="caption" 
-                    sx={{ 
-                      color: 'text.secondary',
-                      lineHeight: 1.3,
-                      display: 'block'
-                    }}
-                  >
-                    {opening.masters.slice(0, 3).join(' • ')}
-                    {opening.masters.length > 3 && ` • +${opening.masters.length - 3}`}
-                  </Typography>
-                </Box>
-                </Box>
-
-                
-              </Box>
-            );
-          })}
-        </Box>
-        
-        {/* Info sélection */}
-        {selectedOpening && (
-          <Box sx={{ 
-            mt: 2, 
-            p: 2, 
-            background: 'linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%)',
-            borderRadius: 2,
-            border: '1px solid #4caf5050'
-          }}>
-            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              ✅ <strong>{FAMOUS_OPENINGS[selectedOpening]?.name}</strong> sélectionnée
-            </Typography>
-          </Box>
-        )}
-      </Box>
-    </Collapse>
-  );
-};
-
-
-// Petits labels élégants selon niveau
-const difficultyLabel = (level) => {
-  switch (level) {
-    case 'beginner': return 'Débutant 👶';
-    case 'intermediate': return 'Intermédiaire 🎯';
-    case 'advanced': return 'Avancé 🔥';
-    default: return 'Inconnu';
-  }
-};
 
 
 

@@ -14,46 +14,6 @@ export const bactHeight = 20;
 
 
 
-
-
-export const SmartBactPanel = () => {
-    const [frameWidth, setFrameWidth] = useState(0);
-    const [frameHeight, setFrameHeight] = useState(0);
-    const aquaRef = useRef();
-    useLayoutEffect(() => {
-        if (aquaRef.current) {
-            setTimeout(()=>{
-
-                const { width, height } = aquaRef.current.getBoundingClientRect();
-                setFrameWidth(width);
-                setFrameHeight(height);
-            },500);
-        }
-      }, [aquaRef]);
-    useEffect(() => {
-        const handleResize = () => {
-            const { width, height } = aquaRef.current.getBoundingClientRect();
-          setFrameWidth(width);
-          setFrameHeight(height);
-        };
-
-        window.addEventListener('resize', handleResize);
-
-        return () => {
-            window.removeEventListener('resize', handleResize);
-        };
-    }, []);
-    
-    const initialConfig = {
-        frameHeight, frameWidth
-    }
-    return <Box sx={{height:'100%'}}>
-        <SmartBactContext  {...initialConfig}>
-            <Etuve  ref={aquaRef}     {...initialConfig} />
-        </SmartBactContext>
-    </Box>
-}
-export default SmartBactPanel;
 export const Etuve = React.forwardRef(({ frameWidth, frameHeight },aquaRef) => {
 
     const { bacteries, setBacteries, attire, initialize , cycleDeVie, ressources, setRessources, baseStock, getSkill, niveau} = useSB();
@@ -137,6 +97,46 @@ const randomType = getRandomTypeWithWeights(rs, weights);
         </Box>
     </Box>
 })
+
+export const SmartBactPanel = () => {
+    const [frameWidth, setFrameWidth] = useState(0);
+    const [frameHeight, setFrameHeight] = useState(0);
+    const aquaRef = useRef();
+    useLayoutEffect(() => {
+        if (aquaRef.current) {
+            setTimeout(()=>{
+
+                const { width, height } = aquaRef.current.getBoundingClientRect();
+                setFrameWidth(width);
+                setFrameHeight(height);
+            },500);
+        }
+      }, [aquaRef]);
+    useEffect(() => {
+        const handleResize = () => {
+            const { width, height } = aquaRef.current.getBoundingClientRect();
+          setFrameWidth(width);
+          setFrameHeight(height);
+        };
+
+        window.addEventListener('resize', handleResize);
+
+        return () => {
+            window.removeEventListener('resize', handleResize);
+        };
+    }, []);
+    
+    const initialConfig = {
+        frameHeight, frameWidth
+    }
+    return <Box sx={{height:'100%'}}>
+        <SmartBactContext  {...initialConfig}>
+            <Etuve  ref={aquaRef}     {...initialConfig} />
+        </SmartBactContext>
+    </Box>
+}
+export default SmartBactPanel;
+
 
 
 const getRandomTypeWithWeights=(types, weights)=> {

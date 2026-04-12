@@ -2,7 +2,7 @@ import { GameOver } from "../ChuckNorrisFact"
 import React, { useState } from "react";
 import Echiquier from "./Echiquier";
 
-import { Box, Button, Popover, Typography } from '@mui/material';
+import { Avatar, Box, Button, Popover, Typography } from '@mui/material';
 import InfoPanel from './InfoPanel'; // nouveau composant à créer
 import { ChessProvider, useChess } from "./ChessContext";
 import { useMainMenuStyles } from "../civ/utils/MainMenu";
@@ -35,7 +35,14 @@ export const EchecBoard = () => {
   const [score, setScore] = useState(0);
   const [resetID, setResetID] = useState(0);
 
-  const { setEchec,setCaptured, joueurEstBlanc, setMessage, resetTimer , getScore} = useChess();
+  const { setEchec, setCaptured, joueurEstBlanc, setMessage, resetTimer, getScore,
+    gamePhase, openingManager, puzzle, tourBlancs } = useChess();
+
+  const phaseLabel = puzzle ? puzzle.name
+    : openingManager?.isActive ? openingManager.currentOpening?.name
+    : gamePhase === 'opening' ? 'Ouverture'
+    : gamePhase === 'middlegame' ? 'Milieu de jeu'
+    : 'Finale';
 
   const _setGameOver = (reason, gagnant) => {
     setGameOver(true);
@@ -54,8 +61,7 @@ export const EchecBoard = () => {
   };
 
   return (
-    <Box sx={{ height: '100%', backgroundColor:joueurEstBlanc? 'rgba(236, 234, 225, 1)' : 'rgba(141, 140, 136, 1)'
-    , padding: 6, overflow: 'auto', display: 'flex', gap: 4 }}>
+    <Box sx={{ height: '100%', background: '#faf9f6', p: '24px 32px', overflow: 'auto', display: 'flex', gap: 5, alignItems: 'flex-start' }}>
       <GameOver
         open={isGameOver}
         gameOverReason={gameOverReason}
@@ -65,15 +71,50 @@ export const EchecBoard = () => {
         handleRestart={reset}
       />
 
-      <Echiquier
-        reset={resetID}
-        gameOver={_setGameOver}
-      />
+      {/* Colonne plateau */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 }}>
 
-      <InfoPanel
-      reset={reset}
-       gameOver={_setGameOver}
-      />
+        {/* Titre + bloc adversaire */}
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <Box>
+            <Typography sx={{ fontSize: '2.6rem', fontWeight: 800, color: '#2f3430', lineHeight: 1, letterSpacing: '-0.02em' }}>
+              Echecs
+            </Typography>
+            <Typography sx={{ fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#5c605c', mt: 0.5 }}>
+              {phaseLabel}
+            </Typography>
+          </Box>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, background: '#f4f4f0', px: 2.5, py: 1.5, borderRadius: 2 }}>
+            <Box sx={{ textAlign: 'right' }}>
+              <Typography sx={{ fontSize: '0.58rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#5c605c' }}>Adversaire</Typography>
+              <Typography sx={{ fontSize: '0.875rem', fontWeight: 700, color: '#2f3430' }}>Claudius Magnus</Typography>
+            </Box>
+            <Avatar sx={{ width: 36, height: 36, bgcolor: '#e0d2c7', color: '#5b5149', fontSize: '0.875rem', fontWeight: 700 }}>AI</Avatar>
+          </Box>
+        </Box>
+
+        {/* Plateau */}
+        <Box sx={{ background: '#f4f4f0', p: 1.5, borderRadius: 2, border: '1px solid rgba(175,179,174,0.12)', boxShadow: '0 4px 20px rgba(0,0,0,0.07)' }}>
+          <Echiquier reset={resetID} gameOver={_setGameOver} />
+        </Box>
+
+        {/* Bloc joueur */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, background: '#f4f4f0', px: 2.5, py: 1.5, borderRadius: 2, alignSelf: 'flex-start' }}>
+          <Avatar sx={{ width: 36, height: 36, bgcolor: joueurEstBlanc ? '#ffdcc1' : '#2f3430', color: joueurEstBlanc ? '#835425' : '#fff', fontSize: '0.75rem', fontWeight: 800 }}>
+            {joueurEstBlanc ? 'W' : 'B'}
+          </Avatar>
+          <Box>
+            <Typography sx={{ fontSize: '0.58rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#5c605c' }}>
+              {tourBlancs ? 'Votre tour' : 'En attente'}
+            </Typography>
+            <Typography sx={{ fontSize: '0.875rem', fontWeight: 700, color: '#2f3430' }}>Vous</Typography>
+          </Box>
+        </Box>
+
+      </Box>
+
+      {/* Panneau droit */}
+      <InfoPanel reset={reset} gameOver={_setGameOver} />
     </Box>
   );
 };

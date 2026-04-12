@@ -141,31 +141,24 @@ export function AIBubble({ text, visible }) {
   return (
     <div
       style={{
-        maxWidth: 240,
-        padding: '8px 12px',
-        borderRadius: 8,
-        background: '#222',
-        color: 'white',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+        maxWidth: 280,
+        padding: '14px 20px',
+        borderRadius: 10,
+        background: 'rgba(255,255,255,0.97)',
+        color: '#2f3430',
+        border: '1px solid rgba(175, 179, 174, 0.25)',
+        boxShadow: '0 4px 20px rgba(131, 84, 37, 0.10)',
         opacity: visible ? 1 : 0,
-        transform: `translateY(${visible ? 0 : -10}px)`,
-        transition: 'opacity 180ms ease, transform 180ms ease',
+        transform: `translateY(${visible ? 0 : -8}px)`,
+        transition: 'opacity 200ms ease, transform 200ms ease',
         pointerEvents: 'none',
+        textAlign: 'center',
+        fontSize: '1rem',
+        lineHeight: 1.45,
+        fontWeight: 500,
       }}
     >
       {text}
-      <span
-        style={{
-          position: 'absolute',
-          bottom: -8,
-          right: 16,
-          width: 0,
-          height: 0,
-          borderLeft: '8px solid transparent',
-          borderRight: '8px solid transparent',
-          borderTop: '8px solid #222',
-        }}
-      />
     </div>
   );
 }

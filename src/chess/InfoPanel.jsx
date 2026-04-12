@@ -3,39 +3,25 @@ import {
     Box,
     Typography,
     Divider,
-    Stack,
     Button,
-    Paper,
-    Chip,
-    Grid,
     IconButton,
     LinearProgress,
-    Card,
-    CardContent,
-    Avatar,
     Tooltip,
     Menu,
     MenuItem,
-    Icon
 } from '@mui/material';
 import {
     RestartAlt,
     PlayArrow,
     Pause,
-    Timer,
-    EmojiEvents,
     TrendingUp,
-    Assessment,
-    SaveAltOutlined,
-    DownloadForOffline,
     CloudDownloadTwoTone,
     CloudUploadTwoTone,
     MoreVert,
     Settings,
-    RestartAltTwoTone,
     Undo,
-    TimerOff,
-    Info
+    Info,
+    HourglassEmpty,
 } from '@mui/icons-material';
 import { CASE_SIZE } from '../dames/Case';
 import { useChess } from './ChessContext';
@@ -183,340 +169,186 @@ const [openConfig, setOpenConfig] = useState(gamePhase=='debut');
         }
     };
 
+    const PANEL_LABEL = { fontSize: '0.62rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#5c605c', display: 'block', mb: 2 };
+
     return (
         <Box sx={{
-            minWidth: 280,
-            maxWidth: 320,
-            maxHeight: CASE_SIZE * 9,
-            overflow: 'auto',
-            bgcolor: 'background.paper',
-            borderRadius: 3,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-            background: 'linear-gradient(275deg, #b7ab7bff 0%, #ddbf49ff 100%)',
-            border: '1px solid rgba(0,0,0,0.06)'
+            width: 300,
+            flexShrink: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+            maxHeight: '100%',
+            overflowY: 'auto',
         }}>
-            {/* Header avec gradient */}
-            <Box sx={{
-                background: 'linear-gradient(135deg, #b7ab7bff 0%, #ddbf49ff 100%)',
-                color: 'white',
-                p: 2,
-                position: 'relative',
-                overflow: 'hidden',
-                borderRadius: 2,
-                mb: 2,
-                boxShadow: 3,
-            }}>
-                {/* Halo décoratif */}
-                <Box sx={{
-                    position: 'absolute',
-                    top: 10,
-                    right: 10,
-                    width: 50,
-                    height: 50,
-                    borderRadius: '50%',
-                    background: 'rgba(250, 250, 250, 0.2)',
-                    opacity: 0.3
-                }} />
 
-                <Stack direction="row" alignItems="center" justifyContent="space-between">
-                    {/* Titre + icône */}
-
-                    {/* Chrono */}
-                    <Stack direction="row" alignItems="center" spacing={1}>
-                        <IconButton color="primary" onClick={()=>{toggleTimer()}}>
-                           {isTimerRunning?<Timer />:<TimerOff/>}
-                            </IconButton>
-                        <Typography variant="body1" fontWeight="medium">
-                            {formatTime(gameTimer)}
+            {/* Section 1 : Tour + commentaire IA */}
+            <Box sx={{ background: '#ffffff', p: 3, borderRadius: 2.5, border: '1px solid rgba(175,179,174,0.1)', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <HourglassEmpty sx={{ color: '#835425' }} />
+                        <Typography sx={{ fontSize: '1.15rem', fontWeight: 800, color: '#2f3430', letterSpacing: '-0.01em' }}>
+                            {tourBlancs ? "C'est a vous" : "L'IA reflechit..."}
                         </Typography>
-                        {timer != null && (
-                            <Typography variant="body2" sx={{ ml: 1, opacity: 0.8 }}>
-                                ({formatTime(timer - gameTimer)} restantes)
-                            </Typography>
-                        )}
-                    </Stack>
-
-                    {/* Bouton More */}
-                    <Box>
-                        <Tooltip title="Actions">
-                            <IconButton onClick={handleMenuOpen} sx={{ color: 'white' }}>
-                                <MoreVert />
-                            </IconButton>
-                        </Tooltip>
-                        <Menu
-                            anchorEl={anchorEl}
-                            open={open}
-                            onClose={handleMenuClose}
-                            PaperProps={{
-                                sx: {
-                                    borderRadius: 2,
-                                    mt: 1,
-                                    minWidth: 200,
-                                }
-                            }}
-                        >
-                            <MenuItem onClick={() => { handleMenuClose(); setOpenConfig(true); }}>
-                            <Settings sx={{ mr: 1 }} /> Configurer la partie
-                            </MenuItem>
-                            <MenuItem onClick={() => { savePartie(); handleMenuClose(); }}>
-                                <CloudUploadTwoTone sx={{ mr: 1 }} /> Sauvegarder la partie
-                            </MenuItem>
-                            <MenuItem onClick={() => { loadPartie(); handleMenuClose(); }}>
-                                <CloudDownloadTwoTone sx={{ mr: 1 }} /> Recharger la partie
-                            </MenuItem>
-                            <Divider />
-                            <MenuItem onClick={() => { handleReset(); handleMenuClose(); }}>
-                                <RestartAlt sx={{ mr: 1 }} /> Réinitialiser
-                            </MenuItem>
-                            <MenuItem onClick={() => { toggleTimer(); handleMenuClose(); }}>
-                                {isTimerRunning ? <Pause sx={{ mr: 1 }} /> : <PlayArrow sx={{ mr: 1 }} />}
-                                {isTimerRunning ? 'Mettre en pause' : 'Démarrer le chrono'}
-                            </MenuItem>
-                        </Menu>
                     </Box>
-                </Stack>
-                <Box sx={{ justifyContent: 'space-between', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
+                        <Box sx={{ textAlign: 'right' }}>
+                            <Typography sx={{ fontSize: '0.95rem', fontWeight: 800, color: '#835425', fontVariantNumeric: 'tabular-nums', lineHeight: 1 }}>
+                                {timer != null ? formatTime(Math.max(0, timer - gameTimer)) : formatTime(gameTimer)}
+                            </Typography>
+                            {timer != null && (
+                                <Typography sx={{ fontSize: '0.55rem', color: '#afb3ae', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                                    {formatTime(gameTimer)} ecoul.
+                                </Typography>
+                            )}
+                        </Box>
+                        <IconButton size="small" onClick={toggleTimer} sx={{ color: '#afb3ae', p: 0.5 }}>
+                            {isTimerRunning ? <Pause sx={{ fontSize: '1rem' }} /> : <PlayArrow sx={{ fontSize: '1rem' }} />}
+                        </IconButton>
+                    </Box>
 
-                <Chip
-                    label={getPhaseLabel(gamePhase)}
-                    size="small"
-                    sx={{
-                        bgcolor: getPhaseColor(gamePhase),
-                        color: 'white',maxWidth:'150px',
-                        fontWeight: 'bold'
-                    }}
-                />
-                 <Tooltip title="Annuler dernier coup">
-                <Button size="small" color='warning' variant="contained" onClick={() => {
-                        handleUndo();}}>
-                            <Undo/>
-                        </Button>
+            {/* Menu options */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <Tooltip title="Plus d'options">
+                    <IconButton onClick={handleMenuOpen} size="small" sx={{ color: '#777c77' }}>
+                        <MoreVert fontSize="small" />
+                    </IconButton>
                 </Tooltip>
-                <Tooltip title="Abandonner / Recommencer">
-                <Button size="small" color='success' variant="contained"  onClick={() => {
-                        setOpenConfig(true);}}>
-                            <RestartAltTwoTone/>
-                        </Button>
-                </Tooltip>
+                <Menu anchorEl={anchorEl} open={open} onClose={handleMenuClose}
+                    slotProps={{ paper: { sx: { borderRadius: 2, mt: 1, minWidth: 200 } } }}>
+                    <MenuItem onClick={() => { handleMenuClose(); setOpenConfig(true); }}>
+                        <Settings sx={{ mr: 1 }} /> Configurer la partie
+                    </MenuItem>
+                    <MenuItem onClick={() => { savePartie(); handleMenuClose(); }}>
+                        <CloudUploadTwoTone sx={{ mr: 1 }} /> Sauvegarder
+                    </MenuItem>
+                    <MenuItem onClick={() => { loadPartie(); handleMenuClose(); }}>
+                        <CloudDownloadTwoTone sx={{ mr: 1 }} /> Recharger
+                    </MenuItem>
+                    <Divider />
+                    <MenuItem onClick={() => { toggleTimer(); handleMenuClose(); }}>
+                        {isTimerRunning ? <Pause sx={{ mr: 1 }} /> : <PlayArrow sx={{ mr: 1 }} />}
+                        {isTimerRunning ? 'Pause chrono' : 'Reprendre chrono'}
+                    </MenuItem>
+                </Menu>
+            </Box>
+                </Box>
+
+                {(pickMessage || openingManager.isActive) && (
+                    <Box sx={{ background: '#f4f4f0', p: 2, borderRadius: 1.5, borderLeft: '2px solid #835425', color: '#5c605c', fontStyle: 'italic', fontSize: '0.875rem', lineHeight: 1.5, mb: 2 }}>
+                        {openingManager.isActive
+                            ? humanReadableMove(openingManager.currentOpening.moves[openingManager.moveIndex])
+                            : pickMessage}
+                    </Box>
+                )}
+
+                {message && (
+                    <Box sx={{ mb: 2, px: 2, py: 1, background: 'rgba(131,84,37,0.08)', borderRadius: 1.5 }}>
+                        <Typography sx={{ fontSize: '0.8rem', color: '#835425', fontWeight: 600 }}>{message}</Typography>
+                    </Box>
+                )}
+
+                {materialAdvantage !== 0 && (
+                    <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <TrendingUp sx={{ fontSize: '1rem', color: materialAdvantage > 0 ? '#835425' : '#5c605c' }} />
+                        <Typography sx={{ fontSize: '0.8rem', fontWeight: 700, color: materialAdvantage > 0 ? '#835425' : '#5c605c' }}>
+                            {materialAdvantage > 0 ? '+' : ''}{materialAdvantage}
+                        </Typography>
+                        <LinearProgress variant="determinate" value={Math.min(Math.abs(materialAdvantage) * 10, 100)}
+                            sx={{ flex: 1, height: 4, borderRadius: 2, bgcolor: '#e6e9e4',
+                                '& .MuiLinearProgress-bar': { bgcolor: materialAdvantage > 0 ? '#835425' : '#5c605c' } }} />
+                    </Box>
+                )}
+
+                {puzzle && (
+                    <Button onClick={() => setHint(getPuzzleHint())} size="small"
+                        sx={{ mb: 2, textTransform: 'none', color: '#835425', fontWeight: 700 }}>
+                        {indice || 'Cliquer pour un indice'}
+                    </Button>
+                )}
+
+                <Box sx={{ display: 'flex', gap: 1.5 }}>
+                    <Button onClick={giveHint} startIcon={<Info />}
+                        sx={{ flex: 1, py: 1.5, borderRadius: 2, background: '#835425', color: '#fff6f1',
+                            fontWeight: 700, fontSize: '0.8rem', textTransform: 'none',
+                            '&:hover': { background: '#75481a' } }}>
+                        Suggerer
+                    </Button>
+                    {echec && (
+                        <Box sx={{ px: 2, py: 1.5, background: 'rgba(158,66,44,0.1)', color: '#9e422c',
+                            borderRadius: 2, display: 'flex', alignItems: 'center', gap: 0.75,
+                            fontWeight: 700, fontSize: '0.8rem' }}>
+                            &#9888; ECHEC
+                        </Box>
+                    )}
                 </Box>
             </Box>
 
-            <Box sx={{ p: 2, space: 2 }}>
-              
-                {/* pickMessage */}
-                {puzzle?<Button variant="contained" onClick={()=>{setHint(getPuzzleHint())}}>
-                    {indice?indice:"Cliquer pour un indice"}
-                </Button>
-                    :pickMessage && (
-                    <Typography
-                        size="small" 
-                        sx={{
-                            fontWeight: 'bold', padding: 2,marginBottom: 2,
-                            borderRadius: 5,
-                            background: 'rgba(232, 229, 229, 0.41)',
-                        }}
-                    >{pickMessage}</Typography>
-                )}
-
-
-                {/* État de la partie */}
-                <Card sx={{ mb: 2, borderRadius: 2, boxShadow: 2 }}>
-                    <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                        <Stack spacing={1}>
-                            {/* Joueur actuel */}
-                            <Stack direction="row" alignItems="center" spacing={1}>
-                                <Avatar sx={{
-                                    width: 24,
-                                    height: 24,
-                                    bgcolor: currentPlayer === 'white' ? '#f5f5f5' : '#424242',
-                                    color: currentPlayer === 'white' ? '#000' : '#fff',
-                                    fontSize: 14
-                                }}>
-                                    {currentPlayer === 'white' ? '♔' : '♚'}
-                                </Avatar>
-                                {openingManager.isActive ? 
-                                    <Typography variant="body2" fontWeight="medium">
-                               {humanReadableMove(openingManager.currentOpening.moves[openingManager.moveIndex])}
-                                </Typography>:
-                                <Typography variant="body2" fontWeight="medium" flex={1}>
-                                    Au tour des {currentPlayer === 'white' ? 'Blancs' : 'Noirs'}
-                                </Typography>}
-
-                                <Typography variant="body2" color="text.secondary">
-                                    Coup #{Math.floor(moveCount / 2) + 1}
-                                </Typography>
-                                <IconButton onClick={giveHint}>
-                                    <Info/>
-                                </IconButton>
-                            </Stack>
-
-                            {/* Phase de jeu */}
-                            <Stack direction="row" alignItems="center" spacing={1}>
-                                {message && (
-
-                                    <Typography sx={{ color: '#06305aff', fontWeight: 'medium' }}>
-                                        {message}
-                                    </Typography>
-
-                                )}
-                            </Stack>
-                              {materialAdvantage !== 0 && <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
-                                <TrendingUp color="success" />
-                                <Typography variant="body2" fontWeight="medium">
-                                    Avantage matériel
-                                </Typography>
-                           
-                            <Typography
-                                variant="h6"
-                                fontWeight="bold"
-                                color={materialAdvantage > 0 ? 'success.main' : 'error.main'}
-                            >
-                                {materialAdvantage > 0 ? '♔' : '♚'} {materialAdvantage}
-                            </Typography>
-                            <LinearProgress
-                                variant="determinate"
-                                value={Math.min(Math.abs(materialAdvantage) * 10, 100)}
-                                color={materialAdvantage > 0 ? 'success' : 'error'}
-                                sx={{ mt: 1, borderRadius: 1, height: 6 }}
-                            />
-                            </Stack>}
-                        </Stack>
-                    </CardContent>
-                </Card>
-                {/* Messages d'état */}
-                {echec && (
-                    <Paper sx={{
-                        p: 1.5,
-                        mb: 2,
-                        bgcolor: '#ffebee',
-                        border: '2px solid #f44336',
-                        borderRadius: 2,
-                        animation: 'pulse 1.5s infinite'
-                    }}>
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                            <Typography sx={{ fontSize: 20 }}>⚠️</Typography>
-                            <Typography sx={{ color: '#d32f2f', fontWeight: 'bold' }}>
-                                Échec !
-                            </Typography>
-                        </Stack>
-                    </Paper>
-                )}
-
-
-
-
-
-             
-
-                {/* Pièces capturées */}
-                <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
-                    <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                        <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
-                            <Assessment color="primary" />
-                            <Typography variant="body2" fontWeight="medium">
-                                Pièces capturées
-                            </Typography>
-                        </Stack>
-
-                        <Grid container spacing={1}>
-                            <Grid item xs={12}>
-                                <Paper sx={{ p: 1, bgcolor: '#fafafa', borderRadius: 1 }}>
-                                    <Stack direction="row" alignItems="center" spacing={1}>
-                                        <Typography variant="body2" fontWeight="medium">
-                                            ♔ Blancs ({whiteScore}):
-                                        </Typography>
-                                        <Box sx={{display:'flex',flexWrap:'wrap'}}>
-                                            {captured.black.length > 0 ? (
-                                                captured.black.map((p, i) => (
-                                                    <span key={i} style={{ textShadow: '2px 2px 4px #000', fontSize: 36, color:'white', marginRight: 4 }}>
-                                                        {emojiPiece(p)}
-                                                    </span>
-                                                ))
-                                            ) : (
-                                                <Typography variant="body2" color="text.secondary">
-                                                    Aucune
-                                                </Typography>
-                                            )}
-                                        </Box>
-                                    </Stack>
-                                </Paper>
-                            </Grid>
-
-                            <Grid item xs={12}>
-                                <Paper sx={{ p: 1, bgcolor: '#fafafa', borderRadius: 1 }}>
-                                    <Stack direction="row" alignItems="center" spacing={1}>
-                                        <Typography variant="body2" fontWeight="medium">
-                                            ♚ Noirs ({blackScore}):
-                                        </Typography>
-                                        <Box sx={{display:'flex',flexWrap:'wrap'}}>
-                                            {captured.white.length > 0 ? (
-                                                captured.white.map((p, i) => (
-                                                    <span key={i} style={{ textShadow: '1px 1px 4px #eee', fontSize: 36, marginRight:4 }}>
-                                                        {emojiPiece(p)}
-                                                    </span>
-                                                ))
-                                            ) : (
-                                                <Typography variant="body2" color="text.secondary">
-                                                    Aucune
-                                                </Typography>
-                                            )}
-                                        </Box>
-                                    </Stack>
-                                </Paper>
-                            </Grid>
-                        </Grid>
-                    </CardContent>
-                </Card>
-
-                {/* Statistiques rapides */}
-                <Card sx={{ mt: 2, borderRadius: 2, boxShadow: 2 }}>
-                    <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
-                        <Typography variant="body2" fontWeight="medium" sx={{ mb: 1 }}>
-                            📊 Statistiques
-                        </Typography>
-                        <Grid container spacing={1}>
-                            <Grid item xs={4}>
-                                <Typography variant="body2" color="text.secondary">
-                                    Coups
-                                </Typography>
-                                <Typography variant="h6" fontWeight="bold">
-                                    {moveCount}
-                                </Typography>
-                            </Grid>
-                            <Grid item xs={4}>
-                                <Typography variant="body2" color="text.secondary">
-                                    Captures
-                                </Typography>
-                                <Typography variant="h6" fontWeight="bold">
-                                    {captured.white.length + captured.black.length}
-                                </Typography>
-                            </Grid>
-                            <Grid item xs={4}>
-                                <Typography variant="body2" color="text.secondary">
-                                    Rythme
-                                </Typography>
-                                <Typography variant="h6" fontWeight="bold">
-                                    {gameTimer > 0 ? Math.round(moveCount / (gameTimer / 60)) : 0}/min
-                                </Typography>
-                            </Grid>
-                        </Grid>
-                    </CardContent>
-                </Card>
+            {/* Section 3 : Pieces capturees */}
+            <Box sx={{ background: '#f4f4f0', p: 3, borderRadius: 2.5 }}>
+                <Typography sx={PANEL_LABEL}>Pieces capturees</Typography>
+                <Box sx={{ mb: 1.5 }}>
+                    <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: '#5c605c', mb: 0.5 }}>
+                        Blancs ({whiteScore})
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', fontSize: '1.4rem', lineHeight: 1 }}>
+                        {captured.black.length > 0
+                            ? captured.black.map((p, i) => <span key={i} style={{ textShadow: '1px 1px 3px rgba(0,0,0,0.25)' }}>{emojiPiece(p)}</span>)
+                            : <Typography sx={{ fontSize: '0.72rem', color: '#afb3ae' }}>Aucune</Typography>}
+                    </Box>
+                </Box>
+                <Box>
+                    <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: '#5c605c', mb: 0.5 }}>
+                        Noirs ({blackScore})
+                    </Typography>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', fontSize: '1.4rem', lineHeight: 1 }}>
+                        {captured.white.length > 0
+                            ? captured.white.map((p, i) => <span key={i}>{emojiPiece(p)}</span>)
+                            : <Typography sx={{ fontSize: '0.72rem', color: '#afb3ae' }}>Aucune</Typography>}
+                    </Box>
+                </Box>
             </Box>
 
-            <style jsx>{`
-        @keyframes pulse {
-          0% { opacity: 1; }
-          50% { opacity: 0.7; }
-          100% { opacity: 1; }
-        }
-      `}</style>
+            {/* Section 4 : Statistiques */}
+            <Box sx={{ background: '#f4f4f0', p: 3, borderRadius: 2.5 }}>
+                <Typography sx={PANEL_LABEL}>Statistiques</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                    {[
+                        { label: 'Coups joues', value: moveCount },
+                        { label: 'Captures totales', value: captured.white.length + captured.black.length },
+                        { label: 'Rythme moyen', value: `${gameTimer > 0 ? Math.round(moveCount / (gameTimer / 60)) : 0} /min` },
+                    ].map(({ label, value }) => (
+                        <Box key={label} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography sx={{ fontSize: '0.875rem', color: '#5c605c' }}>{label}</Typography>
+                            <Typography sx={{ fontSize: '0.875rem', fontWeight: 700, color: '#2f3430' }}>{value}</Typography>
+                        </Box>
+                    ))}
+                </Box>
+            </Box>
 
-<ParametresDialog 
-  open={openConfig} 
-  reset={handleReset}
-  handleClose={() => setOpenConfig(false)} 
-/>
+            {/* Section 5 : Actions */}
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                <Button onClick={handleUndo} fullWidth startIcon={<Undo />}
+                    sx={{ py: 1.75, borderRadius: 2.5, background: '#e6e9e4', color: '#2f3430',
+                        fontWeight: 700, fontSize: '0.875rem', textTransform: 'none',
+                        '&:hover': { background: '#d6dbd5' } }}>
+                    Annuler le coup
+                </Button>
+                <Button onClick={() => setOpenConfig(true)} fullWidth startIcon={<RestartAlt />}
+                    sx={{ py: 1.75, borderRadius: 2.5, border: '1px solid #afb3ae', color: '#5c605c',
+                        fontWeight: 700, fontSize: '0.875rem', textTransform: 'none',
+                        '&:hover': { background: '#f4f4f0' } }}>
+                    Recommencer
+                </Button>
+                <Button fullWidth onClick={() => gameOver('Abandon', tourBlancs ? 'black' : 'white')}
+                    sx={{ py: 1.75, color: '#9e422c', fontWeight: 700, fontSize: '0.875rem',
+                        textTransform: 'none', opacity: 0.6, '&:hover': { opacity: 1 } }}>
+                    Abandonner
+                </Button>
+            </Box>
+
+
+            <ParametresDialog open={openConfig} reset={handleReset} handleClose={() => setOpenConfig(false)} />
         </Box>
     );
 }
