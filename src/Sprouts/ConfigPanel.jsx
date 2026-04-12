@@ -48,7 +48,7 @@ const conds=[{label:"Bonnes", value:1},{label:"Difficiles", value:2},{label:"Ext
                 </MenuItem>
             ))}
         </TextField>
-        <TextField label="Taille des cellules" value={gridSize}
+        <TextField label="Taille de la grille" value={gridSize}
             select
             onChange={evt => { setGridSize(evt.target.value) }}>
             {Array.from({ length: 50 }).map((option, i) => (

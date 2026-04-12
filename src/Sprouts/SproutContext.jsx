@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import QuickDialog from "../bitLife/utils/QuickDialog";
 
 import { lifeCycle } from "./sproutUtil";
@@ -21,32 +21,32 @@ export const SproutProvider = ({ frameWidth, frameHeight, children }) => {
         setOrganismes([]);
     }
 
+    const [isRunning, setIsRunning] = useState(true);
+    const isRunningRef = useRef(true);
+    const toggleRunning = () => {
+        const nowRunning = !isRunningRef.current;
+        isRunningRef.current = nowRunning;
+        setIsRunning(nowRunning);
+        if (nowRunning) setCycle(c => c + 1); // relance la boucle
+    };
+
     useEffect(() => {
-        let tid=null;
-        const animate = () => {
-          
-            if(organismes.length>0)
+        if (!isRunningRef.current) return;
+        if (organismes.length > 0 && frameWidth > 0 && frameHeight > 0)
             lifeCycle({ gridMap, organismes, setGridMap, setOrganismes
-                , frameHeight, frameWidth, cycle, gridSize ,coutDeLaVie});
-          
-             
-        };
-        //tid = setTimeout(animate, 200);
-        animate();
-        return () => {
-            if(tid!=null)
-                clearTimeout(tid);
-        };
+                , frameHeight, frameWidth, cycle, gridSize, coutDeLaVie });
     }, [cycle]);
-  
+
     useEffect(() => {
-        setCycle(cycle+1);
-    },[organismes]);
-    
-    
+        // toujours incrémenter : la boucle s'arrête naturellement si lifeCycle
+        // ne modifie pas organismes (ex: pause — le cycle monte mais rien ne change)
+        setCycle(c => c + 1);
+    }, [organismes]);
+
     const ctxt = {
-        organismes, setOrganismes,  setMessage
-        , gridMap, setGridMap, reset,gridSize, setGridSize,setcoutDeLaVie, coutDeLaVie
+        organismes, setOrganismes, setMessage
+        , gridMap, setGridMap, reset, gridSize, setGridSize, setcoutDeLaVie, coutDeLaVie
+        , cycle, isRunning, toggleRunning
     }
     return <SproutContext.Provider value={ctxt}>
         {children}
