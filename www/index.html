@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>David Poilevey</title>
   <script src="https://cdn.jsdelivr.net/npm/pocketbase/dist/pocketbase.umd.js"></script>
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-C34SK04MZ0"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-C34SK04MZ0');
+  </script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -319,8 +328,45 @@
     }
 
     loadChuckFact();
-    // Commentaires Pocketbase
-const pb = new PocketBase('https://bdd.poilevey.org');
+
+    // PocketBase (utilisé par logVisitor ET les commentaires)
+    const pb = new PocketBase('https://bdd.poilevey.org');
+
+    // Logging visiteur → collection "visitors" (champs: ip, pays, region, org, ua, count)
+    // La ville est conservée mais souvent fausse en IPv6 résidentiel (géoloc approximative)
+    async function logVisitor() {
+      try {
+        const geo = await fetch('https://ipapi.co/json/').then(r => r.json());
+        const ip = (geo.ip || '').replace(/"/g, '');
+        const today = new Date().toISOString().slice(0, 10);
+
+        let existing = null;
+        try {
+          existing = await pb.collection('visitors').getFirstListItem(
+            `ip = "${ip}" && created >= "${today} 00:00:00.000Z"`
+          );
+        } catch { /* 404 = nouvelle visite */ }
+
+        if (existing) {
+          await pb.collection('visitors').update(existing.id, {
+            count: (existing.count || 1) + 1,
+          });
+        } else {
+          await pb.collection('visitors').create({
+            ip,
+            pays:   geo.country_name || '',
+            ville:  geo.city         || '',
+            region: geo.region       || '',
+            org:    geo.org          || '',
+            ua:     navigator.userAgent.substring(0, 250),
+            count:  1,
+          });
+        }
+      } catch(err) {
+        console.log('Error logging visitor:', err);
+      }
+    }
+    logVisitor();
 
 async function loadComments() {
   try {
