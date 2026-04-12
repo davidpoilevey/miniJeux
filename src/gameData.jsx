@@ -1059,7 +1059,7 @@ export const GAMES_DATA = [
         id: 'footballCoach',
         component: FootballCoach,
         icon: 'SportsSoccer',
-        image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Football_Pallo_valmiina-cropped.jpg/800px-Football_Pallo_valmiina-cropped.jpg',
+        image: 'https://img.sanctuary.fr/fiche/300/1128.jpg',
         description: "Sois l'entraîneur ! Dicte les tactiques en temps réel pendant que les joueurs jouent",
         regle: "Touches tactiques : [A] Attaque  [D] Défense  [T] Tacle  [G] Garder  [P] Presse haute  [F] Fuite  [C] Centre  [X] Dribble dangereux  [R] Repli  [M] Marquage  [Z] Zone  [H] Haut rythme  [S] Substitution. Le match dure 90 minutes (3 min réelles).",
         status: 'warning',
