@@ -5,10 +5,12 @@
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
+
+  <!-- Jeux avec id explicite -->
   <url><loc>https://davidpoilevey.github.io/miniJeux?game=echec</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://davidpoilevey.github.io/miniJeux?game=shufflepuck</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://davidpoilevey.github.io/miniJeux?game=bomberman</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://davidpoilevey.github.io/miniJeux?game=belote</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=shufflepuck</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=bomberman</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=belote</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://davidpoilevey.github.io/miniJeux?game=scopa</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://davidpoilevey.github.io/miniJeux?game=trouduc</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://davidpoilevey.github.io/miniJeux?game=monopoly</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
@@ -47,4 +49,61 @@
   <url><loc>https://davidpoilevey.github.io/miniJeux?game=worldbox</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://davidpoilevey.github.io/miniJeux?game=anniv</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://davidpoilevey.github.io/miniJeux?game=ezioTrip</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+
+  <!-- Jeux sans id explicite (name utilisé comme identifiant) -->
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=2048</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Arkanoid</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Awale</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Civilization</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Dames</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Dobble</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Flipper</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Morpion</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Puissance4</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Simon</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Snake</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Uno</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=WhackAMole</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Sprouts</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Maq-city</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Mee</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=GodBoard</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Ecosysteme</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Farmer</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Flip%20Seven</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Fourmiz</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Tower%20defense</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Curling</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Lettre</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Proverbe</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Conway</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Bubulles</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Bactery</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Bacterie%202.0</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Bacterie%205.0</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Cellular%20Blob</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Pot%20de%20fleur%202.0</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Pot%20de%20fleur%20genetique</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Bataille%20navale</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Rush%20Hour</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Chi-Fu-Mi</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Peche%20au%20sonar</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Open%20library</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Jeu%20de%20tir</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Jardin%20magique</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=TI%2087</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Bite%20Life</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Relie%20les%20points</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=OhCestBeau</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=M%C3%A9m%C3%A9gram</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=M%C3%A9m%C3%A9mory</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=M%C3%A9m%C3%A9-mots-cach%C3%A9s-gram</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Poker%20de%20Claude</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Knight%20RPG</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Final%20Fantasy%200.1</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Cul-Clicker</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Pissotiere</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Speed%20Shooter</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Kaleidopoeme</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://davidpoilevey.github.io/miniJeux?game=Joyeux%20anniversaire</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
 </urlset>
