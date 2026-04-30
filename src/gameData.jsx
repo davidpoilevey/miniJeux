@@ -45,6 +45,7 @@ const GameOfLife = lazy(() => import( './jeudelavie/JeuDeLaVie'));
 const EntreeDansLaVie  = lazy(() => import( './bitLife/personnages/BitLife'));
 const Fourmiz = lazy(() => import( './fourmis/Fourmiz'));
 const FinalFantasy10 = lazy(() => import( './ff1/Entree'));
+const  Kratland = lazy(() => import( './kratland/Kratland'));
 const PotDeFleur20 = lazy(() => import( './genetic/pot20'));
 const SmartBactPanel = lazy(() => import( './bactery/SmartBact'));
 
@@ -252,7 +253,7 @@ export const GAMES_DATA = [
         icon: 'Biotech',
         description: "La version finale de mon delire evolutif . Plus interactif",
         status: 'warning',
-        tags: [ 'bacterie',  'simulation', 'evolution', 'workInProgress']
+        tags: [ 'bacterie',  'simulation', 'evolution']
       },
       {
         name:"Carbonifère 14",
@@ -263,7 +264,7 @@ export const GAMES_DATA = [
         icon: 'Biotech',
         description: "Simulation évolutive de plantes à ADN sur un monde vivant. Pousse sur des semaines, interagis en likant les plus belles fleurs.",
         status: 'warning',
-        tags: [ 'simulation', 'evolution', 'workInProgress', 'mobileFriendly']
+        tags: [ 'simulation', 'evolution',  'mobileFriendly']
       },
       {
         name:"Worldbox",
@@ -288,6 +289,16 @@ export const GAMES_DATA = [
         status: 'success',
         tags: [ 'iaInside', 'cartes', 'hasard', 'strategie', 'multijoueur', 'remake', 'premium']
       },
+     {
+        name:"Kratland", 
+        id:'kratland',
+        component: Kratland,
+        image:'',
+        icon: 'LocalCasino',
+        description: "Inspiré de Kraland, mais en plus desert",
+        status: 'success',
+        tags: [ 'multijoueur', 'simulation', 'rpg', 'workInProgress', 'remake', 'premium']
+      },
       
      {
         name:"Joyeux anniversaire", 
@@ -297,7 +308,7 @@ export const GAMES_DATA = [
         icon: 'Cake',
         description: "Jeu pour les anniversaires",
         status: 'warning',
-        tags: [  'hasard',  'humour',  'mobileFriendly', 'basique','workInProgress']
+        tags: [  'hasard',  'humour',  'mobileFriendly', 'basique']
       },
       {
         name: 'Uno',
@@ -1063,7 +1074,7 @@ export const GAMES_DATA = [
         description: "Sois l'entraîneur ! Dicte les tactiques en temps réel pendant que les joueurs jouent",
         regle: "Touches tactiques : [A] Attaque  [D] Défense  [T] Tacle  [G] Garder  [P] Presse haute  [F] Fuite  [C] Centre  [X] Dribble dangereux  [R] Repli  [M] Marquage  [Z] Zone  [H] Haut rythme  [S] Substitution. Le match dure 90 minutes (3 min réelles).",
         status: 'warning',
-        tags: ['action', 'strategie', 'clavier', 'ambitieux', 'workInProgress']
+        tags: ['action', 'strategie', 'clavier', 'zeroJoueur']
       }
     ]
   }
