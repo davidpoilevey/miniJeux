@@ -320,8 +320,9 @@ export default function CombatView() {
 
   const [currentRound,  setCurrentRound] = useState(1)
   const [logs,          setLogs]         = useState(() => {
-    const names = initEnemies.map(e => e.name).join(' & ')
-    return [{ time: '—', text: `Combat contre ${names} !`, narrative: true }]
+    const names    = initEnemies.map(e => e.name).join(' & ')
+    const introText = combat.encounterMessage ?? `Combat contre ${names} !`
+    return [{ time: '—', text: introText, narrative: true }]
   })
   const [isOver,        setIsOver]   = useState(false)
   const [outcome,       setOutcome]  = useState(null)

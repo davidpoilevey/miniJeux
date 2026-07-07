@@ -17,8 +17,9 @@ import MaterialIcon from './MaterialIcon'
 export default function KratAccordion({
   title,
   icon,
-  defaultOpen = false,
-  alwaysOpen  = false,
+  defaultOpen  = false,
+  alwaysOpen   = false,
+  maxBodyHeight = null,
   children,
 }) {
   const [open, setOpen] = useState(defaultOpen || alwaysOpen)
@@ -35,6 +36,7 @@ export default function KratAccordion({
         borderColor: open ? 'primary.light' : 'divider',
         overflow: 'hidden',
         transition: 'border-color 0.2s',
+        flexShrink: 0,
       }}
     >
       {/* ── En-tête ── */}
@@ -89,7 +91,10 @@ export default function KratAccordion({
 
       {/* ── Corps ── */}
       <Collapse in={open}>
-        <Box sx={{ px: 2, py: 1.5 }}>
+        <Box sx={{
+          px: 2, py: 1.5,
+          ...(maxBodyHeight ? { maxHeight: maxBodyHeight, overflowY: 'auto' } : {}),
+        }}>
           {children}
         </Box>
       </Collapse>

@@ -2,7 +2,7 @@
  * AdminPanel — Outil d'administration Kratland (dev only).
  * Accès : bouton engrenage discret près du titre dans HUDJoueur.
  */
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import Dialog        from '@mui/material/Dialog'
 import DialogTitle   from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -636,6 +636,54 @@ function NpcsTab() {
   )
 }
 
+// ─── Bouton Fin de journée ────────────────────────────────────────────────────
+
+const EOD_URL = '/api/end-of-day'
+
+function EndOfDayButton() {
+  const [status, setStatus] = useState(null) // null | 'loading' | 'ok' | 'error'
+  const [info,   setInfo]   = useState('')
+  const timerRef = useRef(null)
+
+  async function trigger() {
+    setStatus('loading'); setInfo('')
+    clearTimeout(timerRef.current)
+    try {
+      const res  = await fetch(EOD_URL, { method: 'POST' })
+      const data = await res.json()
+      if (data.ok) {
+        setStatus('ok')
+        setInfo(`${data.joueurs} joueurs · ${data.liberated} libéré(s) · ${data.dismissed} destitué(s)`)
+      } else {
+        setStatus('error'); setInfo(data.error ?? 'Erreur inconnue')
+      }
+    } catch (e) {
+      setStatus('error'); setInfo(e.message)
+    }
+    timerRef.current = setTimeout(() => setStatus(null), 6000)
+  }
+
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+      {status === 'ok'    && <Typography variant="caption" color="success.main"  sx={{ fontStyle: 'italic' }}>{info}</Typography>}
+      {status === 'error' && <Typography variant="caption" color="error.main"    sx={{ fontStyle: 'italic' }}>{info}</Typography>}
+      <Button
+        size="small"
+        variant="outlined"
+        color={status === 'error' ? 'error' : 'primary'}
+        disabled={status === 'loading'}
+        startIcon={status === 'loading'
+          ? <CircularProgress size={14} />
+          : <MaterialIcon icon="nights_stay" sx={{ fontSize: '1rem !important' }} />}
+        onClick={trigger}
+        sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}
+      >
+        Fin de journée
+      </Button>
+    </Box>
+  )
+}
+
 // ─── AdminPanel ───────────────────────────────────────────────────────────────
 
 export default function AdminPanel({ open, onClose }) {
@@ -650,9 +698,12 @@ export default function AdminPanel({ open, onClose }) {
             Administration Kratland
           </Typography>
         </Box>
-        <IconButton onClick={onClose}>
-          <MaterialIcon icon="close" />
-        </IconButton>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          <EndOfDayButton />
+          <IconButton onClick={onClose}>
+            <MaterialIcon icon="close" />
+          </IconButton>
+        </Box>
       </DialogTitle>
       <Divider />
       <Box sx={{ px: 3, borderBottom: 1, borderColor: 'divider' }}>

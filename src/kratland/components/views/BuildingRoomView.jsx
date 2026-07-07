@@ -20,12 +20,16 @@ import Chip       from '@mui/material/Chip'
 import Divider    from '@mui/material/Divider'
 import MaterialIcon            from '../MaterialIcon'
 import { useKrat }             from '../../context/KratContext'
-import { CONTEXTUAL_ACTIONS, ITEM_TYPES } from '../../data/catalog'
+import Snackbar from '@mui/material/Snackbar'
+import Alert    from '@mui/material/Alert'
+import { CONTEXTUAL_ACTIONS, ITEM_TYPES, NPC_SPAWN_TEMPLATES } from '../../data/catalog'
 import AchatDialog             from '../dialogs/AchatDialog'
 import TravailDialog           from '../dialogs/TravailDialog'
 import ActionDialog            from '../dialogs/ActionDialog'
 import CharacterDialog         from '../dialogs/CharacterDialog'
 import BureauDuMaireDialog     from '../dialogs/BureauDuMaireDialog'
+import CoffreDialog            from '../dialogs/CoffreDialog'
+import EvasionDialog           from '../dialogs/EvasionDialog'
 
 // ─── Boutique ────────────────────────────────────────────────────────────────
 
@@ -88,19 +92,20 @@ function ShopItemRow({ item, onBuyClick }) {
 
 // ─── Carte de pièce ──────────────────────────────────────────────────────────
 
-function RoomCard({ room, active, onSelect }) {
+function RoomCard({ room, active, onSelect, disabled }) {
   return (
     <Paper
       variant="outlined"
-      onClick={() => onSelect(room.id)}
+      onClick={() => !disabled && onSelect(room.id)}
       sx={{
         p:          2,
-        cursor:     'pointer',
+        cursor:     disabled ? 'not-allowed' : 'pointer',
+        opacity:    disabled ? 0.45 : 1,
         borderLeft: active ? '4px solid' : '1px solid',
         borderColor: active ? 'primary.main' : 'divider',
         bgcolor:    active ? 'rgba(152,67,0,0.04)' : 'background.default',
         transition: 'background-color 0.15s',
-        '&:hover':  { bgcolor: 'rgba(152,67,0,0.06)' },
+        '&:hover':  { bgcolor: disabled ? undefined : 'rgba(152,67,0,0.06)' },
       }}
     >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
@@ -178,6 +183,13 @@ export default function BuildingRoomView() {
   const currentRoom = building.rooms.find(r => r.id === building.currentRoomId)
     ?? building.rooms[0]
 
+  const visibleInhabitants = building.inhabitants.filter(inh => {
+    const loc = typeof inh.location === 'string' ? JSON.parse(inh.location) : (inh.location ?? {})
+    return !loc.roomId || loc.roomId === building.currentRoomId
+  })
+
+  const inPrison = building.type === 'mairie' && building.currentRoomId === 'prison'
+
   const contextualActions = CONTEXTUAL_ACTIONS[building.type]?.[currentRoom.id] ?? []
 
   const [selectedShopItem,   setSelectedShopItem]   = useState(null)
@@ -185,6 +197,9 @@ export default function BuildingRoomView() {
   const [selectedAction,     setSelectedAction]     = useState(null)
   const [selectedInhabitant, setSelectedInhabitant] = useState(null)
   const [bureauOpen,         setBureauOpen]         = useState(false)
+  const [coffreOpen,         setCoffreOpen]         = useState(false)
+  const [evasionOpen,        setEvasionOpen]        = useState(false)
+  const [hireSnack,          setHireSnack]          = useState(null)
 
   // Disponibilité boutique tirée au sort à chaque entrée dans le bâtiment
   const [shopItems, setShopItems] = useState([])
@@ -196,12 +211,21 @@ export default function BuildingRoomView() {
     )
   }, [building.id, building.type])
 
-  function handleAction(actionId) {
+  async function handleAction(actionId) {
     if (actionId === 'exit')          { actions.exitBuilding(); return }
     if (actionId === 'bureauDuMaire') { setBureauOpen(true);   return }
+    if (actionId === 'coffre')        { setCoffreOpen(true);   return }
     if (actionId === 'work') {
       const act = contextualActions.find(a => a.id === 'work')
       if (act) setSelectedWorkAction(act)
+      return
+    }
+    if (actionId === 'evasion') { setEvasionOpen(true); return }
+    if (actionId === 'costaud') {
+      const result = await actions.spawnNpc(NPC_SPAWN_TEMPLATES.bodyguard)
+      if (result === 'hired')    setHireSnack({ message: 'Dmitri vous rejoint. Il a l\'air content… enfin, difficile à dire.', severity: 'success' })
+      if (result === 'too_poor') setHireSnack({ message: 'Vous n\'avez pas les 50g nécessaires. Dmitri vous toise avec mépris.', severity: 'warning' })
+      if (result === 'error')    setHireSnack({ message: 'Dmitri est indisponible pour l\'instant.', severity: 'error' })
       return
     }
     const act = contextualActions.find(a => a.id === actionId)
@@ -263,6 +287,7 @@ export default function BuildingRoomView() {
                     room={room}
                     active={room.id === building.currentRoomId}
                     onSelect={actions.selectRoom}
+                    disabled={room.id==='prison'||(inPrison && room.id !== building.currentRoomId)}
                   />
                 </Grid>
               ))}
@@ -273,11 +298,15 @@ export default function BuildingRoomView() {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                 <Typography variant="h6">Habitants</Typography>
                 <Typography variant="caption" color="text.disabled" sx={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  {building.inhabitants.length} personnages présents
+                  {visibleInhabitants.length} personnage{visibleInhabitants.length !== 1 ? 's' : ''} présent{visibleInhabitants.length !== 1 ? 's' : ''}
                 </Typography>
               </Box>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                {building.inhabitants.map(inh => (
+                {visibleInhabitants.length === 0 ? (
+                  <Typography variant="body2" color="text.disabled" sx={{ py: 0.5, fontStyle: 'italic' }}>
+                    Personne ici.
+                  </Typography>
+                ) : visibleInhabitants.map(inh => (
                   <InhabitantRow key={inh.id} inhabitant={inh} onSelect={setSelectedInhabitant} />
                 ))}
               </Box>
@@ -423,6 +452,26 @@ export default function BuildingRoomView() {
         open={bureauOpen}
         onClose={() => setBureauOpen(false)}
       />
+      <EvasionDialog
+        open={evasionOpen}
+        onClose={() => setEvasionOpen(false)}
+      />
+      <CoffreDialog
+        open={coffreOpen}
+        onClose={() => setCoffreOpen(false)}
+        buildingId={building.id}
+        isOwner={building.id === `maison_${state.player.id}` || building.ownerId === state.player.id}
+      />
+      <Snackbar
+        open={!!hireSnack}
+        autoHideDuration={4000}
+        onClose={() => setHireSnack(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert severity={hireSnack?.severity ?? 'info'} onClose={() => setHireSnack(null)} sx={{ width: '100%' }}>
+          {hireSnack?.message}
+        </Alert>
+      </Snackbar>
     </Box>
   )
 }

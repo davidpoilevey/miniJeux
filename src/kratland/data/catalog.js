@@ -12,7 +12,7 @@ export const ROOM_DEFINITIONS = {
   entrance: { id: 'entrance', label: 'Entrée',   icon: 'meeting_room', description: 'Le seuil du bâtiment, entre ceux qui partent et ceux qui arrivent.' },
   shop:     { id: 'shop',     label: 'Boutique', icon: 'storefront',   description: 'Provisions, équipements et curiosités à vendre.'                    },
   sleeping: { id: 'sleeping', label: 'Chambre',  icon: 'bed',          description: 'Un lit, quatre murs. Le repos et la récupération.'                  },
-  bed:      { id: 'bed',      label: 'Cellule',   icon: 'lock',         description: 'Quatre murs et des barreaux. Les gardes ne rigolent pas.'           },
+  prison:   { id: 'prison',   label: 'Cellule',  icon: 'lock',         description: 'Quatre murs et des barreaux. Les gardes ne rigolent pas.'            },
 }
 
 /**
@@ -24,7 +24,7 @@ export const ROOM_CONFIGS = {
   entrance_shop:     ['entrance', 'shop'],
   entrance_shop_bed: ['entrance', 'shop', 'sleeping'],
   entrance_bed:      ['entrance', 'sleeping'],
-  entrance_prison:   ['entrance', 'bed'],
+  entrance_prison:   ['entrance', 'prison'],
 }
 
 /** Construit le tableau de pièces depuis la clé roomConfig d'un bâtiment. */
@@ -48,7 +48,7 @@ export const BUILDING_TYPES = {
   garage:    { label: 'Garage',    icon: 'directions_car' },
   bibliotheque:{ label: 'Bibliothèque', icon: 'menu_book' },
   laboratoire:{ label: 'Laboratoire', icon: 'science' },
-
+  maison:    { label: 'Maison',    icon: 'home' },
 }
 
 // ─── Actions contextuelles par type de bâtiment et par pièce ─────────────────
@@ -70,7 +70,7 @@ export const CONTEXTUAL_ACTIONS = {
         reward: { gold: { min: 40, max: 100 } },
         onSuccess: { reputation: -3 },
         onFailure: { reputation: -8 },
-        competenceBonus: 'pickpocket',
+        competenceBonus: 'discretion',
         successMessage: "Vous glissez la main dans la caisse sans vous faire remarquer.",
         failMessage: "Le patron vous a vu. Vous êtes jeté dehors — et votre réputation en prend un coup.",
       },
@@ -110,15 +110,38 @@ export const CONTEXTUAL_ACTIONS = {
       },
     ],
   },
+
+  maison: {
+    entrance: [
+      { id: 'exit',  label: 'Sortir dans la ville', icon: 'door_front', primary: true },
+    ]
+    , sleeping: [
+      { id: 'sleep_floor', label: 'Dormir par terre', icon: 'night_shelter', primary: false,
+        auto: true, confirmLabel: 'Se coucher',
+        description: "Le plancher froid comme litière. Votre dos s'en souviendra.",
+        onSuccess: { forme: 5, faim: -2, reputation: -1, pointsDivins: 2 },
+        successMessage: "Vous vous réveillez courbaturé mais vaguement moins épuisé.",
+      },
+      { id: 'sleep_room', label: 'Dormir dans un lit (necessite lit)', icon: 'bed', primary: true,
+        auto: true, confirmLabel: 'Louer',
+        description: "Un lit propre, une nuit au chaud. Le luxe, c'est relatif. Sinon ca s'achete au marché",
+        condition: state => state.player.inventaire.find(item => item.typeId === 'lit'),
+        onSuccess: { forme: 10, gold: -10, pointsDivins: 5 },
+        successMessage: "Vous vous réveillez reposé. La nuit valait ses 10 pièces.",
+      },
+      { id: 'coffre', label: 'Ouvrir le coffre', icon: 'lock_open', primary: false },
+    ],
+  },
   mairie: {
     entrance: [
       { id: 'exit', label: 'Sortir dans la ville', icon: 'door_front', primary: true,
-        condition: state => state.player.jauges.reputation.current > 0,
+        
       },
       { id: 'candidature', label: 'Devenir maire', icon: 'gavel', primary: false,
         condition: state => !state.city.mayor,
         description: "La ville est sans maire. Il n'en faut peut-être pas plus pour prétendre au poste.",
-        successChance: 0.80,
+        successChance: 0.60,
+        competenceBonus: 'mentalisme',
         onSuccess: { reputation: 10 },
         successMessage: "La ville vous acclame. Vous êtes désormais le maire de cette cité !",
         failMessage: "Le peuple ne semble pas convaincu. Votre candidature est rejetée.",
@@ -133,16 +156,12 @@ export const CONTEXTUAL_ACTIONS = {
       },
 
     ],
-    bed:[
-      {id:'parlerPrisonnier', label: 'Parler au prisonnier', icon: 'gavel', 
-         form: [
-          { key: 'text',   label: 'La rumeur', multiline: true, required: true,  placeholder: "Il paraît que..." },
-          { key: 'target', label: 'Cible',     multiline: false, required: false, placeholder: "Personne ou lieu visé (optionnel)" },
-        ],
-        pbCollection: 'kratNews',
-        newsType: 'rumor',
-         successMessage: "Vous échangez quelques mots avec le prisonnier. Il semble apprécier votre compagnie.",
-        primary: false}
+    prison: [
+      { id: 'evasion', label: "Tenter de s'évader", icon: 'directions_run', primary: true,
+        description: "Les barreaux semblent solides. Mais les gardes ont aussi des pauses café.",
+        successMessage: "Dans la confusion, vous vous glissez hors de la cellule !",
+        failMessage: "Le garde vous rattrape alors que vous franchissez la porte. Vous êtes épuisé.",
+      },
     ],
     shop:[
       { id: 'bureauDuMaire', label: 'Bureau du Maire', icon: 'account_balance', primary: true,
@@ -155,8 +174,7 @@ export const CONTEXTUAL_ACTIONS = {
       { id: 'exit',   label: 'Sortir dans la ville',  icon: 'door_front', primary: false },
     ],
     shop: [
-      { id: 'forge',  label: 'Forger',                icon: 'hardware',   primary: true  },
-      { id: 'repair', label: 'Réparer un équipement', icon: 'build',      primary: false },
+      { id: 'costaud',  label: 'Engager un garde du corps',                icon: 'fitness_center',   primary: true  },
       { id: 'caisse', label: 'Braquer la caisse', icon: 'point_of_sale', primary: false,
         illegal: true,
         description: "Le forgeron s'est absenté un instant. Mais il est solide comme l'acier...",
@@ -164,7 +182,7 @@ export const CONTEXTUAL_ACTIONS = {
         reward: { gold: { min: 80, max: 220 } },
         onSuccess: { reputation: -4 },
         onFailure: { reputation: -12 },
-        competenceBonus: 'pickpocket',
+        competenceBonus: 'discretion',
         successMessage: "Mission accomplie. La caisse du forgeron était bien garnie.",
         failMessage: "Le forgeron vous attrape par le col. Vous ne l'aurez pas deux fois.",
       },
@@ -176,8 +194,6 @@ export const CONTEXTUAL_ACTIONS = {
       { id: 'exit', label: 'Sortir dans la ville', icon: 'door_front',    primary: true },
     ],
     shop: [
-      { id: 'buy',  label: 'Acheter',              icon: 'shopping_cart', primary: true  },
-      { id: 'sell', label: 'Vendre',               icon: 'sell',          primary: false },
       { id: 'caisse', label: 'Braquer la caisse', icon: 'point_of_sale', primary: false,
         illegal: true,
         description: "Le marché est animé. Dans la confusion, une occasion se présente.",
@@ -185,7 +201,7 @@ export const CONTEXTUAL_ACTIONS = {
         reward: { gold: { min: 60, max: 160 } },
         onSuccess: { reputation: -3 },
         onFailure: { reputation: -10 },
-        competenceBonus: 'pickpocket',
+        competenceBonus: 'discretion',
         successMessage: "Personne n'a rien vu. Le flot de la foule vous a couvert.",
         failMessage: "Un cri, des regards. Vous vous enfuyez sans rien.",
       },
@@ -195,7 +211,13 @@ export const CONTEXTUAL_ACTIONS = {
   temple: {
     entrance: [
       { id: 'exit',   label: 'Sortir dans la ville', icon: 'door_front',         primary: true },
-      { id: 'donate', label: 'Faire un don',         icon: 'volunteer_activism', primary: false },
+      { id: 'donate', label: 'Faire un don',    
+             icon: 'volunteer_activism',  auto: true
+             , confirmLabel: "Donner de l'argent",
+        description: "Votre générosité envers les divinités pourrait vous porter chance... ou pas.",
+        onSuccess: {gold: { min: -100, max: -10 }, reputation: 1, pointsDivins: 1 },
+        successMessage: "Vous faites un don à la hauteur de votre foi. Vous sentez une présence bienveillante.",
+    primary: false },
     ],
     sleeping: [
       { id: 'pray',   label: 'Prier',                icon: 'self_improvement',   primary: true  },
@@ -207,9 +229,18 @@ export const CONTEXTUAL_ACTIONS = {
       { id: 'exit', label: 'Sortir', icon: 'door_front', primary: true },
     ],
     shop: [
-      { id: 'buy_meds', label: 'Acheter des médicaments', icon: 'medication',       primary: true  },
       { id: 'consult',  label: 'Demander conseil',        icon: 'question_answer',  primary: false },
-      { id: 'analyze',  label: 'Analyser une substance',  icon: 'science',          primary: false },
+        { id: 'caisse', label: 'Braquer la caisse', icon: 'point_of_sale', primary: false,
+        illegal: true,
+        description: "La pharmacie est remplie de choses qui se revendent... En profiter ?",
+        successChance: 0.35,
+        reward: { gold: { min: 60, max: 160 } },
+        onSuccess: { reputation: -2 },
+        onFailure: { reputation: -10 },
+        competenceBonus: 'discretion',
+        successMessage: "Personne n'a rien vu. Le flot de la foule vous a couvert.",
+        failMessage: "Un cri, des regards. Vous vous enfuyez sans rien.",
+      },
       { id: 'work',     label: 'Trier les déchets biologiques non identifiés', icon: 'recycling', primary: false, salary: 55, forme: -8, faim: -3, reputation: 0 },
     ],
   },
@@ -232,8 +263,6 @@ export const CONTEXTUAL_ACTIONS = {
     ],
     shop: [
       { id: 'repair_vehicle',  label: 'Réparer véhicule',    icon: 'build',       primary: true  },
-      { id: 'upgrade_vehicle', label: 'Améliorer véhicule',  icon: 'upgrade',     primary: false },
-      { id: 'buy_parts',       label: 'Acheter pièces',      icon: 'settings',    primary: false },
       { id: 'work',            label: "Vider l'huile de vidange à mains nues", icon: 'car_repair', primary: false, salary: 70, forme: -12, faim: -5, reputation: 0 },
     ],
   },
@@ -287,33 +316,23 @@ export const CONTEXTUAL_ACTIONS = {
 
 export const COMPETENCES = {
   discretion:   { label: 'Discrétion',   icon: 'visibility_off'    },
-  pickpocket:   { label: 'Pickpocket',   icon: 'pan_tool'          },
-  crochetage:   { label: 'Crochetage',   icon: 'key'               },
-  hacking:      { label: 'Hacking',      icon: 'terminal'          },
+  informatique: { label: 'Informatique', icon: 'memory' },
   mentalisme:   { label: 'Mentalisme',   icon: 'psychology_alt'    },
-  baratineur:   { label: 'Baratineur',   icon: 'chat_bubble'       },
-  herboriste:   { label: 'Herboriste',   icon: 'potted_plant'      },
   alchimie:     { label: 'Alchimie',     icon: 'science'           },
   navigation:   { label: 'Navigation',   icon: 'explore'           },
   combat:       { label: 'Combat',       icon: 'swords'            },
+  medecine:     { label: 'Médecine', icon: 'medical_services' },
+    survie:       { label: 'Survie', icon: 'forest' },
+  marchandage:  { label: 'Marchandage', icon: 'price_check' },
 
   // Ajouts
   closeCombat:  { label: 'Combat rapproché', icon: 'sports_martial_arts' },
   tir:          { label: 'Tir', icon: 'gps_fixed' },
-  mecanique:    { label: 'Mécanique', icon: 'precision_manufacturing' },
-  medecine:     { label: 'Médecine', icon: 'medical_services' },
-  informatique: { label: 'Informatique', icon: 'memory' },
-  diplomatie:   { label: 'Diplomatie', icon: 'handshake' },
-  survie:       { label: 'Survie', icon: 'forest' },
+
   magieFeu:   { label: 'Magie du Feu',   icon: 'local_fire_department' },
   magieEau:   { label: 'Magie de l\'Eau',   icon: 'water_drop' },
   magieTerre: { label: 'Magie de la Terre', icon: 'landslide'  },
   magieVent:  { label: 'Magie du Vent',     icon: 'air'        },
-  cuisine:      { label: 'Cuisine', icon: 'restaurant' },
-  commerce:     { label: 'Commerce',    icon: 'paid'        },
-  marchandage:  { label: 'Marchandage', icon: 'price_check' },
-  perception:   { label: 'Perception',  icon: 'visibility'  },
-  investigation:{ label: 'Investigation', icon: 'search'    },
 }
 
 
@@ -326,6 +345,16 @@ export const ITEM_TYPES = {
 
   // ───── Nourriture
 
+  gold: {
+    label: 'Or',
+    icon: 'currency_exchange',
+    type: 'consumable',
+    effects: { gold: +1 },
+    prix: 1,
+    stackable: true,
+    maxStack: 1000,
+    inBuildingShop: 'mine',
+  },
   pain: {
     label: 'Pain',
     icon: 'bakery_dining',
@@ -432,6 +461,14 @@ festin_taverne: {
 },
 // ───── Services adultes (abstraits gameplay)
 
+  lit: {
+    label: 'Lit',
+    icon: 'bedroom_baby',
+    type: 'material',
+    prix: 600,
+    stackable: false,
+    inBuildingShop: 'marche',
+  },
 compagnie_standard: {
   label: 'Petite pipe',
   icon: 'favorite',
@@ -462,6 +499,54 @@ compagnie_influence: {
   rarete: 'rare',
   inBuildingShop: 'taverne',
 },
+
+// -- vehicules
+
+  cheval: {
+    label: 'Cheval de trait',
+    icon: '',
+    type: 'vehicle',
+    effects: { vitesse: 0.9 },
+    prix: 90,
+    rarete: 'common',
+    inBuildingShop: 'garage',
+  },
+  trottinette: {
+    label: 'Trottinette',
+    icon: '',
+    type: 'vehicle',
+    effects: { vitesse: 0.8 },
+    prix: 90,
+    rarete: 'rare',
+    inBuildingShop: 'garage',
+  },
+  autruche_de_course: {
+    label: 'Autruche de fonction',
+    icon: 'cruelty_free',
+    type: 'vehicle',
+    effects: { vitesse: 0.4,}, // Très rapide, mais tourne quand elle veut
+    prix: 300,
+    rarete: 'rare',
+    inBuildingShop: 'garage',
+  }
+  ,palanquin_uber: {
+    label: 'Palanquin porté par des stagiaires',
+    icon: 'groups',
+    type: 'vehicle',
+    effects: { vitesse: 0.9 }, // Très lent, mais permet de porter énormément de loot
+    prix: 500,
+    rarete: 'epic',
+    inBuildingShop: 'garage',
+  }
+  ,caddie_des_steppes: {
+    label: 'Caddie de supermarché tuné',
+    icon: 'shopping_cart',
+    type: 'vehicle',
+    effects: { vitesse: 0.6 }, // Rapide en descente, mais fait un boucan d'enfer
+    prix: 45,
+    rarete: 'common',
+    inBuildingShop: 'garage',
+  },
 // ───── Objets illégaux
 
 faux_papiers: {
@@ -479,7 +564,7 @@ cle_maitre: {
   label: 'Clé maître illégale',
   icon: 'vpn_key',
   type: 'illegal',
-  effects: { competence: 'crochetage' },
+  effects: {  },
   prix: 450,
   rarete: 'rare',
     inBuildingShop: 'garage',
@@ -490,11 +575,10 @@ virus_usb: {
   label: 'Clé USB infectée',
   icon: 'bug_report',
   type: 'illegal',
-  effects: { competence: 'hacking' },
+  effects: {  },
   prix: 520,
   rarete: 'rare',
-    inBuildingShop: 'cybercafe',
-  tags: ['illegal'],
+    inBuildingShop: 'cybercafe'
 },
 
 arme_interdite: {
@@ -535,7 +619,7 @@ artefact_vole: {
   herbes: {
     label: 'Herbes médicinales',
     icon: 'potted_plant',
-    type: 'material',
+    type: 'consumable',
     effects: { forme: +2 },
     prix: 12,
     stackable: true,
@@ -571,170 +655,152 @@ artefact_vole: {
   },
 
   // ───── Livres
-// ───── Livres de compétences
+ 
+  // --- Physique & Survie ---
+  livre_discretion: {
+    label: 'Guide de la discrétion',
+    icon: 'menu_book',
+    type: 'book',
+    effects: { competence: 'discretion' },
+    prix: 90,
+    rarete: 'uncommon',
+    inBuildingShop: 'bibliotheque',
+  },
+  livre_survie: {
+    label: 'Manuel de survie en milieu hostile',
+    icon: 'menu_book',
+    type: 'book',
+    effects: { competence: 'survie' },
+    prix: 75,
+    rarete: 'common',
+    inBuildingShop: 'bibliotheque',
+  },
+  livre_navigation: {
+    label: 'Atlas des constellations',
+    icon: 'menu_book',
+    type: 'book',
+    effects: { competence: 'navigation' },
+    prix: 120,
+    rarete: 'uncommon',
+    inBuildingShop: 'bibliotheque',
+  },
 
-livre_discretion: {
-  label: 'Guide de la discrétion',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'discretion' },
-  prix: 90,
-  rarete: 'uncommon',
-  inBuildingShop: 'bibliotheque',
-},
+  // --- Combat ---
+  livre_combat: {
+    label: 'L\'Art de la Guerre',
+    icon: 'menu_book',
+    type: 'book',
+    effects: { competence: 'combat' },
+    prix: 150,
+    rarete: 'rare',
+    inBuildingShop: 'bibliotheque',
+  },
+  livre_closeCombat: {
+    label: 'Maîtrise du corps à corps',
+    icon: 'menu_book',
+    type: 'book',
+    effects: { competence: 'closeCombat' },
+    prix: 110,
+    rarete: 'uncommon',
+    inBuildingShop: 'bibliotheque',
+  },
+  livre_tir: {
+    label: 'Théorie de la trajectoire',
+    icon: 'menu_book',
+    type: 'book',
+    effects: { competence: 'tir' },
+    prix: 110,
+    rarete: 'uncommon',
+    inBuildingShop: 'bibliotheque',
+  },
 
-livre_pickpocket: {
-  label: 'Art du pickpocket',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'pickpocket' },
-  prix: 95,
-  inBuildingShop: 'bibliotheque',
-},
+  // --- Intellect & Technique ---
+  livre_informatique: {
+    label: 'Architecture des systèmes binaires',
+    icon: 'menu_book',
+    type: 'book',
+    effects: { competence: 'informatique' },
+    prix: 200,
+    rarete: 'rare',
+    inBuildingShop: 'bibliotheque',
+  },
+  livre_medecine: {
+    label: 'Codex Anatomia',
+    icon: 'menu_book',
+    type: 'book',
+    effects: { competence: 'medecine' },
+    prix: 180,
+    rarete: 'rare',
+    inBuildingShop: 'bibliotheque',
+  },
+  livre_alchimie: {
+    label: 'Traité des transmutations',
+    icon: 'menu_book',
+    type: 'book',
+    effects: { competence: 'alchimie' },
+    prix: 160,
+    rarete: 'rare',
+    inBuildingShop: 'bibliotheque',
+  },
 
-livre_crochetage: {
-  label: 'Crochetage avancé',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'crochetage' },
-  prix: 110,
-},
+  // --- Social & Mental ---
+  livre_mentalisme: {
+    label: 'Secrets de l\'esprit',
+    icon: 'menu_book',
+    type: 'book',
+    effects: { competence: 'mentalisme' },
+    prix: 250,
+    rarete: 'epic',
+    inBuildingShop: 'bibliotheque',
+  },
+  livre_marchandage: {
+    label: 'Le petit manuel de la négociation',
+    icon: 'menu_book',
+    type: 'book',
+    effects: { competence: 'marchandage' },
+    prix: 80,
+    rarete: 'common',
+    inBuildingShop: 'bibliotheque',
+  },
 
-livre_hacking: {
-  label: 'Bases du hacking',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'hacking' },
-  prix: 130,
-},
+  // --- Magies Elementaires ---
+  livre_magieFeu: {
+    label: 'Grimoire des flammes éternelles',
+    icon: 'auto_stories',
+    type: 'book',
+    effects: { competence: 'magieFeu' },
+    prix: 300,
+    rarete: 'epic',
+    inBuildingShop: 'bibliotheque',
+  },
+  livre_magieEau: {
+    label: 'Livre des courants et marées',
+    icon: 'auto_stories',
+    type: 'book',
+    effects: { competence: 'magieEau' },
+    prix: 300,
+    rarete: 'epic',
+    inBuildingShop: 'bibliotheque',
+  },
+  livre_magieTerre: {
+    label: 'Chants de la roche',
+    icon: 'auto_stories',
+    type: 'book',
+    effects: { competence: 'magieTerre' },
+    prix: 300,
+    rarete: 'epic',
+    inBuildingShop: 'bibliotheque',
+  },
+  livre_magieVent: {
+    label: 'Le souffle de l\'invisible',
+    icon: 'auto_stories',
+    type: 'book',
+    effects: { competence: 'magieVent' },
+    prix: 300,
+    rarete: 'epic',
+    inBuildingShop: 'bibliotheque',
+  },
 
-livre_mentalisme: {
-  label: 'Initiation au mentalisme',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'mentalisme' },
-  prix: 120,
-},
-
-livre_baratineur: {
-  label: 'Techniques de persuasion',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'baratineur' },
-  prix: 85,
-},
-
-livre_herboriste: {
-  label: 'Traité d’herboristerie',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'herboriste' },
-  prix: 90,
-},
-
-livre_alchimie: {
-  label: 'Principes d’alchimie',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'alchimie' },
-  prix: 140,
-},
-
-livre_navigation: {
-  label: 'Cartographie moderne',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'navigation' },
-  prix: 100,
-},
-
-livre_combat: {
-  label: 'Techniques de combat',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'combat' },
-  prix: 110,
-},
-
-livre_closeCombat: {
-  label: 'Combat rapproché',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'closeCombat' },
-  prix: 115,
-},
-
-livre_tir: {
-  label: 'Manuel de tir',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'tir' },
-  prix: 125,
-},
-
-livre_mecanique: {
-  label: 'Bases de mécanique',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'mecanique' },
-  prix: 105,
-},
-
-livre_medecine: {
-  label: 'Introduction médicale',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'medecine' },
-  prix: 135,
-},
-
-livre_diplomatie: {
-  label: 'Diplomatie pratique',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'diplomatie' },
-  prix: 95,
-},
-
-livre_survie: {
-  label: 'Guide de survie',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'survie' },
-  prix: 100,
-},
-
-livre_cuisine: {
-  label: 'Cuisine avancée',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'cuisine' },
-  prix: 85,
-},
-
-livre_commerce: {
-  label: 'Principes du commerce',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'commerce' },
-  prix: 95,
-},
-
-livre_perception: {
-  label: 'Développer sa perception',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'perception' },
-  prix: 105,
-},
-
-livre_investigation: {
-  label: 'Méthodes d’investigation',
-  icon: 'menu_book',
-  type: 'book',
-  effects: { competence: 'investigation' },
-  prix: 115,
-},
 
 
   // ───── Équipement médiéval
@@ -791,7 +857,7 @@ livre_investigation: {
   tablette: {
     label: 'Tablette numérique',
     icon: 'tablet',
-    type: 'techno',
+    type: 'consumable',
     effects: { intelligence: +1 },
     prix: 200,
     rarete: 'uncommon',
@@ -801,7 +867,7 @@ livre_investigation: {
   drone: {
     label: 'Mini-drone',
     icon: 'flight',
-    type: 'techno',
+    type: 'consumable',
     effects: { perception: +2 },
     prix: 350,
     inBuildingShop: 'cybercafe',
@@ -823,9 +889,17 @@ livre_investigation: {
     label: 'Fer brut',
     icon: 'construction',
     type: 'material',
-    prix: 20,
+    prix: 40,
     stackable: true,
     inBuildingShop: 'forge',
+  },
+  planche: {
+    label: 'Planche de bois',
+    icon: 'construction',
+    type: 'material',
+    prix: 20,
+    stackable: true,
+    inBuildingShop: 'marche',
   },
 
   cuir: {
@@ -837,6 +911,23 @@ livre_investigation: {
     stackable: true,
   },
 
+  plastique: {
+    label: 'Plastique',
+    icon: 'texture',
+    type: 'material',
+    inBuildingShop: 'marche',
+    prix: 22,
+    stackable: true,
+  },
+
+  peauDeChat: {
+    label: 'Peau de chat',
+    icon: 'cats',
+    type: 'material',
+    illegal: true,
+    prix: 18,
+    stackable: true,
+  },
   poudre_alchimique: {
     label: 'Poudre alchimique',
     icon: 'science',
@@ -876,6 +967,21 @@ export const CITY_GEO = {
 // Tout le reste (nom, type, roomConfig, cityId, position) vient de PocketBase (kratBuildings).
 
 // ─── Templates de spawn de PNJ ───────────────────────────────────────────────
+// ─── Vitesse de déplacement selon le véhicule en inventaire ─────────────────
+// Retourne le meilleur multiplicateur vitesse trouvé (le plus petit = le plus rapide).
+// Sans véhicule → 1.0 (coût inchangé).
+
+export function getSpeedMultiplier(inventaire = []) {
+  let best = 1.0
+  for (const slot of inventaire) {
+    const def = ITEM_TYPES[slot.typeId]
+    if (def?.type === 'vehicle' && def.effects?.vitesse != null) {
+      if (def.effects.vitesse < best) best = def.effects.vitesse
+    }
+  }
+  return best
+}
+
 // Chaque entrée décrit un type de PNJ instanciable via actions.spawnNpc(template).
 // Champs obligatoires  : name, role, stats, hp
 // Champs optionnels    : action, avatarUrl, icon, label, description, maxInGroupe
@@ -892,6 +998,18 @@ export const NPC_SPAWN_TEMPLATES = {
     description: "Agent d'ordre public chargé de protéger le maire.",
     icon:        'local_police',
     maxInGroupe: 5,
+  },
+  bodyguard: {
+    name:        'Colosse Dmitri',
+    role:        'bodyguard',
+    action:      'Suivre',
+    avatarUrl:   'https://papillon-paragliders.com/wp-content/uploads/2021/08/bodyguard.png',
+    stats:       { force: 9, intelligence: 3, charisme: 2 },
+    hp:          { current: 20, max: 20 },
+    label:       'Garde du corps',
+    description: "Un colosse aux bras comme des jambons. Il vous suivra partout, sans poser de questions.",
+    icon:        'security',
+    maxInGroupe: 2,
   },
   // soldat: { name: 'Soldat', role: 'guard', stats: { force: 8, intelligence: 2, charisme: 1 }, hp: { current: 16, max: 16 }, icon: 'shield', maxInGroupe: 10 },
   // bimbo:  { name: 'Bimbo',  role: 'escort', stats: { force: 2, intelligence: 3, charisme: 9 }, hp: { current: 8, max: 8 },  icon: 'favorite', maxInGroupe: 3 },
@@ -913,7 +1031,7 @@ export const BUILDING_TYPE_IMAGES = {
   cybercafe:'https://thumbs.dreamstime.com/b/joueurs-dans-un-cybercaf%C3%A9-%C3%A9clair%C3%A9-au-n%C3%A9on-412881673.jpg',
   garage:'https://www.aurus-compta.fr/wp-content/uploads/2022/09/ouvrir-un-garage-automobile.jpg',
   laboratoire:'https://www.galveston.com/wp-content/uploads/2019/08/The-Witchery-800x600.jpg',
-
+  maison: 'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=900&auto=format&fit=crop',
 }
 
 export const BUILDING_ASSETS = {
@@ -969,14 +1087,29 @@ export const HIRE_COST_BY_ROLE = Object.fromEntries(Object.entries(ROLES).map(([
 export const HIRE_COST_DEFAULT = 25
 
 // ─── Rencontres aléatoires (jamais en base) ───────────────────────────────────
-
 export const RANDOM_ENCOUNTERS = {
   city: [
-    { id: 'pickpocket', name: 'Pickpocket',          stats: { force: 4, intelligence: 6, charisme: 3 }, hp: { current: 8,  max: 8  } },
-    { id: 'ivrogne',    name: 'Ivrogne agressif',     stats: { force: 7, intelligence: 2, charisme: 4 }, hp: { current: 12, max: 12 } },
+    { id: 'pickpocket', name: 'Pickpocket', stats: { force: 4, intelligence: 6, charisme: 3 }, hp: { current: 8, max: 8 }, loot: { gold: 10 } },
+    { id: 'ivrogne', name: 'Ivrogne agressif', stats: { force: 7, intelligence: 2, charisme: 4 }, hp: { current: 12, max: 12 }, loot: { biere: 2, fromage: 1, pain: 1 } },
+        { id: 'policier', name: 'Policier', stats: { force: 9, intelligence: 2, charisme: 4 }, hp: { current: 30, max: 30 }, loot: { biere: 1, gold: 5, matraque:1 } },
+
+    // Nouveautés urbaines
+    { id: 'mendiant_pro', name: 'Mendiant en auto-entrepreneur', stats: { force: 2, intelligence: 8, charisme: 9 }, hp: { current: 6, max: 6 }, loot: { gold: 50, livre_marchandage: 1 } },
+    { id: 'controleur', name: 'Contrôleur de Palanquin', stats: { force: 5, intelligence: 7, charisme: 2 }, hp: { current: 20, max: 20 }, loot: { poudre_alchimique: 1, gold: 5 } },
+    { id: 'fanatique', name: 'Prêcheur de la mise à jour 1.2', stats: { force: 3, intelligence: 9, charisme: 10 }, hp: { current: 10, max: 10 }, loot: { dague: 1 } },
+    { id: 'rat_pizza', name: 'Rat mutant amateur de pizza', stats: { force: 4, intelligence: 3, charisme: 1 }, hp: { current: 5, max: 5 }, loot: { ration: 1, fromage: 1 } },
+    { id: 'influenceur', name: 'Barde influenceur (en plein live)', stats: { force: 2, intelligence: 5, charisme: 12 }, hp: { current: 15, max: 15 }, loot: { compagnie_standard: 1, gold: 100 } },
   ],
   worldmap: [
-    { id: 'bandit',     name: 'Bandit de grand chemin', stats: { force: 6, intelligence: 4, charisme: 3 }, hp: { current: 15, max: 15 } },
-    { id: 'loup',       name: 'Loup',                   stats: { force: 8, intelligence: 1, charisme: 1 }, hp: { current: 18, max: 18 } },
+    { id: 'bandit', name: 'Bandit de grand chemin', stats: { force: 6, intelligence: 4, charisme: 3 }, hp: { current: 15, max: 15 }, loot: { gold: 20 } },
+    { id: 'loup', name: 'Loup', stats: { force: 8, intelligence: 1, charisme: 1 }, hp: { current: 18, max: 18 }, loot: { cuir: 1 } },
+    { id: 'policier', name: 'Police nationale', stats: { force: 7, intelligence: 5, charisme: 8 }, hp: { current: 40, max: 40 }, loot: {  gold: 15, matraque:1 } },
+  
+    // Nouveautés sur la carte
+    { id: 'vendeur_aspi', name: 'Vendeur d\'aspirateurs à domicile perdu', stats: { force: 4, intelligence: 6, charisme: 8 }, hp: { current: 14, max: 14 }, loot: { livre_mentalisme: 1, gold: 30 } },
+    { id: 'golem_pneu', name: 'Golem de vieux pneus recyclés', stats: { force: 12, intelligence: 2, charisme: 1 }, hp: { current: 40, max: 40 }, loot: { plastique: 5, gold: 2 } },
+    { id: 'stagiaire_magie', name: 'Stagiaire en Magie du Vent (perte de contrôle)', stats: { force: 3, intelligence: 4, charisme: 5 }, hp: { current: 12, max: 12 }, loot: { livre_magieFeu: 1, livre_magieEau: 1 } },
+    { id: 'cycliste_lycra', name: 'Cycliste de l\'extrême en retard', stats: { force: 9, intelligence: 4, charisme: 3 }, hp: { current: 22, max: 22 }, loot: { medikit: 1, casque: 1 } },
+    { id: 'licorne_claquee', name: 'Licorne sous anti-dépresseurs', stats: { force: 6, intelligence: 5, charisme: 4 }, hp: { current: 25, max: 25 }, loot: { cuir: 1, plat_viande: 10 } },
   ],
 }

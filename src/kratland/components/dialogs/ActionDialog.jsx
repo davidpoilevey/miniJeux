@@ -112,7 +112,7 @@ function RollPanel({ action, player, onExecute, onClose }) {
   const isAuto          = !!action.auto
   const competenceLevel = isAuto ? 0 : (player.stats.competences?.[action.competenceBonus] ?? 0)
   const baseChance      = action.successChance ?? 0.5
-  const bonus           = competenceLevel * 0.05
+  const bonus           = competenceLevel * 0.1
   const effectiveChance = isAuto ? 1 : Math.min(0.95, baseChance + bonus)
   const buttonLabel     = action.confirmLabel ?? (isAuto ? 'Confirmer' : 'Tenter le coup')
 

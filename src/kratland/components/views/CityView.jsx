@@ -1,26 +1,22 @@
 /**
- * CityView — Carte de la ville, style WorldMap.
- *
- * Règles d'interaction :
- *  - Bâtiment   → enterBuilding
- *  - Sortie     → exitToWorld
- *  - Case vide  → déplacer (coût forme)
- *  - NPC/Joueur sur la même case :
- *      action === 'Attaquer' → startCombat automatique
- *      sinon                  → CharacterDialog
+ * CityView — Carte de la ville avec menu contextuel au clic.
  */
 import { useMemo, useState, useEffect, useRef } from 'react'
 import Box            from '@mui/material/Box'
 import Typography     from '@mui/material/Typography'
-import Tooltip        from '@mui/material/Tooltip'
 import Paper          from '@mui/material/Paper'
+import Menu           from '@mui/material/Menu'
+import MenuItem       from '@mui/material/MenuItem'
 import { useKrat }    from '../../context/KratContext'
 import { pb }         from '../../services/pb'
+import { getSpeedMultiplier } from '../../data/catalog'
 import CharacterDialog from '../dialogs/CharacterDialog'
+import { GridCell as BaseGridCell } from './GridCell'
+import imgTerre from '../../../bactery/images/fondTerre.jpg';
 
 const CELL_SIZE = 45
 
-// ─── Terrain et bâtiments en emoji ───────────────────────────────────────────
+// ─── Terrain ──────────────────────────────────────────────────────────────────
 
 function rollCityTerrain() {
   const r = Math.random()
@@ -39,6 +35,7 @@ const BUILDING_EMOJI = {
   bibliotheque: '📚',
   pharmacie:    '⚕️',
   prison:       '⛓️',
+  maison:       '🏠',
 }
 
 // ─── Cellule ──────────────────────────────────────────────────────────────────
@@ -48,63 +45,44 @@ function GridCell({ pos, info, isPlayer, groupeSize, canReach, onClick }) {
   const hasChars   = chars.length > 0
   const aggressive = chars.find(c => c._type === 'npc' && c.action === 'Attaquer')
 
-  let bgColor = 'transparent'
-  if (isPlayer)   bgColor = 'rgba(0,200,80,0.18)'
-  else if (building)  bgColor = 'rgba(180,140,80,0.18)'
-  else if (exit)      bgColor = 'rgba(200,160,40,0.12)'
-  else if (hasChars)  bgColor = aggressive ? 'rgba(200,30,30,0.12)' : 'rgba(80,80,200,0.10)'
+  let bgColor = null
+  if (building)  bgColor = 'rgba(180,140,80,0.25)'
+  else if (exit) bgColor = 'rgba(200,160,40,0.15)'
+  else if (hasChars) bgColor = aggressive ? 'rgba(200,30,30,0.15)' : 'rgba(80,80,200,0.12)'
 
   const tipParts = []
   if (isPlayer)  tipParts.push('Vous êtes ici')
   if (building)  tipParts.push(building.type ?? building.id)
   if (exit)      tipParts.push('Sortie')
   if (hasChars)  tipParts.push(chars.map(c => `${c.name}${c.role ? ` (${c.role})` : ''}`).join(', '))
-  if (!canReach && !building && !exit && !isPlayer) tipParts.push(`Forme insuffisante`)
+  if (!canReach && !building && !exit && !isPlayer) tipParts.push('Forme insuffisante')
   const tip = tipParts.join(' · ') || null
 
   const primaryCharEmoji = chars[0]?._type === 'player' ? '👤' : (aggressive ? '😠' : '🧑')
 
-  const cell = (
-    <Box
-      onClick={() => onClick(pos, info)}
-      sx={{
-        position: 'relative',
-        width: CELL_SIZE, height: CELL_SIZE,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        border: '0.5px solid',
-        borderColor: exit ? 'rgba(200,160,40,0.5)' : 'rgba(0,0,0,0.06)',
-        bgcolor: bgColor,
-        cursor: canReach || building || exit || isPlayer || hasChars ? 'pointer' : 'not-allowed',
-        opacity: !canReach && !building && !exit && !isPlayer && !hasChars ? 0.35 : 1,
-        transition: 'background-color 0.08s',
-        fontSize: CELL_SIZE * 0.58,
-        lineHeight: 1,
-        userSelect: 'none',
-        '&:hover': { bgcolor: 'rgba(255,255,255,0.12)' },
-        flexShrink: 0,
-      }}
+  let content, isDecor = false
+  if (isPlayer)      { content = groupeSize > 0 ? `🧙‍♂️+${groupeSize}` : '🧙‍♂️' }
+  else if (building) { content = BUILDING_EMOJI[building.type] ?? '🏠' }
+  else if (exit)     { content = '🚪' }
+  else if (hasChars) { content = chars.length > 1 ? `${primaryCharEmoji}${chars.length}` : primaryCharEmoji }
+  else               { content = terrain; isDecor = !!terrain }
+
+  return (
+    <BaseGridCell
+      pos={pos}
+      size={CELL_SIZE}
+      tooltip={tip}
+      bgColor={bgColor}
+      canReach={canReach}
+      isPlayer={isPlayer}
+      isDecor={isDecor}
+      cursor={canReach || building || exit || isPlayer || hasChars ? 'pointer' : 'not-allowed'}
+      indicator={!isPlayer && building && aggressive ? 'error.main' : null}
+      onClick={(e) => onClick(pos, info, e)}
     >
-      {isPlayer
-        ? (groupeSize > 0 ? `🧙‍♂️+${groupeSize}` : '🧙‍♂️')
-        : building
-          ? (BUILDING_EMOJI[building.type] ?? '🏠')
-          : exit
-            ? '🚪'
-            : hasChars
-              ? (chars.length > 1 ? `${primaryCharEmoji}${chars.length}` : primaryCharEmoji)
-              : terrain}
-
-      {/* Dot rouge si NPC agressif cohabite avec un bâtiment */}
-      {!isPlayer && building && aggressive && (
-        <Box sx={{ position: 'absolute', top: 2, right: 2,
-          width: 5, height: 5, bgcolor: 'error.main', borderRadius: '50%' }} />
-      )}
-    </Box>
+      {content}
+    </BaseGridCell>
   )
-
-  return tip
-    ? <Tooltip title={tip} placement="top" arrow><span>{cell}</span></Tooltip>
-    : cell
 }
 
 // ─── Composant principal ──────────────────────────────────────────────────────
@@ -112,11 +90,13 @@ function GridCell({ pos, info, isPlayer, groupeSize, canReach, onClick }) {
 export default function CityView() {
   const { state, actions } = useKrat()
   const { city, player, groupe } = state
-  const forme    = player.jauges.forme.current
-  const playerPos = player.location.position
+  const forme      = player.jauges.forme.current
+  const playerPos  = player.location.position
+  const speedMult  = getSpeedMultiplier(player.inventaire ?? [])
 
   const [cityChars,    setCityChars]    = useState([])
   const [selectedChar, setSelectedChar] = useState(null)
+  const [menuState,    setMenuState]    = useState(null)
 
   // Terrain figé
   const terrainRef = useRef(null)
@@ -130,7 +110,6 @@ export default function CityView() {
     terrainRef.current = { width: city.width, height: city.height, map }
   }
 
-  // Fetch PNJs + joueurs présents dans la ville (hors bâtiments)
   useEffect(() => {
     if (!city?.id) return
     let cancelled = false
@@ -161,7 +140,7 @@ export default function CityView() {
     return () => { cancelled = true }
   }, [city?.id])
 
-  // Combat automatique si NPC(s) agressif(s) sur la même case que le joueur
+  // Combat automatique si NPC(s) agressif(s) sur la même case
   useEffect(() => {
     if (!playerPos || !cityChars.length) return
     const aggressors = cityChars.filter(c => {
@@ -184,7 +163,6 @@ export default function CityView() {
       if (!pos) return
       map[pos] = { ...map[pos], chars: [...(map[pos]?.chars ?? []), c] }
     })
-    // Injecter le terrain dans chaque case (sans écraser les autres infos)
     for (let r = 0; r < city.height; r++)
       for (let c = 0; c < city.width; c++) {
         const pos = `${c},${r}`
@@ -195,53 +173,122 @@ export default function CityView() {
 
   const [pc, pr] = (playerPos ?? '0,0').split(',').map(Number)
 
-  function handleClick(pos, info) {
-    const chars = info?.chars ?? []
+  // Fiable sans ownerId en PB — on contrôle le format de buildingId
+  const hasHouse = city.buildings.some(b => b.id === `maison_${player.id}`)
 
-    // Clic sur la case du joueur : ouvrir dialog si des persos sont là
-    if (pos === playerPos) {
-      const talkable = chars.find(c => c._type !== 'npc' || c.action !== 'Attaquer')
-      if (talkable) setSelectedChar(talkable)
-      return
-    }
+  const inv = player.inventaire ?? []
+  const canBuildHouse = !hasHouse
+    && (inv.find(i => i.typeId === 'planche')?.qty  ?? 0) >= 10
+    && (inv.find(i => i.typeId === 'fer_brut')?.qty ?? 0) >= 4
 
-    if (info?.building) { actions.enterBuilding(info.building.id); return }
-    if (info?.exit)     { actions.exitToWorld();                    return }
-
+  function getCost(pos) {
     const [tc, tr] = pos.split(',').map(Number)
     const distance = Math.abs(tc - pc) + Math.abs(tr - pr)
-    const cost     = Math.round(distance * 10) / 100
-    if (forme < cost) return
+    return Math.round(distance * speedMult * 10) / 100
+  }
 
-    actions.movePlayer(pos, cost)
+  function handleCellClick(pos, info, event) {
+    const chars    = info?.chars ?? []
+    const canReach = forme >= getCost(pos)
+    if (!canReach && !info?.building && !info?.exit && pos !== playerPos && !chars.length) return
+    event.stopPropagation()
+    setMenuState({ pos, info, cost: getCost(pos), canReach, anchorPos: { top: event.clientY, left: event.clientX } })
+  }
 
-    // Interaction après le déplacement
-    const aggressors = chars.filter(c => c._type === 'npc' && c.action === 'Attaquer')
-    if (aggressors.length > 0) {
-      actions.startCombat(aggressors)
-    } else if (chars.length > 0) {
-      setSelectedChar(chars[0])
+  function closeMenu() { setMenuState(null) }
+
+  function handleMove(pos, cost, info, options = {}) {
+    actions.movePlayer(pos, cost, options)
+    const chars       = info?.chars ?? []
+    const firstTalkable = chars.find(c => c._type !== 'npc' || c.action !== 'Attaquer')
+    if (firstTalkable) setSelectedChar(firstTalkable)
+  }
+
+  // ── Menu items ──────────────────────────────────────────────────────────────
+
+  function renderMenuItems() {
+    if (!menuState) return null
+    const { pos, info, cost, canReach } = menuState
+    const chars    = info?.chars ?? []
+    const isPlayer = pos === playerPos
+    const items    = []
+
+    if (isPlayer) {
+      // Building or exit on player's cell
+      if (info?.building) items.push(
+        <MenuItem key="enter" onClick={() => { closeMenu(); actions.enterBuilding(info.building.id) }}>
+          🚪 Entrer dans le bâtiment
+        </MenuItem>
+      )
+      if (info?.exit) items.push(
+        <MenuItem key="exit-world" onClick={() => { closeMenu(); actions.exitToWorld() }}>
+          🌍 Quitter la ville
+        </MenuItem>
+      )
+      // Talkable chars on same cell
+      chars.filter(c => c._type !== 'npc' || c.action !== 'Attaquer').forEach(c => items.push(
+        <MenuItem key={`talk-${c.id}`} onClick={() => { closeMenu(); setSelectedChar(c) }}>
+          💬 Parler à {c.name}
+        </MenuItem>
+      ))
+      // Build house
+      if (!hasHouse) items.push(
+        <MenuItem key="build" disabled={!canBuildHouse} onClick={() => { closeMenu(); actions.buildHouse() }}>
+          <Box>
+            <Typography variant="body2">🏗️ Construire une cabane</Typography>
+            <Typography variant="caption" color={canBuildHouse ? 'text.secondary' : 'error'}>
+              10 planches · 4 fer brut
+            </Typography>
+          </Box>
+        </MenuItem>
+      )
+    } else if (info?.building) {
+      items.push(
+        <MenuItem key="enter" onClick={() => { closeMenu(); actions.enterBuilding(info.building.id) }}>
+          🚪 Entrer dans le bâtiment
+        </MenuItem>
+      )
+    } else if (info?.exit) {
+      items.push(
+        <MenuItem key="exit-world" onClick={() => { closeMenu(); actions.exitToWorld() }}>
+          🌍 Quitter la ville
+        </MenuItem>
+      )
+    } else if (canReach) {
+      items.push(
+        <MenuItem key="move" onClick={() => { const s = menuState; closeMenu(); handleMove(s.pos, s.cost, s.info) }}>
+          🚶 Se déplacer <Typography variant="caption" sx={{ ml: 1, color: 'text.secondary' }}>({cost.toFixed(1)} forme)</Typography>
+        </MenuItem>
+      )
+      items.push(
+        <MenuItem key="discreet" disabled={forme < cost * 2}
+          onClick={() => { const s = menuState; closeMenu(); handleMove(s.pos, s.cost, s.info, { discreet: true }) }}>
+          🥷 Discrètement <Typography variant="caption" sx={{ ml: 1, color: 'text.secondary' }}>({(cost * 2).toFixed(1)} forme, 1% rencontre)</Typography>
+        </MenuItem>
+      )
     }
+
+    if (!items.length) items.push(<MenuItem key="none" disabled>Aucune action disponible</MenuItem>)
+    return items
   }
 
   return (
     <Box sx={{ p: 2 }}>
-      {/* En-tête */}
       <Typography variant="h4" sx={{ mb: 2, fontWeight: 'bold' }}>
         🏙️ {city.name}
       </Typography>
 
-      {/* Grille */}
       <Box sx={{
         display: 'inline-flex', flexDirection: 'column',
-        border: '3px solid #2c3e50', bgcolor: '#e8e4d8',
+        borderRadius: 1,
+        boxShadow: '0 0 0 2px rgba(44,62,80,0.45), 0 6px 24px rgba(0,0,0,0.22)',
+       background:`url(${imgTerre})`
       }}>
         {Array.from({ length: city.height }, (_, row) => (
           <Box key={row} sx={{ display: 'flex' }}>
             {Array.from({ length: city.width }, (_, col) => {
-              const pos      = `${col},${row}`
-              const distance = Math.abs(col - pc) + Math.abs(row - pr)
-              const cost     = Math.round(distance * 10) / 100
+              const pos  = `${col},${row}`
+              const cost = getCost(pos)
               return (
                 <GridCell
                   key={pos}
@@ -250,7 +297,7 @@ export default function CityView() {
                   isPlayer={pos === playerPos}
                   groupeSize={pos === playerPos ? (groupe?.length ?? 0) : 0}
                   canReach={forme >= cost}
-                  onClick={handleClick}
+                  onClick={handleCellClick}
                 />
               )
             })}
@@ -258,14 +305,12 @@ export default function CityView() {
         ))}
       </Box>
 
-      {/* Footer */}
       <Paper sx={{ mt: 2, p: 1.5, bgcolor: '#2c3e50', color: '#fff',
         display: 'flex', gap: 3, flexWrap: 'wrap', alignItems: 'center', borderRadius: 2 }}>
         <Typography variant="body2">📍 {playerPos}</Typography>
         <Typography variant="body2">⚡ Forme : {forme.toFixed(1)}</Typography>
-        <Typography variant="body2">
-          👤 Maire : {city.mayor || '—'}
-        </Typography>
+        <Typography variant="body2">👤 Maire : {city.mayor || '—'}</Typography>
+        {hasHouse && <Typography variant="body2">🏠 Propriétaire</Typography>}
         {cityChars.length > 0 && (
           <Typography variant="body2" sx={{ ml: 'auto' }}>
             👥 {cityChars.length} présence{cityChars.length > 1 ? 's' : ''} détectée{cityChars.length > 1 ? 's' : ''}
@@ -273,7 +318,16 @@ export default function CityView() {
         )}
       </Paper>
 
-      {/* Dialog interactions personnage */}
+      {/* Menu contextuel */}
+      <Menu
+        open={!!menuState}
+        onClose={closeMenu}
+        anchorReference="anchorPosition"
+        anchorPosition={menuState?.anchorPos}
+      >
+        {renderMenuItems()}
+      </Menu>
+
       <CharacterDialog
         target={selectedChar}
         open={!!selectedChar}

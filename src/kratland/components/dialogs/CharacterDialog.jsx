@@ -44,12 +44,13 @@ const ACTIONS = [
   },
   {
     id: 'derober', label: 'Dérober', icon: 'backpack', muiColor: 'warning',
-    type: 'roll', stat: 'intelligence', baseChance: 0.30, illegal: true,
+    type: 'roll', stat: 'intelligence', baseChance: 0.30,
+    competenceBonus:'discretion', illegal: true,
     description: 'Subtiliser discrètement de l\'or ou un objet.',
-    reward: { gold: { min: 1, max: 8 } },
+    reward: { gold: { min: 1, max: 28 } },
     successMessage: 'Vos mains sont plus rapides que ses yeux !',
-    failMessage: 'Pris sur le fait ! −1 Réputation.',
-    onFailure: { reputation: -1 },
+    failMessage: 'Pris sur le fait ! −5 Réputation.',
+    onFailure: { reputation: -5 },
   },
   {
     id: 'attaquer', label: 'Attaquer', icon: 'swords', muiColor: 'error',

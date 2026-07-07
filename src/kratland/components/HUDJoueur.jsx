@@ -17,6 +17,8 @@ import Divider        from '@mui/material/Divider'
 import IconButton     from '@mui/material/IconButton'
 import Tooltip        from '@mui/material/Tooltip'
 import Chip           from '@mui/material/Chip'
+import Menu           from '@mui/material/Menu'
+import MenuItem       from '@mui/material/MenuItem'
 import MaterialIcon   from './MaterialIcon'
 import KratAccordion  from './KratAccordion'
 import AdminPanel     from './admin/AdminPanel'
@@ -165,13 +167,19 @@ function NewsItem({ news }) {
 
 // ─── Mini-avatar d'un membre du groupe ───────────────────────────────────────
 
-function GroupeMember({ member }) {
-  const hp     = member.hp ?? { current: 1, max: 1 }
-  const hpPct  = Math.max(0, Math.round((hp.current / hp.max) * 100))
+function GroupeMember({ member, onFire }) {
+  const [anchorEl, setAnchorEl] = useState(null)
+  const hp      = member.hp ?? { current: 1, max: 1 }
+  const hpPct   = Math.max(0, Math.round((hp.current / hp.max) * 100))
   const hpColor = hpPct > 60 ? '#4caf50' : hpPct > 30 ? '#ff9800' : '#f44336'
+
   return (
-    <Tooltip title={`${member.name}${member.role ? ` · ${member.role}` : ''}`} placement="right">
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+    <>
+      <Box
+        onClick={(e) => setAnchorEl(e.currentTarget)}
+        sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+              cursor: 'pointer', '&:hover': { opacity: 0.8 } }}
+      >
         <Avatar
           src={member.avatarUrl}
           alt={member.name}
@@ -181,7 +189,37 @@ function GroupeMember({ member }) {
           <Box sx={{ width: `${hpPct}%`, height: '100%', bgcolor: hpColor, borderRadius: 2 }} />
         </Box>
       </Box>
-    </Tooltip>
+
+      <Menu
+        anchorEl={anchorEl}
+        open={!!anchorEl}
+        onClose={() => setAnchorEl(null)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        slotProps={{ paper: { sx: { minWidth: 172 } } }}
+      >
+        <Box sx={{ px: 2, py: 1.25, borderBottom: '1px solid', borderColor: 'divider' }}>
+          <Typography sx={{ fontSize: '0.82rem', fontWeight: 700, lineHeight: 1.3 }}>
+            {member.name}
+          </Typography>
+          {member.role && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontSize: '0.65rem' }}>
+              {member.role}
+            </Typography>
+          )}
+          <Typography variant="caption" sx={{ display: 'block', fontSize: '0.62rem', color: 'warning.dark', mt: 0.5 }}>
+            💰 50 or / jour
+          </Typography>
+        </Box>
+        <MenuItem
+          onClick={() => { setAnchorEl(null); onFire(member.id) }}
+          sx={{ color: 'error.main', fontSize: '0.78rem', gap: 1, py: 0.75 }}
+        >
+          <MaterialIcon icon="person_remove" sx={{ fontSize: '0.9rem' }} />
+          Renvoyer
+        </MenuItem>
+      </Menu>
+    </>
   )
 }
 
@@ -196,9 +234,10 @@ const JAUGE_LABELS = {
 // ─── Composant principal ──────────────────────────────────────────────────────
 
 export default function HUDJoueur() {
-  const { state } = useKrat()
-  const { player, groupe } = state
+  const { state, actions } = useKrat()
+  const { player, groupe, building } = state
   const { jauges, stats } = player
+  const inShop = building?.currentRoomId === 'shop'
   const [adminOpen,   setAdminOpen]   = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [news,        setNews]        = useState([])
@@ -253,7 +292,7 @@ export default function HUDJoueur() {
 
           {groupe.length > 0 && (
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '4px', width: 56, justifyContent: 'flex-start' }}>
-              {groupe.map(m => <GroupeMember key={m.id} member={m} />)}
+              {groupe.map(m => <GroupeMember key={m.id} member={m} onFire={actions.fireNpc} />)}
             </Box>
           )}
         </Box>
@@ -341,23 +380,54 @@ export default function HUDJoueur() {
               Inventaire vide.
             </Typography>
           ) : (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25 }}>
               {(player.inventaire ?? []).map((slot, i) => {
                 const def = ITEM_TYPES[slot.typeId]
                 if (!def) return null
+                const stdEffects = def.effects
+                  ? Object.keys(def.effects).some(k => ['forme','faim','reputation','gold','pointsDivins'].includes(k))
+                  : false
+                const canUse  = def.type === 'consumable' || def.type === 'book'
+                const canSell = !!def.prix && inShop
                 return (
-                  <Box key={i} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 0.5 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <MaterialIcon icon={def.icon} sx={{ fontSize: '1rem', color: 'text.secondary' }} />
-                      <Typography variant="overline" sx={{ fontSize: '0.6rem', color: 'text.primary', lineHeight: 1 }}>
-                        {def.label}
-                      </Typography>
-                    </Box>
+                  <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 0.5, py: 0.25,
+                    borderRadius: 1, '&:hover': { bgcolor: 'rgba(0,0,0,0.03)' } }}>
+                    {/* Icône + label */}
+                    <MaterialIcon icon={def.icon} sx={{ fontSize: '0.95rem', color: 'text.secondary', flexShrink: 0 }} />
+                    <Typography variant="overline" sx={{ fontSize: '0.58rem', color: 'text.primary', lineHeight: 1, flex: 1, minWidth: 0 }} noWrap>
+                      {def.label}
+                    </Typography>
+                    {/* Qty */}
                     {slot.qty > 1 && (
-                      <Typography sx={{ fontSize: '0.75rem', fontWeight: 700, color: 'text.secondary' }}>
+                      <Typography sx={{ fontSize: '0.65rem', fontWeight: 700, color: 'text.disabled', flexShrink: 0 }}>
                         ×{slot.qty}
                       </Typography>
                     )}
+                    {/* Actions */}
+                    <Box sx={{ display: 'flex', gap: 0, flexShrink: 0 }}>
+                      {canUse && (
+                        <Tooltip title={stdEffects ? `Utiliser${Object.entries(def.effects).filter(([k])=>['forme','faim','reputation'].includes(k)).map(([k,v])=>' '+k+' '+(v>0?'+':'')+v).join('')}` : 'Utiliser'} placement="top">
+                          <IconButton size="small" onClick={() => actions.useItem(slot.typeId)}
+                            sx={{ p: '2px', color: 'success.main', opacity: 0.7, '&:hover': { opacity: 1 } }}>
+                            <MaterialIcon icon="bolt" sx={{ fontSize: '0.85rem' }} />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      <Tooltip title={canSell ? `Vendre (${Math.max(1,Math.floor(def.prix*0.5))}g)` : 'Vendre (shop uniquement)'} placement="top">
+                        <span>
+                          <IconButton size="small" disabled={!canSell} onClick={() => actions.sellItem(slot.typeId)}
+                            sx={{ p: '2px', color: 'warning.main', opacity: canSell ? 0.7 : 0.3, '&:hover': { opacity: 1 } }}>
+                            <MaterialIcon icon="sell" sx={{ fontSize: '0.85rem' }} />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
+                      <Tooltip title="Jeter" placement="top">
+                        <IconButton size="small" onClick={() => actions.dropItem(slot.typeId)}
+                          sx={{ p: '2px', color: 'error.main', opacity: 0.5, '&:hover': { opacity: 1 } }}>
+                          <MaterialIcon icon="delete" sx={{ fontSize: '0.85rem' }} />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
                   </Box>
                 )
               })}
@@ -366,12 +436,41 @@ export default function HUDJoueur() {
         </KratAccordion>
 
         <KratAccordion title="Capacités" icon="bolt">
-          <Typography variant="body2" color="text.disabled" sx={{ py: 0.5, fontStyle: 'italic' }}>
-            Aucune capacité.
-          </Typography>
+          {Object.keys(stats.competences ?? {}).length === 0 ? (
+            <Typography variant="body2" color="text.disabled" sx={{ py: 0.5, fontStyle: 'italic' }}>
+              Aucune capacité.
+            </Typography>
+          ) : (
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, pt: 0.5 }}>
+              {Object.entries(stats.competences).map(([key, value]) => {
+                const def = COMPETENCES[key]
+                if (!def) return null
+                return (
+                  <Tooltip key={key} title={value > 0 ? `+${value}` : `${value}`} placement="top">
+                    <Chip
+                      size="small"
+                      icon={<MaterialIcon icon={def.icon} sx={{ fontSize: '0.8rem !important' }} />}
+                      label={def.label}
+                      sx={{
+                        height: 22,
+                        fontSize: '0.6rem',
+                        fontWeight: 600,
+                        bgcolor: value > 0 ? 'rgba(46,125,50,0.1)' : 'rgba(198,40,40,0.08)',
+                        color:   value > 0 ? 'success.dark' : 'error.dark',
+                        border: '1px solid',
+                        borderColor: value > 0 ? 'success.light' : 'error.light',
+                        '& .MuiChip-icon': { color: value > 0 ? 'success.main' : 'error.main' },
+                        '& .MuiChip-label': { px: 0.75 },
+                      }}
+                    />
+                  </Tooltip>
+                )
+              })}
+            </Box>
+          )}
         </KratAccordion>
 
-        <KratAccordion title="Journal" icon="menu_book" alwaysOpen>
+        <KratAccordion title="Journal" icon="menu_book" alwaysOpen maxBodyHeight={220}>
           {news.length === 0 ? (
             <Typography variant="body2" color="text.disabled" sx={{ py: 0.5, fontStyle: 'italic' }}>
               Aucune nouvelle pour l'instant.

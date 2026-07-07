@@ -6,6 +6,7 @@ import DialogActions  from '@mui/material/DialogActions'
 import Box            from '@mui/material/Box'
 import Typography     from '@mui/material/Typography'
 import Button         from '@mui/material/Button'
+import IconButton     from '@mui/material/IconButton'
 import Chip           from '@mui/material/Chip'
 import Divider        from '@mui/material/Divider'
 import MaterialIcon   from '../MaterialIcon'
@@ -41,6 +42,7 @@ const EFFECT_LABELS = {
   intelligence:      { label: 'Intelligence',   icon: 'psychology',         color: 'text.primary' },
   charisme:          { label: 'Charisme',       icon: 'record_voice_over',  color: 'text.primary' },
   bonusForce:        { label: 'Force',          icon: 'fitness_center',     color: '#2e7d32' },
+  vitesse:        { label: 'Vitesse',          icon: 'fitness_center',     color: '#2e7d32' },
   bonusIntelligence: { label: 'Intelligence',   icon: 'psychology',         color: '#2e7d32' },
   bonusCharisme:     { label: 'Charisme',       icon: 'record_voice_over',  color: '#2e7d32' },
   perception:        { label: 'Perception',     icon: 'visibility',         color: 'text.primary' },
@@ -94,9 +96,10 @@ export default function AchatDialog({ item, open, onClose }) {
   const { state, actions } = useKrat()
   const { player }         = state
 
-  const [currentPrice,    setCurrentPrice]    = useState(0)
-  const [marchanderUsed,  setMarchanderUsed]  = useState(false)
+  const [currentPrice,     setCurrentPrice]     = useState(0)
+  const [marchanderUsed,   setMarchanderUsed]   = useState(false)
   const [marchanderResult, setMarchanderResult] = useState(null) // null | 'success' | 'fail'
+  const [qty,              setQty]              = useState(1)
 
   // Réinitialise à chaque ouverture
   useEffect(() => {
@@ -104,13 +107,18 @@ export default function AchatDialog({ item, open, onClose }) {
       setCurrentPrice(item.prix)
       setMarchanderUsed(false)
       setMarchanderResult(null)
+      setQty(1)
     }
   }, [open, item])
 
   if (!item) return null
 
-  const rarity    = RARITY_META[item.rarete ?? 'common']
-  const canAfford = player.gold >= currentPrice
+  const rarity       = RARITY_META[item.rarete ?? 'common']
+  const currentOwned = (player.inventaire ?? []).find(i => i.typeId === item.key)?.qty ?? 0
+  const maxStack     = item.maxStack ?? 99
+  const maxQty       = Math.max(1, maxStack - currentOwned)
+  const totalPrice   = currentPrice * (item.stackable ? qty : 1)
+  const canAfford    = player.gold >= totalPrice
 
   function handleMarchander() {
     const base    = MARCHANDER_PROBA[item.rarete ?? 'common']
@@ -128,7 +136,7 @@ export default function AchatDialog({ item, open, onClose }) {
   const alreadyOwned = !item.stackable && (player.inventaire ?? []).some(i => i.typeId === item.key)
 
   function handleBuy() {
-    actions.buyItem(item.key, currentPrice)
+    actions.buyItem(item.key, currentPrice, qty)
     onClose()
   }
 
@@ -165,7 +173,7 @@ export default function AchatDialog({ item, open, onClose }) {
             </Box>
           )}
 
-          {/* Prix */}
+          {/* Prix + quantité */}
           <Box sx={{
             display:      'flex',
             alignItems:   'center',
@@ -181,11 +189,11 @@ export default function AchatDialog({ item, open, onClose }) {
               <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
                 {marchanderResult === 'success' && (
                   <Typography sx={{ fontSize: '0.9rem', color: 'text.disabled', textDecoration: 'line-through' }}>
-                    {item.prix}g
+                    {item.prix * qty}g
                   </Typography>
                 )}
                 <Typography sx={{ fontSize: '1.4rem', fontFamily: '"Noto Serif", serif', fontWeight: 700, color: canAfford ? 'warning.dark' : 'error.main' }}>
-                  {currentPrice}g
+                  {totalPrice}g
                 </Typography>
               </Box>
             </Box>
@@ -198,6 +206,32 @@ export default function AchatDialog({ item, open, onClose }) {
               </Typography>
             </Box>
           </Box>
+
+          {/* Sélecteur de quantité (stackable uniquement) */}
+          {item.stackable && (
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+              <Typography variant="overline" color="text.secondary" sx={{ fontSize: '0.6rem', flexShrink: 0 }}>
+                Quantité
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5,
+                border: '1px solid', borderColor: 'divider', borderRadius: 2, px: 0.5 }}>
+                <IconButton size="small" onClick={() => setQty(q => Math.max(1, q - 1))} disabled={qty <= 1}>
+                  <MaterialIcon icon="remove" sx={{ fontSize: '1rem' }} />
+                </IconButton>
+                <Typography sx={{ minWidth: 28, textAlign: 'center', fontWeight: 700, fontSize: '0.95rem' }}>
+                  {qty}
+                </Typography>
+                <IconButton size="small" onClick={() => setQty(q => Math.min(maxQty, q + 1))} disabled={qty >= maxQty}>
+                  <MaterialIcon icon="add" sx={{ fontSize: '1rem' }} />
+                </IconButton>
+              </Box>
+              {qty > 1 && (
+                <Typography variant="caption" color="text.secondary">
+                  {currentPrice}g × {qty}
+                </Typography>
+              )}
+            </Box>
+          )}
 
           {/* Résultat du marchandage */}
           {marchanderResult && (
@@ -248,7 +282,7 @@ export default function AchatDialog({ item, open, onClose }) {
           startIcon={<MaterialIcon icon={alreadyOwned ? 'block' : 'payments'} sx={{ fontSize: '1rem !important' }} />}
           sx={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 700 }}
         >
-          {alreadyOwned ? 'Déjà possédé' : `Acheter ${currentPrice}g`}
+          {alreadyOwned ? 'Déjà possédé' : `Acheter ${totalPrice}g`}
         </Button>
       </DialogActions>
 

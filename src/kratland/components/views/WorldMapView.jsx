@@ -1,9 +1,13 @@
 
 
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { Box, Typography, Tooltip, Paper } from '@mui/material'
+import { Box, Typography, Paper } from '@mui/material'
 import { useKrat } from '../../context/KratContext'
 import { pb }       from '../../services/pb'
+import { getSpeedMultiplier } from '../../data/catalog'
+import { GridCell } from './GridCell'
+
+import imgHerbe from '../../data/fondMap.jpg';
 
 function rollTerrainEmoji() {
   const r = Math.random()
@@ -24,6 +28,7 @@ export default function WorldMapView() {
   const forme = player.jauges.forme.current
   const playerPos = player.location.position
   const [pc, pr] = (playerPos ?? '0,0').split(',').map(Number)
+  const speedMult = getSpeedMultiplier(player.inventaire ?? [])
 
   // Terrain généré une seule fois et figé dans un ref
   const terrainRef = useRef(null)
@@ -118,7 +123,7 @@ const worldChars = all.filter(c => {
     // Déplacement classique
     const [tc, tr] = pos.split(',').map(Number)
     const distance = Math.abs(tc - pc) + Math.abs(tr - pr)
-    const cost = Math.round(distance * 10) / 100
+    const cost = Math.round(distance * speedMult * 10) / 100
     if (forme >= cost) actions.movePlayer(pos, cost)
   }
 
@@ -129,7 +134,9 @@ const worldChars = all.filter(c => {
 
       <Box sx={{
         display: 'inline-flex', flexDirection: 'column',
-        border: '3px solid #2c3e50', bgcolor: '#f0f0f0'
+        borderRadius: 1,
+        boxShadow: '0 0 0 2px rgba(44,62,80,0.45), 0 6px 24px rgba(0,0,0,0.22)',
+         background:`url(${imgHerbe})`, backgroundSize: 'cover',
       }}>
         {Array.from({ length: world.height }, (_, r) => (
           <Box key={r} sx={{ display: 'flex' }}>
@@ -140,26 +147,31 @@ const worldChars = all.filter(c => {
               const terrain = terrainRef.current.map[pos]
 
               const distance = Math.abs(c - pc) + Math.abs(r - pr)
-              const cost = Math.round(distance * 10) / 100
+              const cost = Math.round(distance * speedMult * 10) / 100
               const canReach = forme >= cost
 
+              const isDecor = !isPlayer && !cellData && !!terrain
+              const bgColor = cellData?.type === 'city'
+                ? 'rgba(100,130,200,0.2)'
+                : (cellData?.type === 'npc' || cellData?.type === 'player')
+                  ? 'rgba(80,80,200,0.12)'
+                  : null
+
               return (
-                <Tooltip key={pos} title={cellData?.info?.name || (isPlayer ? "Moi" : `Coût: ${cost}`)}>
-                  <Box
-                    onClick={() => handleClick(pos, cellData)}
-                    sx={{
-                      width: CELL_SIZE, height: CELL_SIZE,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '22px', cursor: canReach ? 'pointer' : 'default',
-                      border: '0.1px solid rgba(0,0,0,0.05)',
-                      opacity: canReach || isPlayer ? 1 : 0.4,
-                      bgcolor: isPlayer ? 'rgba(0,255,0,0.1)' : 'transparent',
-                      '&:hover': { bgcolor: 'rgba(0,0,0,0.05)' }
-                    }}
-                  >
-                    {isPlayer ? '🧙‍♂️' : (cellData?.emoji || terrain)}
-                  </Box>
-                </Tooltip>
+                <GridCell
+                  key={pos}
+                  pos={pos}
+                  size={CELL_SIZE}
+                  tooltip={cellData?.info?.name || (isPlayer ? 'Moi' : `Coût: ${cost}`)}
+                  bgColor={bgColor}
+                  canReach={canReach}
+                  isPlayer={isPlayer}
+                  isDecor={isDecor}
+                  cursor={canReach ? 'pointer' : 'default'}
+                  onClick={() => handleClick(pos, cellData)}
+                >
+                  {isPlayer ? '🧙‍♂️' : (cellData?.emoji || terrain)}
+                </GridCell>
               )
             })}
           </Box>
