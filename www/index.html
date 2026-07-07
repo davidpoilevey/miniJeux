@@ -203,6 +203,27 @@
     <p class="chuck-credit" id="chuck-credit"></p>
   </section>
 
+  <!-- UTILITAIRES -->
+  <section class="section">
+    <h2>⚡ Utilitaires</h2>
+
+    <a class="card" href="https://www.google.com/maps/dir/?api=1&origin=Haguenau&destination=Strasbourg&travelmode=driving" target="_blank">
+      <div class="card-icon c-blue">🚗</div>
+      <div class="card-text">
+        <div class="card-title">Trafic Haguenau → Strasbourg</div>
+        <div class="card-sub" id="traffic-sub">Chargement de l'info trafic…</div>
+      </div>
+    </a>
+
+    <div class="card" style="cursor: default;">
+      <div class="card-icon c-pink">⛽</div>
+      <div class="card-text">
+        <div class="card-title">SP95 autour de Haguenau</div>
+        <div class="card-sub" id="fuel-sub">Chargement des prix…</div>
+      </div>
+    </div>
+  </section>
+
   <!-- LIENS -->
   <section class="section">
     <h2>Mes liens</h2>
@@ -328,6 +349,100 @@
     }
 
     loadChuckFact();
+
+    // Prix SP95 autour de Haguenau — open data gouv (sans clé, CORS ouvert)
+    async function loadFuelPrices() {
+      const el = document.getElementById('fuel-sub');
+      const nice = s => (s || '').toLowerCase().replace(/(^|[\s'-])\w/g, c => c.toUpperCase());
+      try {
+        const params = new URLSearchParams({
+          where: "within_distance(geom, geom'POINT(7.7905 48.8156)', 10km) AND sp95_prix IS NOT NULL",
+          select: 'adresse,ville,sp95_prix',
+          order_by: 'sp95_prix',
+          limit: '3',
+        });
+        const res = await fetch('https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records?' + params);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (!data.results?.length) throw new Error('aucune station');
+        el.innerHTML = data.results.map(s => {
+          const q = encodeURIComponent(`${s.adresse} ${s.ville}`);
+          return `<a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" style="display:block; color:inherit; text-decoration:none; padding:2px 0;">
+            <strong>${Number(s.sp95_prix).toFixed(3).replace('.', ',')} €</strong> — ${escapeHtml(nice(s.adresse))}, ${escapeHtml(nice(s.ville))} 📍
+          </a>`;
+        }).join('');
+      } catch (err) {
+        console.log('Erreur prix carburants:', err);
+        el.innerHTML = '<a href="https://www.prix-carburants.gouv.fr" target="_blank" style="color:inherit;">Prix indisponibles — voir le site officiel</a>';
+      }
+    }
+    loadFuelPrices();
+
+    // Info trafic Haguenau → Strasbourg — TomTom (2500 req/jour gratuites)
+    const TOMTOM_KEY = 'p2Vip45dscw8ksXw9YfneoiIQRIMhRBh';
+
+    async function loadTraffic() {
+      const el = document.getElementById('traffic-sub');
+      if (TOMTOM_KEY === 'TA_CLE_TOMTOM_ICI') {
+        el.textContent = 'Clé TomTom manquante — clic pour Google Maps';
+        return;
+      }
+
+      // Corridor Haguenau → Strasbourg (A340/A35)
+      const routeUrl = `https://api.tomtom.com/routing/1/calculateRoute/48.8156,7.7905:48.5734,7.7521/json?key=${TOMTOM_KEY}&traffic=true`;
+      const fields = encodeURIComponent('{incidents{properties{iconCategory,from,to,events{description}}}}');
+      const incidentsUrl = `https://api.tomtom.com/traffic/services/5/incidentDetails?key=${TOMTOM_KEY}&bbox=7.65,48.52,7.90,48.85&language=fr-FR&categoryFilter=1,6,8,9,14&timeValidityFilter=present&fields=${fields}`;
+
+      const [route, inc] = await Promise.allSettled([
+        fetch(routeUrl).then(r => r.json()),
+        fetch(incidentsUrl).then(r => r.json()),
+      ]);
+
+      let html = '';
+
+      if (route.status === 'fulfilled' && route.value.routes?.length) {
+        const s = route.value.routes[0].summary;
+        const min = Math.round(s.travelTimeInSeconds / 60);
+        const delay = Math.round((s.trafficDelayInSeconds || 0) / 60);
+        const etat = delay >= 15 ? '🔴 trafic très perturbé' : delay >= 5 ? '🟠 trafic chargé' : '🟢 trafic fluide';
+        html += `<div><strong>${min} min</strong>${delay > 0 ? ` (+${delay} min)` : ''} · ${etat}</div>`;
+      }
+
+      if (inc.status === 'fulfilled' && inc.value.incidents?.length) {
+        const icons = { 1: '🚨', 6: '🐌', 8: '⛔', 9: '🚧', 14: '🔧' };
+        const priorite = { 1: 0, 6: 1, 14: 2, 9: 3, 8: 4 }; // accident > bouchon > panne > travaux > fermeture
+        const fr = {
+          'Closed': 'Route fermée', 'Roadworks': 'Travaux', 'Queuing traffic': 'Bouchon',
+          'Stationary traffic': 'Trafic à l\'arrêt', 'Slow traffic': 'Trafic ralenti',
+          'Accident': 'Accident', 'Broken down vehicle': 'Véhicule en panne',
+        };
+        // Ne garder que le corridor Haguenau → Strasbourg
+        const corridor = /\b(A4|A35|A340|N63|N1063|D263)\b|Haguenau|Brumath|H(œ|oe)rdt|Vendenheim|Reichstett|Mundolsheim|Souffelweyersheim|Schiltigheim|Bischheim/i;
+        const vus = new Set();
+        const pertinents = inc.value.incidents
+          .filter(i => {
+            const p = i.properties || {};
+            const zone = `${p.from || ''} ${p.to || ''}`;
+            if (!corridor.test(zone)) return false;
+            const cle = [p.from, p.to].sort().join('|'); // doublons aller/retour
+            if (vus.has(cle)) return false;
+            vus.add(cle);
+            return true;
+          })
+          .sort((a, b) => (priorite[a.properties?.iconCategory] ?? 9) - (priorite[b.properties?.iconCategory] ?? 9));
+
+        html += pertinents.slice(0, 3).map(i => {
+          const p = i.properties || {};
+          const brut = p.events?.[0]?.description || 'Incident';
+          const desc = fr[brut] || brut;
+          const zone = p.from && p.to ? ` — entre ${p.from} et ${p.to}` : (p.from ? ` — ${p.from}` : '');
+          return `<div>${icons[p.iconCategory] || '⚠️'} ${escapeHtml(desc)}${escapeHtml(zone)}</div>`;
+        }).join('');
+      }
+
+      el.innerHTML = html || 'Info trafic indisponible — clic pour Google Maps';
+    }
+    loadTraffic();
 
     // PocketBase (utilisé par logVisitor ET les commentaires)
     const pb = new PocketBase('https://bdd.poilevey.org');
