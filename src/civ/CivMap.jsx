@@ -2,13 +2,13 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Stage, Layer, Image as KonvaImage, Text, Circle, Rect, Image, Line, RegularPolygon, Group } from 'react-konva';
 
 
-import { focusNextUnit, getHexagonPoints, getHexNeighbors, getMovementResult, hexToPixel, moveSelectedUnit } from './utils/hexUtils';
-import { useCivContext, useLockNavigationOnMap, useTrapBackNavigation } from './CivContext';
+import { focusNextUnit, getDistanceHex, getHexagonPoints, getHexNeighbors, getMovementResult, hexToPixel, moveSelectedUnit } from './utils/hexUtils';
+import { useCivContext } from './CivContext';
 import ActionMenu from './utils/ActionMenu';
 import { AllImageSources } from './utils/imagesImports';
 import { usePreloadedImages } from './utils/hooks';
 import { CityNameDialog, CivilDialog } from './utils/Dialogs';
-import { CIVILIZATIONS } from './data/civilzationTypes';
+import { BARBARE_CIV, CIVILIZATIONS } from './data/civilzationTypes';
 import { getTileCost } from './utils/utils';
 import { addFeatureInTile, calculateTileYield, FEATURE_YIELD } from './utils/mapGenerator';
 
@@ -22,7 +22,7 @@ export const STAGE_WIDTH = 4000;
 export const STAGE_HEIGHT = 2000;
 
 export const getCivMeta = (ownerId) => {
-    const civ = CIVILIZATIONS.find(c => c.id === ownerId);
+    const civ = [...CIVILIZATIONS, BARBARE_CIV].find(c => c.id === ownerId);
     return civ || { name: 'Inconnu', flag: '❔', color: '#999' };
 };
 
@@ -33,8 +33,15 @@ const CivMap = ({ setSelected, handleNavigate }) => {
         selectedUnitPos, getCityByTile, playerNation,
         setSelectedUnitPos, addEvent, fxTrigger
         , diplomaticInteraction, setDiplomaticInteraction,
-        moveUnit, fortifyUnit, removeUnit, selectCity
+        moveUnit, fortifyUnit, removeUnit, selectCity,
+        healAround, detonateNuke, isRunning, setRunning, mapConfig,
+        techsUnlocked
     } = useCivContext();
+
+    // 🗺️ Cartographie : le brouillard inexploré laisse deviner le terrain.
+    // 🌍 Géographie : la carte entière est révélée (terrain + villes, pas les unités).
+    const hasCartographie = techsUnlocked.includes('cartographie');
+    const hasGeographie = techsUnlocked.includes('geographie');
 
     const [selectedTile, setSelectedTile] = useState(null);
     const [showMenuAt, setShowMenuAt] = useState(null);
@@ -179,10 +186,12 @@ const CivMap = ({ setSelected, handleNavigate }) => {
             if (!tile.unit && !tile.hasCity) {
 
                 const tileCost = getTileCost(tile);
-                const canMove = tile.unit == null && selectedUnitPos.unit.remainingMovement >= tileCost;
+                // uniquement les cases voisines ici : sans ce check, un clic lointain
+                // sans chemin praticable téléportait l'unité à travers la carte
+                const distance = getDistanceHex(selectedUnitPos, tile);
+                const canMove = distance === 1 && selectedUnitPos.unit.remainingMovement >= tileCost;
 
-                const distance = 1; // pour l’instant, cases voisines
-                if (canMove && !tile.unit && selectedUnitPos.unit.remainingMovement >= distance) {
+                if (canMove) {
                     moveUnit(selectedUnitPos, tile);
                     if (selectedUnitPos.unit.remainingMovement <= 0)
                         setSelectedUnitPos(null);
@@ -213,9 +222,23 @@ const CivMap = ({ setSelected, handleNavigate }) => {
             case 'disband':
                 removeUnit(selectedUnitPos); break;
             case 'road':
-                selectedUnitPos.hasRoad = true;
+                // via setTiles, sinon la route n'apparaît qu'au tour suivant
+                setTiles(prev =>
+                    prev.map(tile =>
+                        tile.q === selectedUnitPos.q && tile.r === selectedUnitPos.r
+                            ? { ...tile, hasRoad: true }
+                            : tile
+                    )
+                );
                 addEvent("route construite");
                  setSelectedUnitPos(null);
+                break;
+            case 'heal':
+            case 'prier':
+                healAround(selectedUnitPos);
+                break;
+            case 'nuke':
+                detonateNuke(selectedUnitPos);
                 break;
             case 'labour':
                 if (!selectedUnitPos.feature) {
@@ -269,7 +292,9 @@ const CivMap = ({ setSelected, handleNavigate }) => {
         const handleKeyDown = (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                nextTurn();
+                if (isRunning) return; // pas de double tour si on martèle Entrée
+                setRunning(true);
+                setTimeout(nextTurn, 1);
             } else if (['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
                 if (selectedUnitPos == null)
                     return;
@@ -288,7 +313,7 @@ const CivMap = ({ setSelected, handleNavigate }) => {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [selectedUnitPos, tiles, playerNation, setSelectedUnitPos]);
+    }, [selectedUnitPos, tiles, playerNation, setSelectedUnitPos, isRunning, nextTurn]);
    
      useEffect(() => {
         
@@ -313,11 +338,12 @@ const CivMap = ({ setSelected, handleNavigate }) => {
     return (
         <> 
         {/* <Box ref={mapContainerRef} onScroll={handleScroll} sx={{width: '100%', height: '100%', overflow: 'auto'}}> */}
-            <Stage width={STAGE_WIDTH} height={STAGE_HEIGHT}>
+            <Stage width={mapConfig?.width || STAGE_WIDTH} height={mapConfig?.height || STAGE_HEIGHT}>
             <Layer>
                 {tiles.map(tile => {
                     const { x, y } = hexToPixel(tile);
                     const isSelected = selectedTile?.q === tile.q && selectedTile?.r === tile.r;
+                    const explored = tile.explored || hasGeographie;
 
                     const city = tile.hasCity ? getCityByTile(tile) : null;
                     const cityOwner = city?.owner;
@@ -354,13 +380,15 @@ const CivMap = ({ setSelected, handleNavigate }) => {
                                     height={TILE_SIZE * 2}
 
                                     listening={false}
-                                    fill={tile.explored ? (tile.visible ? 'transparent' : 'rgba(0,0,0,0.3') : 'rgba(0, 0, 0, 0.89)'}
+                                    fill={explored
+                                        ? (tile.visible ? 'transparent' : 'rgba(0,0,0,0.3)')
+                                        : (hasCartographie ? 'rgba(0, 0, 0, 0.93)' : 'black')}
                                 />
                             </Group>
 
 
 
-                            {tile.feature && tile.explored && (
+                            {tile.feature && explored && (
                                 <KonvaImage
                                     x={x - SPRITE_SIZE / 2}
                                     y={y - SPRITE_SIZE / 2}
@@ -372,7 +400,8 @@ const CivMap = ({ setSelected, handleNavigate }) => {
 
                             )}
 
-                            {tile.hasCity && (
+                            {/* pas d'espionnage gratuit : une ville n'apparaît que si la zone est explorée */}
+                            {tile.hasCity && explored && (
                                 <>
                                     <KonvaImage
                                         x={x - SPRITE_SIZE / 2}
@@ -422,6 +451,28 @@ const CivMap = ({ setSelected, handleNavigate }) => {
                                             offsetY={-10}
                                             listening={false}
                                         />
+
+                                        {/* 💤 ville du joueur sans production : ça se voit ! */}
+                                        {cityOwner?.id === playerNation.id
+                                            && !city?.currentProduction
+                                            && (city?.productionQueue?.length || 0) === 0 && (
+                                            <Group listening={false}>
+                                                <Circle
+                                                    x={26}
+                                                    y={-26}
+                                                    radius={12}
+                                                    fill="rgba(198, 40, 40, 0.95)"
+                                                    stroke="white"
+                                                    strokeWidth={2}
+                                                />
+                                                <Text
+                                                    x={26 - 8}
+                                                    y={-26 - 8}
+                                                    text="💤"
+                                                    fontSize={16}
+                                                />
+                                            </Group>
+                                        )}
                                     </Group>
 
                                 </>
@@ -522,7 +573,7 @@ const tileid=tile.q+'-'+tile.r;
                             {/* 🦶 Mouvements restants (texte) */}
                             {Array.from({ length: unitType.movement }).map((_, i) => (
                                 <Circle
-                                    key={'c-'+tileid}
+                                    key={'c-'+tileid+'-'+i}
                                     x={x - 12 + i * 7}
                                     y={y + 18}
                                     radius={3}

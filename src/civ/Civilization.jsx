@@ -5,8 +5,9 @@ import CivSump from './CivSumUp';
 import CivRecherche from './CivRecherche';
 import { CivContextProvider, useCivContext } from './CivContext';
 import CivCity from './CivCity';
-import { NationDialog } from './utils/Dialogs';
-import CivAppBar from './utils/CivAppBar';
+import CivPalmares from './CivPalmares';
+import { AudienceDialog, GameOverDialog, NationDialog } from './utils/Dialogs';
+import CivDashboard from './utils/CivDashboard';
 import { MiniMap } from './CivMiniMap';
 import { HEX_SIZE, hexToPixel } from './utils/hexUtils';
 import { LoadGameMenu, MainMenu } from './utils/MainMenu';
@@ -17,18 +18,31 @@ import { Alert, CircularProgress, Typography } from '@mui/material';
 const Civilization = () => {
   const [selected, setSelected] = useState('map');
   const [selectedNation, setSelectedNation] = useState(null);
-  return <CivContextProvider setSelected={setSelected} selectedNation={selectedNation}>
+  const [gameConfig, setGameConfig] = useState({ opponents: 7, mapSize: 'moyenne' });
+  // incrémenter gameId remonte tout le provider : reset propre pour "Retour au menu"
+  const [gameId, setGameId] = useState(0);
+
+  const restartGame = () => {
+    setSelectedNation(null);
+    setSelected('map');
+    setGameId(id => id + 1);
+  };
+
+  return <CivContextProvider key={gameId} setSelected={setSelected}
+    selectedNation={selectedNation} gameConfig={gameConfig}>
     <CivilizationMain selected={selected} setSelected={setSelected}
-      setSelectedNation={setSelectedNation} />
+      setSelectedNation={setSelectedNation} setGameConfig={setGameConfig}
+      restartGame={restartGame} />
   </CivContextProvider>
 }
 
-const CivilizationMain = ({ selected, setSelectedNation, setSelected }) => {
+const CivilizationMain = ({ selected, setSelectedNation, setSelected, setGameConfig, restartGame }) => {
   const [gameState, setGameState] = useState('mainMenu');
   const [open, setOpen] = useState(true);
 
-  const handleNationSelect = (nation) => {
-    setSelectedNation(nation); // on en parlera juste après
+  const handleNationSelect = (nation, setup) => {
+    if (setup) setGameConfig(setup);
+    setSelectedNation(nation);
     setOpen(false);
     setGameState('playing');
   };
@@ -59,7 +73,7 @@ const CivilizationMain = ({ selected, setSelectedNation, setSelected }) => {
 
     case 'playing':
       return (
-        <PlayingCiv setSelected={setSelected} selected={selected} />
+        <PlayingCiv setSelected={setSelected} selected={selected} restartGame={restartGame} />
       );
 
     default:
@@ -67,10 +81,10 @@ const CivilizationMain = ({ selected, setSelectedNation, setSelected }) => {
   }
 };
 
-const PlayingCiv = ({ setSelected, selected, }) => {
+const PlayingCiv = ({ setSelected, selected, restartGame }) => {
   const [currentViewport, setCurrentViewport] = useState({ x: 0, y: 0, width: 100, height: 100 });
   const mapContainerRef = React.useRef(null);
-  const { isRunning } = useCivContext();
+  const { isRunning, gameResult, pendingAudience, resolveAudience } = useCivContext();
   const [savedScrollPosition, setSavedScrollPosition] = useState({ x: 0, y: 0 });
   // Un état pour stocker la position et la taille de la vue
 
@@ -127,14 +141,18 @@ const PlayingCiv = ({ setSelected, selected, }) => {
       case 'map': return <CivMap setSelected={setSelected} handleNavigate={handleNavigate}/>;
       case 'recherche': return <CivRecherche />;
       case 'sump': return <CivSump setSelected={setSelected} handleNavigate={handleNavigate}/>;
+      case 'palmares': return <CivPalmares />;
       default:
     }
   }
-  return <Box sx={{ flexGrow: 1, height: '100%',overscrollBehaviorX: 'none' }}>
-    <CivAppBar setSelected={setSelected} selected={selected} />
+  return <Box sx={{ display: 'flex', height: '100vh', overscrollBehaviorX: 'none' }}>
+    {/* 🎛️ le poste de commandement, à gauche */}
+    <CivDashboard setSelected={setSelected} selected={selected} />
     <Box ref={mapContainerRef} onScroll={handleScroll}
-      sx={{ width: '100%', height: '100%', overflow: 'auto', position: 'relative' }}>
+      sx={{ flex: 1, height: '100%', overflow: 'auto', position: 'relative' }}>
       {renderView()}
+      <GameOverDialog result={gameResult} onRestart={restartGame} />
+      <AudienceDialog audience={pendingAudience} onResolve={resolveAudience} />
       {selected === 'map' && (
         <MiniMap mainHexSize={HEX_SIZE}
           onNavigate={handleNavigate}

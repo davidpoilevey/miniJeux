@@ -185,7 +185,7 @@ export const Garnison = ({ city }) => {
 const ProductionEnCours = ({ removeFromQueue, selectedCity }) => {
   const production_TYPES = Object.assign({}, BUILDING_TYPES, UNIT_TYPES);
 
-  return <Box sx={{ flex: 1, p: 1, borderRadius: 10, backgroundSize: 'cover', p: 1, backgroundImage: `url(${imgFondPanel})` }}>
+  return <Box sx={{ flex: 1, p: 1, borderRadius: 10, backgroundSize: 'cover', backgroundImage: `url(${imgFondPanel})` }}>
 
     <Typography variant="h6" >Production en cours</Typography>
 
@@ -261,15 +261,17 @@ const BatimentCard = ({ city, building }) => {
     setCities(prev =>
       prev.map(cite => {
         if (cite.id !== city.id) return cite;
-        const updated = { ...cite };
+        const updated = {
+          ...cite,
+          resources: { ...cite.resources },
+          productionQueue: [...(cite.productionQueue || []), selectedUnitId],
+        };
 
         // Déduction des ressources
         for (const [res, amount] of Object.entries(lastCost)) {
           updated.resources[res] = (updated.resources[res] || 0) - amount;
         }
 
-        // Ajout à la file de production
-        updated.productionQueue.push(selectedUnitId);
         if (!updated.currentProduction) {
           updated.currentProduction = selectedUnitId;
           updated.productionProgress = 0;

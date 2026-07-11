@@ -36,33 +36,42 @@ export const computeCityResources = (city, tiles) => {
   for (const tile of relevantTiles) {
     const yieldData = tile.yield || {};
 
-    // Bonus de civilisation basé sur le type de terrain + bonus par non assigned tile
-    const civTileBonus = (civ?.bonuses?.[tile.terrain] || {});
-    if(civ?.bonuses?.happiness) civTileBonus.happiness=civ.bonuses.happiness;
-    if(civTileBonus.happiness==null) civTileBonus.happiness=0;
- const maxCitizens = city.population;
-  const assignedCount = city.assignedTiles?.length || 0;
-  const freeCitizens = maxCitizens - assignedCount;
-  if(freeCitizens>0) civTileBonus.happiness+=freeCitizens
+    // Bonus de civilisation basé sur le type de terrain (c'est tile.type, pas tile.terrain !)
+    // et surtout sans muter civ.bonuses, sinon le bonus gonfle de tour en tour
+    const civTileBonus = civ?.bonuses?.[tile.type] || {};
     for (const [res, val] of Object.entries(yieldData)) {
       const bonus = civTileBonus[res] || 0;
       result[res] = (result[res] || 0) + val + bonus;
     }
   }
 
-  // 2. Bonus des bâtiments
+  // Bonheur : bonus de la civ + un point par citoyen libre (non affecté à une tuile)
+  const freeCitizens = Math.max(0, city.population - (city.assignedTiles?.length || 0));
+  const happinessBonus = (civ?.bonuses?.happiness || 0) + freeCitizens;
+  if (happinessBonus !== 0) result.happiness = (result.happiness || 0) + happinessBonus;
+
+  // 2. Production des bâtiments (brute : le bonus de civ est appliqué globalement dans nextTurn)
   for (const buildingId of city.buildings || []) {
     const building = BUILDING_TYPES[buildingId];
     if (building?.production) {
       for (const [res, val] of Object.entries(building.production)) {
-        const base = val;
-        const bonusMultiplier = 1 + (civ?.buildingBonus || 0); // ex: +20% bonus
-        const total = Math.round(base * bonusMultiplier);
-        result[res] = (result[res] || 0) + total;
+        result[res] = (result[res] || 0) + val;
       }
     }
   }
 
+  return result;
+};
+
+// Gain net par tour, bonus de civilisation inclus — la même formule que nextTurn.
+// Sert à l'aperçu "production par tour" de la vue ville : ce que le joueur verra
+// vraiment tomber dans ses caisses avec l'assignation actuelle des citoyens.
+export const computeCityGainsPreview = (city, tiles) => {
+  const base = computeCityResources(city, tiles);
+  const buildingBonus = city.owner?.buildingBonus || 0;
+  const result = {};
+  for (const [res, amount] of Object.entries(base))
+    result[res] = Math.ceil(amount * (1 + buildingBonus));
   return result;
 };
 

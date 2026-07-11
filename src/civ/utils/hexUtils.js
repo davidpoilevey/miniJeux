@@ -4,6 +4,20 @@ import { getTileCost } from "./utils";
 export const HEX_SIZE = 40; // rayon
 const SQRT_3 = Math.sqrt(3);
 
+// Index q,r -> tile, mis en cache par référence de tableau : chaque setTiles crée
+// un nouveau tableau donc le cache se renouvelle tout seul. Les mutations d'unités
+// ne changent pas les coordonnées, l'index reste valide.
+const tileIndexCache = new WeakMap();
+export const getTileMap = (tiles) => {
+  let index = tileIndexCache.get(tiles);
+  if (!index) {
+    index = new Map(tiles.map(t => [`${t.q},${t.r}`, t]));
+    tileIndexCache.set(tiles, index);
+  }
+  return index;
+};
+export const getTileAt = (tiles, q, r) => getTileMap(tiles).get(`${q},${r}`);
+
 export const hexToPixel = ({ q, r }) => {
   const x = HEX_SIZE * SQRT_3 * (q + r / 2);
   const y = HEX_SIZE * 1.5 * r;
@@ -77,24 +91,21 @@ export const getHexNeighbors = ({ q, r }, tiles) => {
     return directions.map(dir => ({ q: q + dir.q, r: r + dir.r }));
   }
 
+  const tileMap = getTileMap(tiles);
   return directions
-    .map(dir => {
-      const nq = q + dir.q;
-      const nr = r + dir.r;
-      return tiles.find(t => t.q === nq && t.r === nr);
-    })
+    .map(dir => tileMap.get(`${q + dir.q},${r + dir.r}`))
     .filter(Boolean);
 };
 
 
 export const getSurroundingTiles = (center, tiles, radius=2) => {
   const { q, r } = center;
+  const tileMap = getTileMap(tiles);
 
   const result = [];
   for (let dq = -radius; dq <= radius; dq++) {
     for (let dr = Math.max(-radius, -dq - radius); dr <= Math.min(radius, -dq + radius); dr++) {
-      const pos = { q: q + dq, r: r + dr };
-      const tile = tiles.find(t => t.q === pos.q && t.r === pos.r);
+      const tile = tileMap.get(`${q + dq},${r + dr}`);
       if (tile) result.push(tile);
     }
   }
@@ -185,7 +196,7 @@ export const focusNextUnit = (selectedTile, tiles, currentPlayer) => {
 
 export const findPath=(start, goal, map, options = {})=> {
   const { armee, canCrossWater = false, isTarget = false} = options;
-  const tileMap = new Map(map.map(t => [`${t.q},${t.r}`, t]));
+  const tileMap = getTileMap(map);
 
   const heuristic = (a, b) => {
     // Distance Manhattan adaptée aux hexagones // erduite pour favoriser les routes
@@ -214,8 +225,8 @@ export const findPath=(start, goal, map, options = {})=> {
       return path.reverse();
     }
 
-    const neighbors = getHexNeighbors(current, map)
-      .map(n => tileMap.get(`${n.q},${n.r}`))
+    const neighbors = HEX_DIRECTIONS
+      .map(dir => tileMap.get(`${current.q + dir.q},${current.r + dir.r}`))
       .filter(n => n); // éviter undefined
 
     for (const neighbor of neighbors) {

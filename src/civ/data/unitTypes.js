@@ -4,7 +4,7 @@ export const UNIT_TYPES = {
   worker: {
   type: 'worker',  name: 'Travailleur',
   icon: '🛠️',  attack: 1,  defense: 1,
-  hp: 5,  hpMax: 5,  movement: 1,  range: 1,  armee: 'infanterie',
+  hp: 5,  hpMax: 5,  movement: 1,  range: 1,  armee: 'none',
   turns: 1,  fortified: false,  canCrossWater: false,  canHeal: false,  veterancy: false,
   cost: {
     food: 10,
@@ -61,10 +61,9 @@ export const UNIT_TYPES = {
     },
     actions: [
       { id: 'fortify', label: 'Fortifier' },
-      { id: 'ranged_attack', label: 'Tir' },
       { id: 'disband', label: 'Dissoudre' },
     ],
-  requirements: {building:'feuDeCamp'}  
+  requirements: {building:'feuDeCamp'}
   }
   , diplomate: {
     type: 'diplomate',    name: 'Diplomate',
@@ -76,11 +75,10 @@ export const UNIT_TYPES = {
       gold: 20
     },
     actions: [
-      { id: 'espionner', label: 'Espionner' },
       { id: 'fortify', label: 'Fortifier' },
       { id: 'disband', label: 'Dissoudre' },
     ],
-  requirements: {building:null, science:'ecriture'}  
+  requirements: {building:null, science:'ecriture'}
   }
   , caravane: {
     type: 'caravane',    name: 'Caravane',
@@ -223,7 +221,7 @@ export const UNIT_TYPES = {
     fortified: false, canCrossWater: false, canHeal: true, veterancy: false,
     cost: { gold: 25, iron: 12 , laine:10},
     actions: [
-      { id: 'prier', label: 'Prier' },
+      { id: 'prier', label: 'Prier (soigner)' },
       { id: 'fortify', label: 'Fortifier' },
       { id: 'disband', label: 'Dissoudre' },
     ],

@@ -142,6 +142,22 @@ export const TECHNOLOGIES = {
       units: ['caravelle']
     },
   },
+  cartographie: {
+    id: 'cartographie',
+    name: 'Cartographie',
+    description: 'Vos explorateurs esquissent les contours du monde : le brouillard laisse deviner le terrain inexploré',
+    cost: 15,
+    requires: ['ecriture'],
+    unlocks: {},
+  },
+  geographie: {
+    id: 'geographie',
+    name: 'Géographie',
+    description: "La forme du monde n'a plus de secret pour vous : la carte entière se révèle",
+    cost: 60,
+    requires: ['cartographie', 'astronomie'],
+    unlocks: {},
+  },
   motorisation: {
     id: 'motorisation',
     name: 'motorisation',

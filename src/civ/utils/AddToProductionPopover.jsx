@@ -14,6 +14,7 @@ import {
   Close as CloseIcon
 } from '@mui/icons-material';
 import { ButtonCiv, DialogCiv, PaperCiv, paperPropsCiv, TypoCiv } from './civUI';
+import { isWonderBuilt } from './utils';
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
@@ -70,8 +71,7 @@ const AddToProductionDialog = ({ city, techsUnlocked, setCities }) => {
     setCities(prev =>
       prev.map(c => {
         if (c.id !== city.id) return c;
-        const updated = { ...c };
-        updated.productionQueue.push(id);
+        const updated = { ...c, productionQueue: [...(c.productionQueue || []), id], resources: { ...c.resources } };
         if (!updated.currentProduction) {
           updated.currentProduction = id;
           updated.productionProgress = 0;
@@ -88,6 +88,9 @@ const AddToProductionDialog = ({ city, techsUnlocked, setCities }) => {
   const renderItem = (item) => {
     const cost = item.cost || {};
     const available = item.isAvailable;
+    const missingSet = new Set(item.missingResources || []);
+    // les blocages non-ressources (technologie, bâtiment...) s'affichent en toutes lettres
+    const otherBlockers = (item.missing || []).filter(m => !m.startsWith('Ressource'));
     const tooltip = item.missing?.length
       ? (
         <Box>
@@ -106,10 +109,10 @@ const AddToProductionDialog = ({ city, techsUnlocked, setCities }) => {
           <PaperCiv
             elevation={available ? 6 : 1}
             sx={{ m:1, p:1,
-              opacity: available ? 1 : 0.4,
+              // pas de voile d'opacité : on doit pouvoir LIRE ce qui manque
               cursor: available ? 'pointer' : 'not-allowed',
               border: available ? '2px solid #4caf50' : '1px dashed gray',
-              backgroundColor: available ? 'transparent' : '#404040',
+              backgroundColor: available ? 'transparent' : '#3a3a3a',
               transition: 'all 0.2s ease-in-out',
               '&:hover': {
                 transform: available ? 'scale(1.03)' : 'none',
@@ -117,7 +120,7 @@ const AddToProductionDialog = ({ city, techsUnlocked, setCities }) => {
             }}
             onClick={() => available && handleSelect(item.id, cost)}
           >
-            <TypoCiv variant="subtitle1">
+            <TypoCiv variant="subtitle1" sx={available ? {} : { color: 'grey.400' }}>
               {item.icon} {item.name}
             </TypoCiv>
             {item.type === 'unit' && (
@@ -127,9 +130,22 @@ const AddToProductionDialog = ({ city, techsUnlocked, setCities }) => {
             )}
             <Box mt={1} display="flex" flexWrap="wrap" gap={0.5}>
               {Object.entries(cost).map(([res, amt]) => (
-                <Chip key={res} label={`${res}: ${amt}`} size="small" />
+                <Chip
+                  key={res}
+                  label={`${res}: ${amt}`}
+                  size="small"
+                  sx={missingSet.has(res)
+                    ? { bgcolor: '#c62828', color: 'white', fontWeight: 'bold',
+                        boxShadow: '0 0 6px rgba(255, 80, 80, 0.9)' }
+                    : {}}
+                />
               ))}
             </Box>
+            {otherBlockers.map((line, i) => (
+              <Typography key={i} variant="caption" sx={{ display: 'block', color: '#ef9a9a', mt: 0.5 }}>
+                🔒 {line}
+              </Typography>
+            ))}
           </PaperCiv>
         </Tooltip>
       </Grid>
@@ -200,7 +216,7 @@ export function getProductionOptionsForCity(city, techsUnlocked, builtWonders = 
     const cost = item.cost || {};
     const missing = [];
 
-    if (type === 'merveille' && builtWonders.includes(item.id)) {
+    if (type === 'merveille' && isWonderBuilt(builtWonders, item.id)) {
       missing.push("Déjà construite par une autre civilisation");
     }
 
@@ -212,9 +228,11 @@ export function getProductionOptionsForCity(city, techsUnlocked, builtWonders = 
       missing.push(`Bâtiment requis : ${reqs.building}`);
     }
 
+    const missingResources = [];
     for (const [res, amt] of Object.entries(cost)) {
       if ((city.resources[res] || 0) < amt) {
         missing.push(`Ressource insuffisante : ${res} (${amt})`);
+        missingResources.push(res);
       }
     }
 
@@ -225,6 +243,7 @@ export function getProductionOptionsForCity(city, techsUnlocked, builtWonders = 
       isAffordable: canAfford(cost),
       isAvailable: missing.length === 0,
       missing,
+      missingResources,
     };
   };
 

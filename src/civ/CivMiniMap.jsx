@@ -10,7 +10,7 @@ const TERRAIN_COLORS = {
   plain: '#22c55e',
   desert: '#eab308',
   forest: '#166534',
-  mountains: '#525252',
+  mountain: '#525252',
   default: '#64748b'
 };
 
@@ -52,7 +52,8 @@ export const MiniMap = ({
   currentViewport = { x: 0, y: 0, width: 100, height: 100 },
   mainHexSize=40
 }) => {
-    const {playerNation, tiles} = useCivContext();
+    const {playerNation, tiles, techsUnlocked} = useCivContext();
+  const hasGeographie = techsUnlocked.includes('geographie');
   const canvasRef = useRef(null);
   const [canvasSize] = useState({ width: 200, height: 150 });
   const hexSize = 3; // Taille des hexagones dans la minimap
@@ -92,21 +93,22 @@ export const MiniMap = ({
       // Dessiner l'hexagone de base
       drawHexagon(ctx, pixelX, pixelY, hexSize * scale);
       
-      if (!tile.explored) {
+      const explored = tile.explored || hasGeographie;
+      if (!explored) {
         // Zone non explorée = noir
         ctx.fillStyle = '#000000';
       } else {
         // Couleur selon le type de terrain
         ctx.fillStyle = TERRAIN_COLORS[tile.type] || TERRAIN_COLORS.default;
       }
-      
+
       ctx.fill();
       ctx.strokeStyle = '#374151';
       ctx.lineWidth = 0.5;
       ctx.stroke();
 
       // Dessiner les villes
-      if (tile.hasCity && tile.explored) {
+      if (tile.hasCity && explored) {
         ctx.beginPath();
         ctx.arc(pixelX, pixelY, hexSize * scale * 0.6, 0, 2 * Math.PI);
         ctx.fillStyle = '#fbbf24';
@@ -198,7 +200,7 @@ export const MiniMap = ({
 
   useEffect(() => {
     drawMiniMap();
-  }, [tiles, playerNation, currentViewport]);
+  }, [tiles, playerNation, currentViewport, techsUnlocked]);
 
   return (
     <div style={{

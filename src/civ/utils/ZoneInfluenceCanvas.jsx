@@ -4,6 +4,13 @@ import { HexTile } from './HexTile';
 import { getSurroundingTiles } from '../utils/hexUtils';
 import { hexToPixel } from '../utils/hexUtils';
 import { Box } from '@mui/material';
+import { computeCityGainsPreview } from '../data/cityTypes';
+
+const RESOURCE_EMOJI = {
+  food: '🍞', gold: '💰', wood: '🌲', stone: '🪨', iron: '⛏️',
+  charbon: '🔥', petrole: '🛢️', laine: '🧶', uranium: '☢️',
+  happiness: '😊', science: '🧪',
+};
 
 const TILE_SIZE = 35;
 const WIDTH = 300;
@@ -42,6 +49,15 @@ export const ZoneInfluenceCanvas = ({
   const maxCitizens = city.population;
   const assignedCount = city.assignedTiles?.length || 0;
   const freeCitizens = maxCitizens - assignedCount;
+
+  // 📈 ce que rapportera ce placement des citoyens au prochain tour
+  const projectedGains = useMemo(
+    () => computeCityGainsPreview(city, tiles),
+    [city, tiles]
+  );
+  const gainEntries = Object.entries(projectedGains)
+    .filter(([, val]) => val !== 0)
+    .sort(([, a], [, b]) => b - a);
 
   return (
     <div style={{ display: 'flex', gap: 20 }}>
@@ -110,6 +126,23 @@ export const ZoneInfluenceCanvas = ({
         </div>
         {Array.from({ length: freeCitizens }).map((_, i) => (
           <div key={i} style={{fontSize:36}}>👷</div>
+        ))}
+      </Box>
+
+      {/* 📈 Rendement projeté avec ce placement des citoyens */}
+      <Box sx={{ width: 120, p: 1, backgroundImage: 'linear-gradient(to right, rgba(96, 140, 88, 0.7), rgba(225, 225, 225, 0))', height: 'min-content' }}>
+        <div style={{ fontWeight: 'bold', marginBottom: 6 }}>
+          📈 Par tour
+        </div>
+        {gainEntries.length === 0 && (
+          <div style={{ fontSize: 13, fontStyle: 'italic' }}>
+            Rien... assignez des citoyens !
+          </div>
+        )}
+        {gainEntries.map(([res, val]) => (
+          <div key={res} style={{ fontSize: 15, whiteSpace: 'nowrap' }}>
+            {RESOURCE_EMOJI[res] || '❓'} {val > 0 ? `+${val}` : val}
+          </div>
         ))}
       </Box>
     </div>

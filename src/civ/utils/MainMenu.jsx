@@ -111,7 +111,8 @@ export const MainMenu = ({ onNewGame, onGameLoaded }) => {
  const [creditsAnchor, setCreditsAnchor] = React.useState(null);
 
   const sertARien = (event) => {
-   addEvent("Putain puisqu'on vous dit qu'il sert a rien")
+   // 'warning' : la snackbar ne s'affiche plus pour les 'info' (elles vont au journal)
+   addEvent("Putain puisqu'on vous dit qu'il sert a rien", 'warning')
   };
   const handleCreditsClick = (event) => {
     setCreditsAnchor(event.currentTarget);

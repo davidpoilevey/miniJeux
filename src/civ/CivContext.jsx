@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from "react";
-import { STAGE_HEIGHT, STAGE_WIDTH, TILE_SIZE } from './CivMap';
+import { TILE_SIZE } from './CivMap';
 import { generateMapWithTerrain } from "./utils/mapGenerator";
 import { BUILDING_TYPES, MERVEILLES_DU_MONDE } from "./data/buildingTypes";
 import {  UNIT_TYPES } from "./data/unitTypes";
@@ -7,9 +7,11 @@ import { TECHNOLOGIES } from "./data/techTree";
 import { computeCityResources } from "./data/cityTypes";
 import useShowAlert from '../jds/components/Message';
 import { getDistanceHex, getHexNeighbors, getMovementResult, hexToPixel } from "./utils/hexUtils";
-import { CIVILIZATIONS, getCivilization } from "./data/civilzationTypes";
+import { BARBARE_CIV, CIVILIZATIONS, getCivilization } from "./data/civilzationTypes";
 import { loadGame, saveGame } from "./utils/saveGame";
-import { applyFogOfWar, assignCityTiles, bonusDeBonheur, chooseCityProduction, chooseResearchIfNeeded, findCitySpot, findClosestEnemy, findClosestForeignCity, generateCityName, getGarnisonCount, getRequiredGarnison, getTileCost, getUnitTile, isGarnisonedInCity, isMilitaryUnit, isSameTile, isTileNearMapEdge, isValidCitySpot, moveUnitToward } from "./utils/utils";
+import { applyFogOfWar, assignCityTiles, bonusDeBonheur, chooseCityProduction, computeCivStats, findCitySpot, findClosestEnemy, findClosestForeignCity, generateCityName, getTileCost, getUnitTile, isMilitaryUnit, isSameTile, isTileNearMapEdge, isValidCitySpot, isWonderBuilt, moveUnitToward, newUid } from "./utils/utils";
+import { getSurroundingTiles } from "./utils/hexUtils";
+import { pickRandomEvent } from "./data/randomEvents";
 
 
 
@@ -38,21 +40,26 @@ export const TAUX_BASE = {
   laine: { gold: 0.5, food: 0.9, charbon: 0.8, petrole: 0.4 , stone:0.7},
 };
 
-const DUMMY_VILLE = {
-  id: 'Paris', name: 'Paris', position: { q: 8, r: 4 }
-  , owner: getCivilization('chinois'),              // joueur
-  population: 2,       // par défaut : 1
-  foundedTurn: 1, productionQueue: []
-  , buildings: ['ferme', 'caserne'],        // ex: ['ferme', 'caserne']
-  resources: { gold: 111, food: 50, wood: 50, iron: 10 },
-  garnison: [{ id: 'unitEnnemi2', ...UNIT_TYPES.warrior, remainingMovement: 2, owner: 'chinois' }]
+export const MAP_SIZES = {
+  petite: { label: 'Petite', width: 2400, height: 1200 },
+  moyenne: { label: 'Moyenne', width: 4000, height: 2000 },
+  grande: { label: 'Grande', width: 5600, height: 2800 },
 };
 
+const resolveGameConfig = (cfg = {}) => {
+  const size = MAP_SIZES[cfg.mapSize] || MAP_SIZES.moyenne;
+  return {
+    mapSize: MAP_SIZES[cfg.mapSize] ? cfg.mapSize : 'moyenne',
+    width: size.width,
+    height: size.height,
+    opponents: Math.min(CIVILIZATIONS.length - 1, Math.max(1, cfg.opponents ?? CIVILIZATIONS.length - 1)),
+  };
+};
 
-
-export const CivContextProvider = ({ setSelected, selectedNation, children }) => {
+export const CivContextProvider = ({ setSelected, selectedNation, gameConfig, children }) => {
   const [tiles, setTiles] = useState([]);
-  const [cities, setCities] = useState([DUMMY_VILLE]);
+  const [cities, setCities] = useState([]);
+  const [mapConfig, setMapConfig] = useState(() => resolveGameConfig(gameConfig));
   const [turn, setTurn] = useState(1);
   const [diplomaticInteraction, setDiplomaticInteraction] = useState(null);
   const [playerNation, setPlayerNation] = useState(selectedNation);
@@ -68,6 +75,7 @@ export const CivContextProvider = ({ setSelected, selectedNation, children }) =>
   const [isRunning, setRunning] = useState(false);
   const [selectedUnitPos, setSelectedUnitPos] = useState(null); // ex: { q, r }
   const [builtWonders, setBuiltWonders] = useState([]); // ID des merveilles déjà construites
+  const [gameResult, setGameResult] = useState(null); // {type:'victory'|'defeat', turn, score, classement}
 
   const { showAlert, SnackbarComponent } = useShowAlert({ verticalAnchor: 'bottom' });
 
@@ -81,40 +89,34 @@ export const CivContextProvider = ({ setSelected, selectedNation, children }) =>
 
   useEffect(() => {
     if (selectedNation && tiles.length==0) {
+      const config = resolveGameConfig(gameConfig);
+      setMapConfig(config);
       setPlayerNation(selectedNation);
+      // les technologies de départ de la nation (elles n'étaient jamais appliquées !)
+      setTechsUnlocked([...(selectedNation.startingTechs || [])]);
       initializeDiplomacy(selectedNation);
       let generated = generateMapWithTerrain(
-        STAGE_WIDTH, STAGE_HEIGHT, TILE_SIZE,
+        config.width, config.height, TILE_SIZE,
         selectedNation // le owner des premières unités
       );
-      let placed = false;
-      // const placedCities = [];
 
-      // while (!placed) {
-      //   placed = placeCity(generated, selectedNation, 'Strasbourg');
-      //   if (placed)
-      //     placedCities.push(placed);
-      // }
-      // placed = false
-      // while (!placed) {
-      //   placed = placeCity(generated, getCivilization('anglais'), 'Londres');
-      //   if (placed)
-      //     placedCities.push(placed);
+      // le joueur + N adversaires tirés au hasard
+      const opponents = CIVILIZATIONS
+        .filter(c => c.id !== selectedNation.id)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, config.opponents);
+      const inGame = [selectedNation, ...opponents];
+      setCivInGame(inGame);
 
-      // }
-      // setCities(placedCities);
-      // placed = false
-      CIVILIZATIONS.forEach((civ,cidx)=>{
-        placed = false;
-        
-        while (!placed) {
+      inGame.forEach((civ,cidx)=>{
+        let placed = false;
+        let attempts = 0;
+        while (!placed && attempts++ < 200) {
           placed = placeUnit(generated, {...UNIT_TYPES['pionnier'], id:'Schwarzy-'+cidx}, civ);
-         
         }
       })
-      
 
-      
+
       generated = applyFogOfWar(generated, selectedNation.id, getCityByTile)
       setTiles(generated);
     }
@@ -123,13 +125,18 @@ export const CivContextProvider = ({ setSelected, selectedNation, children }) =>
 
 
   // **************Diplomatic et Civilization functions **************************
+  // Les relations sont indexées par id : on accepte indifféremment un id ou un objet civ,
+  // sinon la clé devient "[object Object]" et toutes les paires partagent la même relation
+  const civId = (civ) => civ?.id ?? civ;
+  const relationKey = (civA, civB) => [civId(civA), civId(civB)].sort().join('-');
+
   const knownCivs = CIVILIZATIONS.map(c => c.id);
   const initializeDiplomacy = (playerCiv) => {
+    const playerId = civId(playerCiv);
     const initialRelations = {};
     for (const civ of knownCivs) {
-      if (civ !== playerCiv) {
-        const key = [playerCiv, civ].sort().join('-');
-        initialRelations[key] = 'neutral';
+      if (civ !== playerId) {
+        initialRelations[relationKey(playerId, civ)] = 'neutral';
       }
     }
     setDiplomaticRelations(initialRelations);
@@ -137,13 +144,15 @@ export const CivContextProvider = ({ setSelected, selectedNation, children }) =>
 
 
   const getDiplomaticRelation = (civA, civB) => {
-    if (civA === civB) return 'self';
-    const key = [civA, civB].sort().join('-');
-    return diplomaticRelations[key] || 'neutral';
+    const a = civId(civA), b = civId(civB);
+    if (a === b) return 'self';
+    // on ne négocie pas avec les barbares
+    if (a === BARBARE_CIV.id || b === BARBARE_CIV.id) return 'war';
+    return diplomaticRelations[relationKey(a, b)] || 'neutral';
   };
 
   const setDiplomaticRelation = (civA, civB, status) => {
-    const key = [civA, civB].sort().join('-');
+    const key = relationKey(civA, civB);
     setDiplomaticRelations(prev => ({
       ...prev,
       [key]: status,
@@ -153,7 +162,7 @@ export const CivContextProvider = ({ setSelected, selectedNation, children }) =>
 
   const shiftDiplomaticRelation = (playerNation, targetCiv, up) => {
     setDiplomaticRelations(prev => {
-      const key = [playerNation, targetCiv].sort().join('-');
+      const key = relationKey(playerNation, targetCiv);
       const current = prev[key] || 'neutral';
       const index = RELATION_LEVELS.indexOf(current);
       const newIndex = Math.max(0, Math.min(RELATION_LEVELS.length - 1, index + (up ? 1 : -1)));
@@ -171,10 +180,13 @@ export const CivContextProvider = ({ setSelected, selectedNation, children }) =>
 
     // au tour des adversaires de jouer
     let newCivCities=[];
-   
-    const activeCivIds = new Set(tiles
-      .flatMap(t => [t.city?.owner?.id, t.unit?.owner?.id])
-      .filter(Boolean));
+
+    // une civ est vivante si elle a une unité sur la carte, une ville, ou une unité en garnison
+    const activeCivIds = new Set([
+      ...tiles.map(t => t.unit?.owner?.id),
+      ...cities.map(c => c.owner?.id),
+      ...cities.flatMap(c => (c.garnison || []).map(u => u.owner?.id)),
+    ].filter(Boolean));
 
 const [surviving, eliminated] = CIVILIZATIONS_inGame.reduce(
   ([alive, dead], civ) => 
@@ -191,12 +203,46 @@ if(eliminated.length>0){
   setCivInGame(surviving);
 }
 
+    // 🏁 Fin de partie ? (les barbares ne comptent pas dans les survivants)
+    if (!gameResult) {
+      const playerAlive = activeCivIds.has(playerNation.id);
+      const rivalsAlive = CIVILIZATIONS_inGame.some(civ =>
+        civ.id !== playerNation.id && activeCivIds.has(civ.id));
 
-    CIVILIZATIONS_inGame.forEach(civ => { 
+      if (!playerAlive || !rivalsAlive) {
+        const classement = CIVILIZATIONS_inGame.map(civ =>
+          computeCivStats(civ, cities, tiles,
+            civ.id === playerNation.id ? techsUnlocked : (civ.technologies || civ.startingTechs || []),
+            builtWonders, turn)
+        ).sort((a, b) => b.score - a.score);
+
+        setGameResult({
+          type: playerAlive ? 'victory' : 'defeat',
+          turn,
+          score: classement.find(c => c.civ.id === playerNation.id)?.score || 0,
+          classement,
+        });
+        addEvent(playerAlive
+          ? "🏆 Votre civilisation règne désormais sans partage !"
+          : "💀 Votre civilisation a été rayée de l'histoire...", playerAlive ? 'success' : 'error', true);
+        setRunning(false);
+        return; // la partie est finie, inutile de jouer le tour
+      }
+    }
+
+
+    // seules les civs adverses sont pilotées par l'IA — pas celle du joueur !
+    CIVILIZATIONS_inGame.filter(civ => civ.id !== playerNation.id).forEach(civ => {
      const newCities = playAITurn(civ);
      if(newCities.length>0)
       newCivCities = newCivCities.concat(newCities);
      })
+
+    // 🏴‍☠️ les hordes existantes attaquent, puis de nouvelles surgissent parfois du brouillard
+    playAITurn(BARBARE_CIV);
+    if (Math.random() < Math.min(0.25, 0.05 + turn * 0.002)) {
+      spawnBarbares(1);
+    }
      
     // 🧭 Remise à zéro des mouvements et régénération
     setTiles(prev =>
@@ -258,10 +304,12 @@ setTiles(prev => {
 });
 
 
-    // application des merveilles
-    builtWonders.forEach(id => {
-      const merveille = MERVEILLES_DU_MONDE[id];
-      merveille.effectParTurn?.(cities);
+    // application des merveilles (chacune ne profite qu'aux villes de son propriétaire)
+    builtWonders.forEach(w => {
+      const merveille = MERVEILLES_DU_MONDE[w?.id ?? w];
+      if (!merveille) return;
+      const ownerCities = w?.ownerId ? cities.filter(c => c.owner.id === w.ownerId) : cities;
+      merveille.effectParTurn?.(ownerCities);
     });
     // regulation des marché
     const [newTaux, newHistorique] = updateMarketRates(taux, historique);
@@ -269,32 +317,32 @@ setTiles(prev => {
     setHistorique(newHistorique);
 
     let sommeScience = 0;
+    // unités du joueur terminées ce tour : elles sortent sur la carte, prêtes à agir
+    const unitsToDeploy = [];
 
     // 🏙️ Traitement des villes
     const updatedCities = cities.map(city => {
-      const updated = { ...city };
+      const updated = { ...city, resources: { ...city.resources } };
       const civ = updated.owner;
       const buildingBonus = civ?.buildingBonus || 0;
 
+      // 0️⃣ Complète les tuiles exploitées si la ville a des citoyens libres
+      if ((updated.assignedTiles?.length || 0) < updated.population) {
+        assignCityTiles(updated, tiles);
+      }
 
-      // 1️⃣ Récolte de ressources
+      // 1️⃣ Récolte de ressources (tuiles + bâtiments — computeCityResources fait déjà les deux,
+      // l'ancienne boucle ici comptait la production des bâtiments en double)
       const baseGain = computeCityResources(updated, tiles); // Ex: { food: 2, gold: 1 }
 
-      // 2️⃣ Bonus des bâtiments
-      for (const buildingId of updated.buildings || []) {
-        const building = BUILDING_TYPES[buildingId];
-        if (building?.production) {
-          for (const [res, amount] of Object.entries(building.production)) {
-            baseGain[res] = (baseGain[res] || 0) + amount;
-          }
-        }
-      }
       // 2.5. Croissance démographique
       const currentPop = updated.population || 1;
       const maxPop = 10;
       const foodAvailable = updated.resources.food || 0;
 
-      const foodNeededForNextPop = pop => Math.round(30 + 10 * Math.pow(pop, 1.5));
+      // le bonus de croissance de la civ réduit la nourriture nécessaire
+      const growthBonus = civ?.populationGrowthBonus || 0;
+      const foodNeededForNextPop = pop => Math.round((30 + 10 * Math.pow(pop, 1.5)) * (1 - Math.min(0.5, growthBonus)));
 
       if (currentPop < maxPop) {
         const foodCost = foodNeededForNextPop(currentPop);
@@ -322,29 +370,42 @@ setTiles(prev => {
         updated.productionProgress += 1;
         const isBuilding = BUILDING_TYPES[updated.currentProduction];
         const isUnit = UNIT_TYPES[updated.currentProduction];
-        const turns = isBuilding?.turns || isUnit?.turns || 1;
+        const isWonder = MERVEILLES_DU_MONDE[updated.currentProduction];
+        const turns = isBuilding?.turns || isUnit?.turns || isWonder?.turns || 1;
 
         if (updated.productionProgress >= turns) {
           if (isBuilding) {
-            updated.buildings.push(updated.currentProduction);
-            if (isUnit?.type === 'merveille') {
-              isUnit.effectInauguration(civ);
-              setBuiltWonders(prev => [...prev, isUnit.id]);
-            }
-if(updated.owner.id===playerNation.id)  
+            updated.buildings = [...updated.buildings, updated.currentProduction];
+if(updated.owner.id===playerNation.id)
             addEvent("Production achevée : " + updated.currentProduction + " dans la ville de " + updated.name);
+          } else if (isWonder) {
+            if (isWonderBuilt(builtWonders, isWonder.id)) {
+              // une autre civ l'a finie avant nous, tant pis pour les ressources investies
+              if(updated.owner.id===playerNation.id)
+                addEvent(`${isWonder.name} a déjà été inaugurée ailleurs, vos ouvriers rentrent bredouilles`, 'warning', true);
+            } else {
+              isWonder.effectInauguration?.(civ);
+              setBuiltWonders(prev => [...prev, { id: isWonder.id, ownerId: updated.owner.id }]);
+              addEvent(`🏛️ ${updated.owner.name} : la merveille ${isWonder.name} est inaugurée à ${updated.name} !`, 'success', true);
+            }
           } else if (isUnit) {
-            if(updated.owner.id===playerNation.id)  
-            addEvent(isUnit.name + " est achevé dans la ville de " + updated.name);
-            updated.garnison = [...(updated.garnison || []), {
-              id: `${updated.currentProduction}-${Date.now()}`,
+            const newUnit = {
               ...isUnit,
+              id: newUid(updated.currentProduction),
               owner: updated.owner,
               remainingMovement: isUnit.movement
-            }];
+            };
+            if (updated.owner.id === playerNation.id) {
+              // 🐣 le joueur reçoit ses unités actives devant la ville — plus de
+              // recrues oubliées en garnison faute d'avoir vu passer la snackbar
+              unitsToDeploy.push({ city: updated, unit: newUnit });
+              addEvent(`${isUnit.name} est achevé et attend vos ordres devant ${updated.name}`, 'success', true);
+            } else {
+              updated.garnison = [...(updated.garnison || []), newUnit];
+            }
           }
 
-          updated.productionQueue.shift();
+          updated.productionQueue = updated.productionQueue.slice(1);
           updated.currentProduction = updated.productionQueue[0] || null;
           updated.productionProgress = 0;
         }
@@ -352,12 +413,43 @@ if(updated.owner.id===playerNation.id)
         updated.currentProduction = updated.productionQueue[0];
         updated.productionProgress = 0;
       }
-      // recupere la science
-      sommeScience += updated.resources.science || 0;
-      sommeScience += bonusDeBonheur(updated.resources.happiness,20)
+      // recupere la science (seules NOS villes financent NOS chercheurs)
+      if (updated.owner.id === playerNation.id) {
+        sommeScience += updated.resources.science || 0;
+        sommeScience += bonusDeBonheur(updated.resources.happiness,20)
+      }
       updated.resources.science = 0;
       return updated;
     })
+
+    // 🐣 Sortie des unités fraîchement produites sur une case libre autour de leur ville.
+    // Mutation directe des tuiles, committée par les setTiles déjà programmés du tour.
+    unitsToDeploy.forEach(({ city, unit }) => {
+      const free = getHexNeighbors(city.position, tiles).filter(t =>
+        !t.unit && !t.hasCity
+        && ((unit.canCrossWater && t.type === 'water') || (!unit.canCrossWater && t.type !== 'water')));
+      if (free.length > 0) {
+        free[Math.floor(Math.random() * free.length)].unit = unit;
+      } else {
+        // aucune case libre : repli en garnison
+        city.garnison = [...(city.garnison || []), unit];
+        addEvent(`${unit.name} attend en garnison à ${city.name} (aucune case libre autour)`, 'warning', true);
+      }
+    });
+
+    // 🎲 Parfois, le destin s'invite dans une ville du joueur
+    if (Math.random() < 0.12) {
+      const playerCities = updatedCities.filter(c => c.owner.id === playerNation.id);
+      if (playerCities.length > 0) {
+        const targetCity = playerCities[Math.floor(Math.random() * playerCities.length)];
+        const event = pickRandomEvent(targetCity);
+        if (event) {
+          const message = event.apply(targetCity, { spawnBarbares });
+          addEvent(message, event.bad ? 'warning' : 'success', true);
+        }
+      }
+    }
+
     setCities([...updatedCities,...newCivCities]);
 
 
@@ -389,17 +481,18 @@ if(updated.owner.id===playerNation.id)
 
   const addEvent = (text, type = 'info', persistent = false) => {
     const evt = {
-      id: Date.now(),
+      id: newUid('evt'),
       text,
       type,           // 'info', 'warning', 'success', 'error'
       timestamp: turn,
       persistent
     };
 
-    if (persistent)
-      setEventLog(prev => [...prev.slice(-49), evt]); // max 50
-    showAlert(text, type);
-
+    // tout va au journal du tableau de bord ; la snackbar n'interrompt
+    // que pour l'important (fini l'empilement de toasts en fin de tour)
+    setEventLog(prev => [...prev.slice(-49), evt]); // max 50
+    if (type === 'warning' || type === 'error')
+      showAlert(text, type);
   };
 
 
@@ -441,14 +534,14 @@ if(updated.owner.id===playerNation.id)
 
     if (to.hasCity) {
       const city = cities.find(c => c.position.q === to.q && c.position.r === to.r);
-      if (city && city.owner === movingUnit.owner) {
+      if (city && city.owner.id === movingUnit.owner.id) {
         // 🏛️ Ajout à la garnison
         setCities(prev =>
           prev.map(c =>
             c.id === city.id
               ? {
                 ...c,
-                garnison: [...(c.garnison || []), { ...movingUnit, id: `${movingUnit.type}-${Date.now()}` }],
+                garnison: [...(c.garnison || []), { ...movingUnit, id: newUid(movingUnit.type) }],
               }
               : c
           )
@@ -477,17 +570,16 @@ if(updated.owner.id===playerNation.id)
     setSelectedUnitPos(to);
   };
   const fortifyUnit = (pos) => {
-    console.log("Fortifier unité en", pos);
     setTiles(prev =>
       prev.map(tile => {
-        if (tile.q === pos.q && tile.r === pos.r && !tile.fortified) {
-          return { ...tile, unit: { ...tile.unit, fortified: true, defense: tile.unit.defense + 5 } };
+        // le check se fait sur l'unité, sinon on peut refortifier à l'infini (+5 def à chaque fois)
+        if (tile.q === pos.q && tile.r === pos.r && tile.unit && !tile.unit.fortified) {
+          return { ...tile, unit: { ...tile.unit, fortified: true, defense: tile.unit.defense + 5, remainingMovement: 0 } };
         }
         return tile;
       })
     );
     setSelectedUnitPos(null);
-    // À implémenter : marquer l’unité comme fortifiée
   };
 
 
@@ -549,7 +641,21 @@ if(updated.owner.id===playerNation.id)
     if (attackerUnit.owner.id === defenderUnit.owner.id)
       return setSelectedUnitPos(null); // pas d'attaque alliée
 
+    // ⚔️ portée et mouvement : pas d'attaque à l'autre bout de la carte
+    const distance = getDistanceHex(attackerTile, defenderTile);
+    if (distance > (attackerUnit.range || 1)) {
+      if (attackerUnit.owner.id === playerNation.id)
+        addEvent(`${UNIT_TYPES[attackerUnit.type].name} est trop loin pour attaquer (portée ${attackerUnit.range || 1})`, 'warning');
+      return setSelectedUnitPos(null);
+    }
+    if (attackerUnit.remainingMovement <= 0) {
+      if (attackerUnit.owner.id === playerNation.id)
+        addEvent("Cette unité a déjà agi ce tour-ci", 'warning');
+      return setSelectedUnitPos(null);
+    }
+
     const { attacker, defender } = resolveCombat(attackerUnit, defenderUnit);
+    attacker.remainingMovement = 0; // attaquer termine le tour de l'unité
     const attackerCoords = { q: attackerTile.q, r: attackerTile.r };
     const defenderCoords = { q: defenderTile.q, r: defenderTile.r };
 
@@ -573,8 +679,8 @@ if(updated.owner.id===playerNation.id)
 
     addEvent(`${UNIT_TYPES[attackerUnit.type].name} attaque ${UNIT_TYPES[defenderUnit.type].name}`, 'info', true);
 
-    // 2. Riposte différée si applicable
-    const shouldRetaliate = defender.hp > 0 && attacker.hp > 0 && defender.range === 1;
+    // 2. Riposte différée si le défenseur survit et peut atteindre l'attaquant
+    const shouldRetaliate = defender.hp > 0 && attacker.hp > 0 && (defender.range || 1) >= distance;
 
     if (shouldRetaliate) {
       setTimeout(() => {
@@ -604,6 +710,15 @@ if(updated.owner.id===playerNation.id)
     const attackerTile = selectedUnitPos;
     const attackerUnit = attackerTile.unit;
 
+    // ⚔️ même règle que contre les unités : portée + mouvement
+    const distance = getDistanceHex(attackerTile, defenderTile);
+    if (distance > (attackerUnit.range || 1) || attackerUnit.remainingMovement <= 0) {
+      addEvent(distance > (attackerUnit.range || 1)
+        ? `Trop loin pour attaquer ${city.name} (portée ${attackerUnit.range || 1})`
+        : "Cette unité a déjà agi ce tour-ci", 'warning');
+      return setSelectedUnitPos(null);
+    }
+
     const attackerCoords = { q: attackerTile.q, r: attackerTile.r };
     const defenderCoords = { q: city.position.q, r: city.position.r };
     const { x: dx, y: dy } = hexToPixel(defenderTile);
@@ -612,6 +727,7 @@ if(updated.owner.id===playerNation.id)
     if (city.garnison && city.garnison.length > 0) {
       const defenderUnit = city.garnison[0];
       const { attacker, defender: newDef } = resolveCombat(attackerUnit, defenderUnit, city.buildings.includes('cityWalls'));
+      attacker.remainingMovement = 0; // attaquer termine le tour de l'unité
 
       // Update la garnison
       const updatedGarnison = newDef.hp <= 0
@@ -625,7 +741,7 @@ if(updated.owner.id===playerNation.id)
       );
 
       // Explosion si contre-attaque possible
-      const shouldRetaliate = newDef.hp > 0 && attacker.hp > 0 && newDef.range === 1;
+      const shouldRetaliate = newDef.hp > 0 && attacker.hp > 0 && (newDef.range || 1) >= distance;
       if (shouldRetaliate) {
         setTimeout(() => {
           const { attacker: defAsAtk, defender: atkAfterRetaliation } = resolveCombat(newDef, attacker);
@@ -692,7 +808,7 @@ if(updated.owner.id===playerNation.id)
             owner: newOwner,
             population: newPopulation,
             buildings: survivors,
-            garnison: [{ ...attackerUnit, id: `${attackerUnit.type}-${Date.now()}` }],
+            garnison: [{ ...attackerUnit, id: newUid(attackerUnit.type) }],
           });
 
   setTiles(prev =>
@@ -714,14 +830,14 @@ if(updated.owner.id===playerNation.id)
   // ***************       functions de Villes **************************
   const foundCity = (pos, cityName, owner) => {
     pos.unit=null;
-    if (!cityName||cityName == '')
-      cityName = generateCityName(owner, pos.type);
     if (owner == null)
       owner = playerNation;
+    if (!cityName||cityName == '')
+      cityName = generateCityName(owner, pos.type);
     const newCity = {
-      id: `city-${cities.length + 1}`,
+      id: newUid('city'),
       name: cityName,
-      position: pos,
+      position: { q: pos.q, r: pos.r },
       owner: owner,
       population: 2,
       foundedTurn: turn, // temporaire, à lier au système de tour plus tard
@@ -742,8 +858,11 @@ if(updated.owner.id===playerNation.id)
       },
     };
 
-    addEvent("La ville de " + cityName + " vient d'etre creee", 'success', true);
-   // setCities(prev => [...prev, newCity]);
+    // la ville exploite tout de suite ses meilleures tuiles voisines
+    assignCityTiles(newCity, tiles);
+
+    addEvent("La ville de " + cityName + " vient d'etre creee",
+      owner.id === playerNation.id ? 'success' : 'info', owner.id === playerNation.id);
 
     // Supprime le pionnier sur la case
     setTiles(prev =>
@@ -769,18 +888,46 @@ if(updated.owner.id===playerNation.id)
 
 
   /**  **************   Functions pour les AI  ****************** */
+
+  // 🏴‍☠️ Fait surgir des barbares du brouillard, loin des villes.
+  // Mutation directe des tuiles (comme le tour IA), committée par les setTiles de fin de tour.
+  const MAX_BARBARES = 6;
+  const spawnBarbares = (count = 1) => {
+    const existing = tiles.filter(t => t.unit?.owner?.id === BARBARE_CIV.id).length;
+    const budget = Math.min(count, MAX_BARBARES - existing);
+    if (budget <= 0) return;
+
+    // les hordes s'arment avec les époques
+    const unitType = turn > 80 ? 'mousquetaire' : turn > 40 ? 'legion' : 'warrior';
+    const candidates = tiles.filter(t =>
+      t.type !== 'water' && !t.unit && !t.hasCity && !t.explored
+      && cities.every(c => getDistanceHex(t, c.position) > 3));
+    if (candidates.length === 0) return;
+
+    let nearPlayer = false;
+    for (let i = 0; i < budget; i++) {
+      const tile = candidates[Math.floor(Math.random() * candidates.length)];
+      if (tile.unit) continue; // déjà pris par un spawn de cette même passe
+      tile.unit = {
+        ...UNIT_TYPES[unitType],
+        id: newUid('barbare'),
+        owner: BARBARE_CIV,
+        remainingMovement: UNIT_TYPES[unitType].movement,
+      };
+      if (cities.some(c => c.owner.id === playerNation.id && getDistanceHex(tile, c.position) <= 8))
+        nearPlayer = true;
+    }
+    if (nearPlayer)
+      addEvent("🏴‍☠️ Des barbares rôdent près de vos terres...", 'warning', true);
+  };
+
   const playAITurn = (civilization) => {
     // must return [] city created
     const allUnits = tiles.filter(t => t.unit != null).map(t => t.unit);
     const civCities = cities.filter(city => city.owner.id === civilization.id);
     const civUnits = allUnits.filter(unit => unit.owner.id === civilization.id);
 
-    // 1. Réassignation des tuiles pour maximiser les ressources
-    civCities.forEach(city => {
-      assignCityTiles(city, tiles);
-    });
-
-    // 2. Choix de la production (unités ou bâtiments)
+    // 1. Choix de la production (unités ou bâtiments)
     let deployedUnits = [];
     civCities.forEach(city => {
       const toDeploy = chooseCityProduction(city, civilization, builtWonders);
@@ -791,12 +938,22 @@ if(updated.owner.id===playerNation.id)
       deployedUnits.forEach(un => {
         for (let d = 0; d < un.toDeploy.length; d++)
           deployUnit(un.city, un.toDeploy[d]);
-        civUnits.push(un.toDeploy);
+        // les unités déployées ce tour n'agissent qu'au tour suivant : elles ne sont
+        // pas encore sur `tiles` (setTiles en attente) et les faire agir les dupliquerait
       })
     }
 
-    // 3. Recherche scientifique (globale, donc inutile)
-    // chooseResearchIfNeeded(civilization);
+    // 2. Recherche scientifique : l'IA débloque petit à petit des technologies,
+    // ce qui élargit ce que ses villes savent construire
+    if (civCities.length > 0 && Math.random() < 0.15) {
+      const known = civilization.technologies || (civilization.technologies = [...(civilization.startingTechs || [])]);
+      const candidates = Object.values(TECHNOLOGIES).filter(t =>
+        !known.includes(t.id) && (t.requires || []).every(r => known.includes(r)));
+      if (candidates.length > 0) {
+        const cheapest = candidates.sort((a, b) => a.cost - b.cost)[0];
+        known.push(cheapest.id);
+      }
+    }
 
     const createdCities=[];
     // 4. Actions des unités
@@ -811,6 +968,77 @@ if(updated.owner.id===playerNation.id)
     });
     return createdCities
   }
+
+  // 🎭 Audiences : un émissaire ennemi arrivé chez le joueur formule une demande,
+  // le joueur accepte ou refuse (et en assume les conséquences)
+  const [pendingAudience, setPendingAudience] = useState(null);
+
+  const buildAudienceDemand = (fromNation, relation) => {
+    const profile = fromNation.diplomacyProfile || {};
+    if (relation === 'war' || relation === 'tendu') {
+      return (profile.aggressif || 0) > 0.5
+        ? { type: 'tribute', text: 'exigent un tribut de 100 or pour épargner vos villes' }
+        : { type: 'peace', text: 'proposent de signer la paix' };
+    }
+    if (relation === 'neutral') {
+      return (profile.opportuniste || 0) > 0.4
+        ? { type: 'trade', text: 'proposent un échange commercial : 10 laine contre 50 or' }
+        : { type: 'peace', text: 'proposent un pacte de paix' };
+    }
+    return { type: 'alliance', text: 'proposent une alliance militaire' };
+  };
+
+  // applique un delta de ressources sur la ville la plus riche du joueur
+  const adjustPlayerResources = (delta) => {
+    setCities(prev => {
+      const richest = prev.filter(c => c.owner.id === playerNation.id)
+        .sort((a, b) => (b.resources.gold || 0) - (a.resources.gold || 0))[0];
+      if (!richest) return prev;
+      const resources = { ...richest.resources };
+      for (const [res, amount] of Object.entries(delta))
+        resources[res] = (resources[res] || 0) + amount;
+      return prev.map(c => c.id === richest.id ? { ...c, resources } : c);
+    });
+  };
+
+  const resolveAudience = (accepted) => {
+    if (!pendingAudience) return;
+    const { fromNation, demand } = pendingAudience;
+    const profile = fromNation.diplomacyProfile || {};
+
+    if (accepted) {
+      switch (demand.type) {
+        case 'tribute':
+          adjustPlayerResources({ gold: -100 });
+          shiftDiplomaticRelation(playerNation, fromNation, true);
+          addEvent(`Vous avez payé un tribut de 100 or aux ${fromNation.name}.`, 'warning', true);
+          break;
+        case 'peace':
+          setDiplomaticRelation(playerNation, fromNation, 'peace');
+          addEvent(`La paix est signée avec les ${fromNation.name}.`, 'success', true);
+          break;
+        case 'trade':
+          adjustPlayerResources({ laine: -10, gold: 50 });
+          shiftDiplomaticRelation(playerNation, fromNation, true);
+          addEvent(`Accord commercial conclu avec les ${fromNation.name} (+50 or).`, 'success', true);
+          break;
+        case 'alliance':
+          setDiplomaticRelation(playerNation, fromNation, 'allied');
+          addEvent(`Alliance militaire conclue avec les ${fromNation.name} !`, 'success', true);
+          break;
+        default:
+      }
+    } else {
+      shiftDiplomaticRelation(playerNation, fromNation, false);
+      if (demand.type === 'tribute' && (profile.aggressif || 0) > 0.6) {
+        setDiplomaticRelation(playerNation, fromNation, 'war');
+        addEvent(`Les ${fromNation.name} déclarent la guerre suite à votre refus !`, 'error', true);
+      } else {
+        addEvent(`L'émissaire des ${fromNation.name} repart déçu de votre cour.`, 'info', true);
+      }
+    }
+    setPendingAudience(null);
+  };
 
   const launchDiplomaticInteraction = (unit, city) => {
 
@@ -832,16 +1060,23 @@ if(updated.owner.id===playerNation.id)
       setCities(prev => prev.map(c => updater(c)));
     };
 
+    // 🎭 Un émissaire arrive chez le JOUEUR : audience à sa cour, c'est à lui de décider
+    if (toNation.id === playerNation.id) {
+      setPendingAudience({ fromNation, demand: buildAudienceDemand(fromNation, relation) });
+      removeDiplomate();
+      return;
+    }
+
 
     if (relation === 'war') {
-      if (profile.agressif < 0.4 && Math.random() > profile.agressif) {
+      if (profile.aggressif < 0.4 && Math.random() > profile.aggressif) {
         // Demande de paix acceptée
         setDiplomaticRelation(fromNation, toNation, 'peace');
         addEvent(`${toNation.name} a accepté la paix avec ${fromNation.name}.`, 'info', true);
-      } else if (Math.random() > profile.agressif + 0.3) {
+      } else if (Math.random() > (profile.aggressif || 0.5) + 0.3) {
         // Tribute accepté
         updateCities(c => {
-          if (c.owner === fromNation) {
+          if (c.owner.id === fromNation.id) {
             return {
               ...c,
               resources: {
@@ -862,7 +1097,7 @@ if(updated.owner.id===playerNation.id)
       if (profile.genereux > 0.6 && Math.random() < profile.genereux) {
         setDiplomaticRelation(fromNation, toNation, 'peace');
         updateCities(c => {
-          if (c.owner === fromNation) {
+          if (c.owner.id === fromNation.id) {
             return {
               ...c,
               resources: {
@@ -876,7 +1111,7 @@ if(updated.owner.id===playerNation.id)
         addEvent(`${fromNation.name} a offert la paix à ${toNation.name}.`, 'info', true);
       } else if (profile.opportuniste > 0.4 && Math.random() < profile.opportuniste) {
         updateCities(c => {
-          if (c.owner === fromNation) {
+          if (c.owner.id === fromNation.id) {
             return {
               ...c,
               resources: {
@@ -885,7 +1120,7 @@ if(updated.owner.id===playerNation.id)
                 laine: (c.resources.laine || 0) - 10,
               },
             };
-          } else if (c.owner === toNation) {
+          } else if (c.owner.id === toNation.id) {
             return {
               ...c,
               resources: {
@@ -907,7 +1142,7 @@ if(updated.owner.id===playerNation.id)
       } else if (profile.opportuniste > 0.3 && Math.random() < profile.opportuniste) {
         // commerce en paix
         updateCities(c => {
-          if (c.owner === fromNation) {
+          if (c.owner.id === fromNation.id) {
             return {
               ...c,
               resources: {
@@ -916,7 +1151,7 @@ if(updated.owner.id===playerNation.id)
                 laine: (c.resources.laine || 0) - 10,
               },
             };
-          } else if (c.owner === toNation) {
+          } else if (c.owner.id === toNation.id) {
             return {
               ...c,
               resources: {
@@ -943,6 +1178,26 @@ if(updated.owner.id===playerNation.id)
     }
     return null;
   }
+
+  // Attaque d'une ville défendue par l'IA : résout le combat contre le premier garde.
+  // Mutations directes (garnison, tuile de l'attaquant) : elles sont committées par les
+  // setTiles/setCities de fin de tour, comme le reste du tour IA.
+  const aiAttaqueCity = (attackerTile, city) => {
+    const attackerUnit = attackerTile.unit;
+    const garde = (city.garnison || [])[0];
+    if (!attackerUnit || !garde) return;
+
+    const { attacker, defender: newDef } = resolveCombat(attackerUnit, garde, city.buildings.includes('cityWalls'));
+    attacker.remainingMovement = 0;
+
+    city.garnison = newDef.hp <= 0 ? city.garnison.slice(1) : [newDef, ...city.garnison.slice(1)];
+    attackerTile.unit = attacker.hp <= 0 ? null : attacker;
+
+    const { x, y } = hexToPixel(city.position);
+    setFxTrigger({ x, y, type: 'explosion', timestamp: Date.now() });
+    if (city.owner.id === playerNation.id)
+      addEvent(`${city.name} est attaquée par les ${getCivilization(attackerUnit.owner)?.name || 'ennemis'} !`, 'error', true);
+  };
   const handleUnitAI = (unit, civilization, options) => {
     const unitTile = getUnitTile(unit, tiles)||lostUnit(unit);
     if(unitTile==null)
@@ -970,32 +1225,48 @@ if(updated.owner.id===playerNation.id)
     }
 
     else if (isMilitaryUnit(unit)) {
-      
+
       const enemy = findClosestEnemy(unit, civilization, tiles, cities, options); //{type, position , unit/city}
- 
+
       if (enemy) {
-        
+
           // 👣 Avancer jusqu’à être à portée
          const movedResult = moveUnitToward(unit, enemy.position, tiles, { stopBeforeTarget: true });
-         if((movedResult.moved && getDistanceHex(movedResult.lastReachedPosition, enemy.position) === 1) 
-         || (getDistanceHex(unitTile, enemy.position) === 1)) {
-                  // 👊 Déjà à portée → on attaque
+         // après déplacement, l'unité vit sur sa NOUVELLE tuile (l'ancienne est vide)
+         const atkTile = movedResult.moved ? movedResult.lastReachedPosition : unitTile;
+         const atkUnit = atkTile.unit;
+         if (atkUnit && atkUnit.remainingMovement > 0
+             && getDistanceHex(atkTile, enemy.position) <= (atkUnit.range || 1)) {
+                  // 👊 À portée → on attaque
                   if(enemy.type==='city')
                     {
-                      if(enemy.city.garnison.length==0||enemy.city.garnison.every(g=>g.hp<=0)){
-                        // prend la ville
-                        enemy.city.owner=civilization;
-                        enemy.city.garnison.push(unit);
-                        unitTile.unit=null;
+                      const garnisonVivante = (enemy.city.garnison || []).filter(g => g.hp > 0);
+                      if(garnisonVivante.length === 0){
+                        const ancienOwner = enemy.city.owner;
+                        if (civilization.id === BARBARE_CIV.id) {
+                          // 🏴‍☠️ les barbares ne gouvernent pas : ils pillent et repartent avec le butin
+                          enemy.city.population = Math.max(1, enemy.city.population - 1);
+                          enemy.city.resources = Object.fromEntries(
+                            Object.entries(enemy.city.resources || {}).map(([res, val]) => [res, Math.ceil((val || 0) / 2)]));
+                          atkTile.unit = null; // la horde disparaît avec son butin
+                          addEvent(`${enemy.city.name} a été pillée par les barbares !`,
+                            ancienOwner.id === playerNation.id ? 'error' : 'warning', true);
+                        } else {
+                          // prend la ville
+                          enemy.city.owner=civilization;
+                          enemy.city.garnison=[{ ...atkUnit, remainingMovement: 0 }];
+                          atkTile.unit=null;
+                          addEvent(`${enemy.city.name} a été capturée par ${civilization.name} !`,
+                            ancienOwner.id === playerNation.id ? 'error' : 'warning', true);
+                        }
                       }
                       else{
                         // attaque le premier garde
-                      const garde = enemy.city.garnison[0];
-                      attaque({unit:garde, ...enemy.city}, unitTile);
+                        aiAttaqueCity(atkTile, enemy.city);
                       }
                   }
                   else
-                    attaque(enemy, unitTile);
+                    attaque(enemy.position, atkTile);
         }
       } else {
         moveUnitToward(unit, null, tiles);
@@ -1005,15 +1276,104 @@ if(updated.owner.id===playerNation.id)
     else if (unit.type === 'diplomate') {
       const targetCity = findClosestForeignCity(unit, cities,getDiplomaticRelation, tiles);
       if (targetCity) {
-        if (isSameTile(unitTile, targetCity)) {
-          launchDiplomaticInteraction(unit, targetCity); // on y reviendra
+        // la destination est la POSITION de la ville (la ville elle-même n'a pas de q/r :
+        // l'A* cherchait un objectif introuvable et explorait toute la carte pour rien)
+        if (getDistanceHex(unitTile, targetCity.position) <= 1) {
+          launchDiplomaticInteraction(unit, targetCity);
         } else {
-          moveUnitToward(unit, targetCity, tiles,{stopBeforeTarget:true});
+          const movedResult = moveUnitToward(unit, targetCity.position, tiles,{stopBeforeTarget:true});
+          if (movedResult.moved && getDistanceHex(movedResult.lastReachedPosition, targetCity.position) <= 1)
+            launchDiplomaticInteraction(movedResult.lastReachedPosition.unit, targetCity);
         }
       }
     }
     return createdCity;
   }
+
+  // 🕊️ Soin : le moine (ou templier) soigne les unités alliées adjacentes, et lui-même
+  const healAround = (pos) => {
+    const healer = pos.unit;
+    if (!healer) return;
+    const HEAL_AMOUNT = 5;
+    const zone = getSurroundingTiles(pos, tiles, 1);
+    let healedCount = 0;
+
+    setTiles(prev =>
+      prev.map(t => {
+        const inZone = zone.some(z => z.q === t.q && z.r === t.r);
+        if (!inZone || !t.unit || t.unit.owner.id !== healer.owner.id) return t;
+        if (t.unit.hp >= t.unit.hpMax && t.unit.id !== healer.id) return t;
+        healedCount++;
+        return {
+          ...t,
+          unit: {
+            ...t.unit,
+            hp: Math.min(t.unit.hpMax, t.unit.hp + HEAL_AMOUNT),
+            // soigner occupe le tour du soigneur
+            remainingMovement: t.unit.id === healer.id ? 0 : t.unit.remainingMovement,
+          }
+        };
+      })
+    );
+    setSelectedUnitPos(null);
+    addEvent(healedCount > 1
+      ? `${UNIT_TYPES[healer.type].name} a soigné les troupes alentour (+${HEAL_AMOUNT} PV)`
+      : "Personne à soigner ici, le moine médite", healedCount > 1 ? 'success' : 'info');
+  };
+
+  // ☢️ La bombe explose sur place : tout ce qui vit dans un rayon de 2 disparaît
+  const detonateNuke = (pos) => {
+    const bomb = pos.unit;
+    if (!bomb) return;
+    const NUKE_RADIUS = 2;
+    const zone = getSurroundingTiles(pos, tiles, NUKE_RADIUS);
+    const zoneKeys = new Set(zone.map(z => `${z.q},${z.r}`));
+
+    const { x, y } = hexToPixel(pos);
+    setFxTrigger({ x, y, type: 'explosion', timestamp: Date.now() });
+
+    // unités et améliorations vaporisées (la bombe aussi)
+    setTiles(prev =>
+      prev.map(t => {
+        if (!zoneKeys.has(`${t.q},${t.r}`)) return t;
+        return { ...t, unit: null, feature: null, hasRoad: false, yield: undefined };
+      })
+    );
+
+    // villes touchées : la moitié de la population et de la garnison partent en fumée
+    setCities(prev =>
+      prev.reduce((acc, c) => {
+        if (!zoneKeys.has(`${c.position.q},${c.position.r}`)) {
+          acc.push(c);
+          return acc;
+        }
+        const newPop = Math.floor(c.population / 2);
+        if (newPop <= 0) {
+          setTiles(prevTiles =>
+            prevTiles.map(t =>
+              t.q === c.position.q && t.r === c.position.r ? { ...t, hasCity: false } : t
+            )
+          );
+          addEvent(`${c.name} a été rayée de la carte par le feu nucléaire !`, 'error', true);
+          return acc;
+        }
+        acc.push({
+          ...c,
+          population: newPop,
+          garnison: (c.garnison || []).slice(0, Math.floor((c.garnison || []).length / 2)),
+        });
+        addEvent(`${c.name} est dévastée par l'explosion nucléaire`, 'error', true);
+        return acc;
+      }, [])
+    );
+
+    setSelectedUnitPos(null);
+    addEvent("☢️ Détonation nucléaire ! Le monde entier vous regarde avec effroi.", 'error', true);
+    // le monde entier vous en veut
+    CIVILIZATIONS_inGame.forEach(civ => {
+      if (civ.id !== bomb.owner.id) setDiplomaticRelation(bomb.owner, civ, 'war');
+    });
+  };
 
   // pour la sauvegarde
   const getGameState = () => ({
@@ -1030,6 +1390,8 @@ if(updated.owner.id===playerNation.id)
     researchProgress,
     eventLog,
     builtWonders,
+    civsInGame: CIVILIZATIONS_inGame,
+    gameConfig: mapConfig,
   });
   const setGameState = (state) => {
     if (!state) return;
@@ -1047,6 +1409,8 @@ if(updated.owner.id===playerNation.id)
     setResearchProgress(state.researchProgress || 0);
     setEventLog(state.eventLog || []);
     setBuiltWonders(state.builtWonders || []);
+    setCivInGame(state.civsInGame || [...CIVILIZATIONS]);
+    setMapConfig(resolveGameConfig(state.gameConfig));
   };
   const saveCiv = () => {
     saveGame(getGameState());
@@ -1066,10 +1430,11 @@ if(updated.owner.id===playerNation.id)
   const value = {
     tiles,
     setTiles,
+    mapConfig,
     selectedUnitPos,
     saveCiv, loadCiv,
     setSelectedUnitPos,
-    moveUnit, fortifyUnit, removeUnit, deployUnit,
+    moveUnit, fortifyUnit, removeUnit, deployUnit, healAround, detonateNuke,
     foundCity, fxTrigger, triggerEffect: (x, y, type) => setFxTrigger({ x, y, type, timestamp: Date.now() }),
     cities, selectedCity, getCityByTile,
     selectCity, setSelectedCity,
@@ -1081,6 +1446,8 @@ if(updated.owner.id===playerNation.id)
     , techsUnlocked, setTechsUnlocked,
     currentResearch, setCurrentResearch,
     researchProgress, setResearchProgress,
+    gameResult, pendingAudience, resolveAudience,
+    civsInGame: CIVILIZATIONS_inGame,
     addEvent, showAlert, eventLog, builtWonders
     , shiftDiplomaticRelation, getDiplomaticRelation, diplomaticRelations
     , taux, setTaux, historique
@@ -1117,7 +1484,8 @@ const updateMarketRates = (currentRates, historique) => {
       if (historique[from][to].length > 20) historique[from][to].shift(); // 20 derniers tours
     }
   }
-  return [newRates, historique];
+  // nouvelle référence, sinon React ne voit pas le changement et les graphiques figent
+  return [newRates, { ...historique }];
 }
 
 function resolveCombat(attacker, defender, cityWalls) {
@@ -1125,9 +1493,9 @@ function resolveCombat(attacker, defender, cityWalls) {
   const atkCiv = getCivilization(attacker.owner);
   const defCiv = getCivilization(defender.owner);
 
-
-  const atk = attacker.attack + (attacker.veterancy ? 2 : 0) + atkCiv?.militaryBonus || 0;
-  const def = defender.defense + (defender.veterancy ? 1 : 0) + defCiv?.militaryBonus || 0;
+  // parenthèses obligatoires : sans elles, un militaryBonus undefined donne NaN et l'attaque tombe à 0
+  const atk = attacker.attack + (attacker.veterancy ? 2 : 0) + (atkCiv?.militaryBonus || 0);
+  const def = defender.defense + (defender.veterancy ? 1 : 0) + (defCiv?.militaryBonus || 0);
   const fortifyBonus = cityWalls ? 3 : (defender.fortified ? 1 : 0);
 
   const damageToDef = Math.max(1, atk - (def + fortifyBonus));
@@ -1149,7 +1517,8 @@ function placeUnit(map, unitObj, owner, tile = null) {
   if (!targetTile) {
   const landTiles = map.filter(t =>
     t.type !== 'water' &&
-    !t.city &&
+    !t.unit && // ne pas écraser le pionnier d'une autre civ déjà placé
+    !t.hasCity &&
     !isTileNearMapEdge(t, map)
   );
 

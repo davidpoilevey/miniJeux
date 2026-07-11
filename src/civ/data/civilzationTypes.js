@@ -163,9 +163,25 @@ export const CIVILIZATIONS = [
 
 
 
+// Pseudo-civilisation hostile : pas dans CIVILIZATIONS (ni diplomatie, ni élimination,
+// ni fondation de villes) — juste des hordes qui surgissent du brouillard
+export const BARBARE_CIV = {
+  id: 'barbare',
+  name: 'Barbares',
+  flag: '🏴‍☠️',
+  color: '#1a1a1a',
+  bonuses: {},
+  militaryBonus: 0,
+  buildingBonus: 0,
+  populationGrowthBonus: 0,
+  diplomacyProfile: { aggressif: 1, genereux: 0, protectionniste: 0, opportuniste: 0 },
+  startingTechs: [],
+};
+
  export const getCivilization =civid=>{
-    if(civid.id)
+    if(civid?.id)
         return civid;
-    else
-    return CIVILIZATIONS.find(civ => civ.id === civid) 
+    if(civid === BARBARE_CIV.id)
+        return BARBARE_CIV;
+    return CIVILIZATIONS.find(civ => civ.id === civid)
  }

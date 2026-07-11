@@ -9,11 +9,14 @@ import {
     Card,
     CardContent,
     IconButton,
-    Tooltip
+    Tooltip,
+    Slider,
+    ToggleButton,
+    ToggleButtonGroup
 } from '@mui/material';
 
-import {  useCivContext } from '../CivContext';
-import { BUILDING_TYPES } from '../data/buildingTypes';
+import {  useCivContext, MAP_SIZES } from '../CivContext';
+import { BUILDING_TYPES, MERVEILLES_DU_MONDE } from '../data/buildingTypes';
 import { UNIT_TYPES } from '../data/unitTypes';
 import { CIVILIZATIONS } from '../data/civilzationTypes';
 import { generateCityName } from './utils';
@@ -39,6 +42,9 @@ export const CivilDialog = ({ unitPos, city, onClose }) => {
 const CivilianDialog = ({ unitPos, city, onClose }) => {
     const { setCities, setTiles,addEvent,setSelectedUnitPos } = useCivContext();
     const movingUnit = unitPos.unit;
+    // déclaré ici et pas dans un case du switch : sinon le case 'moine' plantait
+    // en accédant à une const déclarée dans le case 'caravane' (zone morte temporelle)
+    const profile = city.owner?.diplomacyProfile || {};
     const actions = [{
                 name: "Garnison", text: "se stocker dans la garnison", icon: "🏰"
                 , onClick: () => {
@@ -79,11 +85,7 @@ const CivilianDialog = ({ unitPos, city, onClose }) => {
 
             break;
         case 'caravane':
-  const targetCiv = city.owner;
-        const profile = targetCiv?.diplomacyProfile || {};
-       
-            
-        const deal = 50+Math.round((Math.random()+profile.genereux)*50)//base de 50 + bonus genereux + random 0-50
+        const deal = 50+Math.round((Math.random()+(profile.genereux||0))*50)//base de 50 + bonus genereux + random 0-50
              actions.push({
                 name: "Commercer", text: `Enrichir la ville de ${deal} boules`, icon: "💰"
                 , onClick: () => {
@@ -96,8 +98,9 @@ const CivilianDialog = ({ unitPos, city, onClose }) => {
             addEvent(`La caravane a apporté ${deal} Or`, 'success');
                 }
              });
-              const currentProd = BUILDING_TYPES[city.currentProduction];
-              const buildUneMarvel = currentProd!=null && currentProd.type==='merveille';
+              // les merveilles vivent dans MERVEILLES_DU_MONDE, pas dans BUILDING_TYPES
+              const currentProd = MERVEILLES_DU_MONDE[city.currentProduction];
+              const buildUneMarvel = currentProd!=null;
               actions.push({
                 name: "Aider", text: "Aider a la construction d'une merveille du monde", icon: "🏛️"
                 , disabled:!buildUneMarvel
@@ -114,8 +117,8 @@ const CivilianDialog = ({ unitPos, city, onClose }) => {
                 }})
         break;
         case 'moine':
-            
-             const gain = Math.round((Math.random()+profile.aggressif)*50)//bonus aggressif + random 0-50
+
+             const gain = Math.round((Math.random()+(profile.aggressif||0))*50)//bonus aggressif + random 0-50
        
              actions.push({
                 name: "Evangeliser", text: "Apporte joie et bonheur et un peu de pognon aussi", icon: "🕊️"
@@ -262,7 +265,7 @@ export const DiplomacyDialog = ({ unit, city, onClose }) => {
             // 💰 gain : or ou tech ?
             setCities(prev =>
                 prev.map(c =>
-                    c.owner === playerNation
+                    c.owner.id === playerNation.id
                         ? {
                             ...c,
                             resources: {
@@ -292,7 +295,7 @@ export const DiplomacyDialog = ({ unit, city, onClose }) => {
             // 💸 paye un petit coût ?
             setCities(prev =>
                 prev.map(c =>
-                    c.owner === playerNation
+                    c.owner.id === playerNation.id
                         ? {
                             ...c,
                             resources: {
@@ -320,7 +323,7 @@ export const DiplomacyDialog = ({ unit, city, onClose }) => {
             // échange 10 de wool contre 50 de gold ?
             setCities(prev =>
                 prev.map(c => {
-                    if (c.owner === playerNation) {
+                    if (c.owner.id === playerNation.id) {
                         return {
                             ...c,
                             resources: {
@@ -329,7 +332,7 @@ export const DiplomacyDialog = ({ unit, city, onClose }) => {
                                 laine: (c.resources.laine || 0) - 10,
                             },
                         };
-                    } else if (c.owner === targetCiv) {
+                    } else if (c.owner.id === targetCiv.id) {
                         return {
                             ...c,
                             resources: {
@@ -473,16 +476,114 @@ export const CityNameDialog = ({ showCityNameDialog, setShowCityNameDialog, newC
 }
 
 
+export const AudienceDialog = ({ audience, onResolve }) => {
+  if (!audience) return null;
+  const { fromNation, demand } = audience;
+
+  return (
+    <Dialog open fullWidth maxWidth="xs">
+      <DialogTitle sx={{ textAlign: 'center' }}>🎭 Audience diplomatique</DialogTitle>
+      <DialogContent>
+        <Typography align="center" fontSize={56}>{fromNation.flag}</Typography>
+        <Typography align="center" variant="h6" gutterBottom>
+          Un émissaire des {fromNation.name} se présente à votre cour.
+        </Typography>
+        <Typography align="center" sx={{ fontStyle: 'italic', mt: 1 }}>
+          « Les {fromNation.name} {demand.text}. »
+        </Typography>
+      </DialogContent>
+      <DialogActions sx={{ justifyContent: 'center', pb: 2, gap: 2 }}>
+        <Button variant="contained" color="success" onClick={() => onResolve(true)}>
+          Accepter
+        </Button>
+        <Button variant="contained" color="error" onClick={() => onResolve(false)}>
+          Refuser
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+export const GameOverDialog = ({ result, onRestart }) => {
+  if (!result) return null;
+  const victory = result.type === 'victory';
+
+  return (
+    <Dialog open fullWidth maxWidth="sm">
+      <DialogTitle sx={{ textAlign: 'center', fontSize: '2.2rem' }}>
+        {victory ? '🏆 VICTOIRE !' : '💀 DÉFAITE...'}
+      </DialogTitle>
+      <DialogContent>
+        <Typography align="center" variant="h6" gutterBottom>
+          {victory
+            ? `Votre civilisation règne sans partage sur le monde (tour ${result.turn}).`
+            : `Votre civilisation a été rayée de l'histoire au tour ${result.turn}.`}
+        </Typography>
+        <Typography align="center" variant="h5" gutterBottom>
+          Score : {result.score} points
+        </Typography>
+        <Typography variant="subtitle1" sx={{ mt: 2 }}>Classement final</Typography>
+        <List dense>
+          {result.classement.map((entry, i) => (
+            <ListItem key={entry.civ.id}>
+              <ListItemText
+                primary={`${i + 1}. ${entry.civ.flag} ${entry.civ.name} — ${entry.score} pts`}
+                secondary={`${entry.cities} ville(s) · ${(entry.population * 1000).toLocaleString('fr-FR')} habitants · ${entry.techCount} technologie(s) · ${entry.wonders} merveille(s)`}
+              />
+            </ListItem>
+          ))}
+        </List>
+      </DialogContent>
+      <DialogActions sx={{ justifyContent: 'center', pb: 2 }}>
+        <Button variant="contained" size="large" onClick={onRestart}>
+          Retour au menu principal
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
 export const NationDialog = ({ open, handleNationSelect, onClose }) => {
   const [expanded, setExpanded] = useState(null);
+  const [opponents, setOpponents] = useState(CIVILIZATIONS.length - 1);
+  const [mapSize, setMapSize] = useState('moyenne');
 
   const toggleExpand = (id) => {
     setExpanded(prev => (prev === id ? null : id));
   };
 
   return (
-    <DialogCiv open={open} maxWidth="md" title="Choisissez votre civilisation" 
+    <DialogCiv open={open} maxWidth="md" title="Choisissez votre civilisation"
     icon={<QuestionAnswer/>} onClose={onClose}>
+        {/* Réglages de la partie */}
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4, justifyContent: 'center',
+          alignItems: 'center', mb: 3, p: 2, border: '1px dashed grey', borderRadius: 2 }}>
+          <Box sx={{ minWidth: 220 }}>
+            <TypoCiv gutterBottom>⚔️ Adversaires : {opponents}</TypoCiv>
+            <Slider
+              value={opponents}
+              onChange={(e, v) => setOpponents(v)}
+              min={1}
+              max={CIVILIZATIONS.length - 1}
+              step={1}
+              marks
+              valueLabelDisplay="auto"
+            />
+          </Box>
+          <Box>
+            <TypoCiv gutterBottom>🗺️ Taille de la carte</TypoCiv>
+            <ToggleButtonGroup
+              value={mapSize}
+              exclusive
+              onChange={(e, v) => { if (v) setMapSize(v); }}
+              size="small"
+            >
+              {Object.entries(MAP_SIZES).map(([key, size]) => (
+                <ToggleButton key={key} value={key}>{size.label}</ToggleButton>
+              ))}
+            </ToggleButtonGroup>
+          </Box>
+        </Box>
         <Box sx={{display:'flex', flexWrap:'wrap', gap:2, justifyContent:'center'}}>
           {CIVILIZATIONS.map(nation => (
               <Card key={nation.id}  onClick={() => toggleExpand(nation.id)}  variant="outlined" 
@@ -531,7 +632,7 @@ export const NationDialog = ({ open, handleNationSelect, onClose }) => {
                       color="primary"
                       fullWidth
                       sx={{ mt: 2 }}
-                      onClick={() => handleNationSelect(nation)}
+                      onClick={() => handleNationSelect(nation, { opponents, mapSize })}
                     >
                       Choisir {nation.name}
                     </ButtonCiv>

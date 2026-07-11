@@ -33,6 +33,7 @@ export const BUILDING_TYPES = {
     cost: { wood: 20, gold: 20 },
     turns: 3
     , requirements: {
+      science: 'agriculture'
     },
   },
   feuDeCamp: {
