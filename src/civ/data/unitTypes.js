@@ -49,7 +49,22 @@ export const UNIT_TYPES = {
     ],
   requirements: {}                               
   },
-  archer: {
+  phalange: {
+    type: 'phalange',   name: 'Phalange',
+    icon: '🔱', imageSrc:null, armee:'infanterie',
+    attack: 1,  defense: 2, hp:6,hpMax:6,
+    movement: 1, range:1 , turns:1,
+    fortified:false,canCrossWater:false,canHeal:false,veterancy:false,
+    cost: {
+      gold: 8, iron:5
+    },
+    actions: [
+      { id: 'fortify', label: 'Fortifier' },
+      { id: 'disband', label: 'Dissoudre' },
+    ],
+  requirements: {building:null, science:"ageDuBronze"}
+  }
+  , archer: {
     type: 'archer',    name: 'Archer',
     icon: '🏹', imageSrc:null, armee:'infanterie',
     attack: 5,    defense: 2, hp:8, hpMax:8,

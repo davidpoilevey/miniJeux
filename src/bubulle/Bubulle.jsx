@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { BullProvider, useBull } from './BulContext';
-import { Box } from '@material-ui/core';
+import { Box } from '@mui/material';
 import Bulle from './Bulle';
 import { ReglagesProvider } from './ReglageContext';
 import RegToolbar from './Toolbar';

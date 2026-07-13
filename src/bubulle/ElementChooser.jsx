@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, FormControl, InputLabel, ListItemText, MenuItem, OutlinedInput, Select, Typography } from '@material-ui/core';
+import { Box, FormControl, InputLabel, ListItemText, MenuItem, OutlinedInput, Select, Typography } from '@mui/material';
 import { Button, Rating } from '@mui/material';
 import Bulle, { ELTS } from './Bulle';
 import imgAimant from './images/magnet.png';

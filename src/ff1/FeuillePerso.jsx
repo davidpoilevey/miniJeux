@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Grid, Avatar, Typography } from '@material-ui/core';
+import { Grid, Avatar, Typography } from '@mui/material';
 import { Accordion, AccordionDetails, AccordionSummary, Badge, Box, Button, IconButton, LinearProgress, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Popover } from '@mui/material';
 
 import { Expand, ExpandMore, Info } from '@mui/icons-material';

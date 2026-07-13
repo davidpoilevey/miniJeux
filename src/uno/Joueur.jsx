@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { useStyles } from "./utils";
-import { Box } from "@material-ui/core";
+import { Box } from "@mui/material";
 import Carte from "./Carte";
 
 const Player = ({ player , playCarte, isCarteValid, isActif}) => {

@@ -3,7 +3,7 @@ import Player from './Joueur';
 import { shuffle, useStyles } from './utils';
 import UnoDeck, { specialCardsNoColor } from './UnoDeck';
 import Carte, { FlyingCarte } from './Carte';
-import { Box, Button } from '@material-ui/core';
+import { Box, Button } from '@mui/material';
 import { Pioche, Tas } from './TasPioche';
 import ColorChoiceDialog from './ColorChoice';
 import { GameOver } from '../ChuckNorrisFact';

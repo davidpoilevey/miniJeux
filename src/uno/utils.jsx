@@ -1,4 +1,4 @@
-import { makeStyles } from "@material-ui/core";
+import { makeStyles } from "@mui/styles";
 import imgHoraire from './horaire.png';
 import imgAntiHoraire from './anti.png';
 

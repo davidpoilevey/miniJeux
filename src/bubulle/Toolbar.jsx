@@ -1,6 +1,6 @@
 // Toolbar.js
 import React, { useState } from 'react';
-import { Box, Button, CardHeader, Toolbar } from '@material-ui/core';
+import { Box, Button, CardHeader, Toolbar } from '@mui/material';
 
 import { BubbleChart } from '@mui/icons-material';
 import { useBull } from './BulContext';

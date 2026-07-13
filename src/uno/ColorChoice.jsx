@@ -1,7 +1,7 @@
 import React from 'react';
-import Dialog from '@material-ui/core/Dialog';
-import { makeStyles } from '@material-ui/core/styles';
-import { red, green, blue, yellow } from '@material-ui/core/colors';
+import Dialog from '@mui/material/Dialog';
+import { makeStyles } from '@mui/styles';
+import { red, green, blue, yellow } from '@mui/material/colors';
 import { DialogContent, DialogTitle } from '@mui/material';
 
 const useStyles = makeStyles({

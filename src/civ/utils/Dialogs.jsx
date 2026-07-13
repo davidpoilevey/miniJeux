@@ -66,6 +66,7 @@ const CivilianDialog = ({ unitPos, city, onClose }) => {
                         )
                     );
                       setSelectedUnitPos(null);
+                      onClose();
     }
     
     switch (movingUnit.type) {

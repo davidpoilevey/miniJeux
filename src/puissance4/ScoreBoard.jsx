@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Table, TableBody, TableCell, TableHead, TableRow, Button, makeStyles } from '@material-ui/core';
+import { Table, TableBody, TableCell, TableHead, TableRow, Button } from '@mui/material';
+import { makeStyles } from '@mui/styles';
 
 import './Board.css';
 

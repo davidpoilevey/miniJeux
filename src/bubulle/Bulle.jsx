@@ -1,5 +1,5 @@
 import React from 'react';
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles } from '@mui/styles';
 import { Air, LocalFireDepartment, PublicSharp, WaterDrop } from '@mui/icons-material';
 import feuImg from './images/feu.png';
 import eauImg from './images/eau.png';

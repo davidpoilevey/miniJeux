@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { makeStyles } from '@material-ui/core/styles';
+import { makeStyles } from '@mui/styles';
 import { specialCards, specialCardsNoColor } from './UnoDeck';
-import { Box } from '@material-ui/core';
+import { Box } from '@mui/material';
 
 const useStyles = makeStyles({
   carte: {

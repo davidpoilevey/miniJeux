@@ -59,7 +59,7 @@ const Board = ({ currentPlayer, onWinner, onPlayerChange, clear, thinking }) => 
                     bestCol = highestScoreCol;
                 }
             }
-            if (bestCol <= 0)
+            if (bestCol < 0)
                 bestCol = Math.floor(Math.random() * COLS);
 
             handleColumnClick(bestCol);

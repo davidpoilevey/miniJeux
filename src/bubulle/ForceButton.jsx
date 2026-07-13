@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useReglages } from './ReglageContext';
-import { Box, Button } from '@material-ui/core';
+import { Box, Button } from '@mui/material';
 import { Add } from '@mui/icons-material';
 import { Slide, Typography } from '@mui/material';
 import { ELTS } from './Bulle';

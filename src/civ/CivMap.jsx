@@ -206,6 +206,10 @@ const CivMap = ({ setSelected, handleNavigate }) => {
         else {
             setShowMenuAt(null);
             if (tile.unit) {
+                if (tile.unit.owner.id !== playerNation.id) {
+                    addEvent("Ce n'est pas votre unité", "error");
+                    return;
+                }
                 if (tile.unit.targetDestination)
                     tile.unit.targetDestination = null;
                 setSelectedUnitPos(tile);

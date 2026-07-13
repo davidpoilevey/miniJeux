@@ -9,7 +9,7 @@ import { makeStyles, styled } from "@mui/styles";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCoins, faPersonHarassing, faPlay } from "@fortawesome/free-solid-svg-icons";
 import { yellow } from "@mui/material/colors";
-import { IconButton } from "@material-ui/core";
+import { IconButton } from "@mui/material";
 import { evaluateMain, getStage, STAGES } from "./pokUtils";
 
 

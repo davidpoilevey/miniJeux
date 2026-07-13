@@ -1,6 +1,6 @@
 import React from 'react';
 import { useReglages } from './ReglageContext';
-import { Box, Button, Popover } from '@material-ui/core';
+import { Box, Button, Popover } from '@mui/material';
 import { Typography } from '@mui/material';
 import { ELTS } from './Bulle';
 
