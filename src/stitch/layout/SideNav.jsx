@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import LibraryBooksIcon from '@mui/icons-material/LibraryBooks';
 import LeaderboardIcon from '@mui/icons-material/Leaderboard';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import { HiScoreButton } from '../../ChuckNorrisFact';
 import photoMoi from '../../DSCN0013.jpg';
 
@@ -15,7 +16,26 @@ const LABEL_STYLE = {
   letterSpacing: 2,
 };
 
-const SideNav = ({ drawerWidth }) => {
+const NAV_SELECTED_SX = {
+  borderRadius: '24px 0 0 24px',
+  ml: 1,
+  '&.Mui-selected': {
+    bgcolor: 'background.paper',
+    color: 'primary.main',
+    boxShadow: '0 4px 12px rgba(50,44,57,0.06)',
+    '&:hover': { bgcolor: 'background.paper' },
+  },
+};
+
+const NAV_IDLE_SX = {
+  borderRadius: 2,
+  ml: 1,
+  opacity: 0.6,
+  transition: 'all 300ms cubic-bezier(0.4,0,0.2,1)',
+  '&:hover': { opacity: 1, transform: 'translateX(4px)' },
+};
+
+const SideNav = ({ drawerWidth, currentView = 'library', onSelectLibrary, onSelectFavorites }) => {
   const hiScoreRef = useRef(null);
 
   return (
@@ -59,39 +79,40 @@ const SideNav = ({ drawerWidth }) => {
 
       {/* Nav */}
       <List sx={{ px: 1 }}>
-        {/* Bibliothèque — active */}
+        {/* Bibliothèque */}
         <ListItemButton
-          selected
-          sx={{
-            borderRadius: '24px 0 0 24px',
-            ml: 1,
-            '&.Mui-selected': {
-              bgcolor: 'background.paper',
-              color: 'primary.main',
-              boxShadow: '0 4px 12px rgba(50,44,57,0.06)',
-              '&:hover': { bgcolor: 'background.paper' },
-            },
-          }}
+          selected={currentView === 'library'}
+          onClick={onSelectLibrary}
+          sx={currentView === 'library' ? NAV_SELECTED_SX : NAV_IDLE_SX}
         >
           <ListItemIcon sx={{ minWidth: 36, color: 'inherit' }}>
             <LibraryBooksIcon />
           </ListItemIcon>
           <ListItemText
             primary="Bibliothèque"
-            primaryTypographyProps={{ ...LABEL_STYLE, fontWeight: 700 }}
+            primaryTypographyProps={{ ...LABEL_STYLE, fontWeight: currentView === 'library' ? 700 : 400 }}
+          />
+        </ListItemButton>
+
+        {/* Favoris */}
+        <ListItemButton
+          selected={currentView === 'favorites'}
+          onClick={onSelectFavorites}
+          sx={currentView === 'favorites' ? NAV_SELECTED_SX : NAV_IDLE_SX}
+        >
+          <ListItemIcon sx={{ minWidth: 36, color: 'inherit' }}>
+            <AutoAwesomeIcon />
+          </ListItemIcon>
+          <ListItemText
+            primary="Favoris"
+            primaryTypographyProps={{ ...LABEL_STYLE, fontWeight: currentView === 'favorites' ? 700 : 400 }}
           />
         </ListItemButton>
 
         {/* Top Scores — triggers HiScoreButton */}
         <ListItemButton
           onClick={() => hiScoreRef.current?.click()}
-          sx={{
-            borderRadius: 2,
-            ml: 1,
-            opacity: 0.6,
-            transition: 'all 300ms cubic-bezier(0.4,0,0.2,1)',
-            '&:hover': { opacity: 1, transform: 'translateX(4px)' },
-          }}
+          sx={NAV_IDLE_SX}
         >
           <ListItemIcon sx={{ minWidth: 36 }}>
             <LeaderboardIcon />

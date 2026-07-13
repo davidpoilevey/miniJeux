@@ -4,6 +4,7 @@ import stitchTheme from './theme';
 import TopNavBar from './stitch/layout/TopNavBar';
 import SideNav from './stitch/layout/SideNav';
 import LibraryPage from './stitch/pages/LibraryPage';
+import FavoritesPage from './stitch/pages/FavoritesPage';
 import { AppBackButton } from './JeuxCards';
 import { GAMES_DATA } from './gameData';
 import { useRandomGame } from './hookGame';
@@ -26,6 +27,7 @@ const AppStitch = () => {
     return id ? findGameById(id) : null;
   });
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentView, setCurrentView] = useState('library'); // 'library' | 'favorites'
   const { getRandomGame } = useRandomGame(GAMES_DATA);
   const gameStartTimeRef = useRef(null);
 
@@ -97,7 +99,12 @@ const AppStitch = () => {
             onSearch={setSearchQuery}
             onRandom={handleRandom}
           />
-          <SideNav drawerWidth={DRAWER_WIDTH} />
+          <SideNav
+            drawerWidth={DRAWER_WIDTH}
+            currentView={currentView}
+            onSelectLibrary={() => setCurrentView('library')}
+            onSelectFavorites={() => setCurrentView('favorites')}
+          />
           <Box
             component="main"
             sx={{
@@ -107,19 +114,34 @@ const AppStitch = () => {
               minHeight: `calc(100dvh - ${APPBAR_HEIGHT}px)`,
             }}
           >
-            <LibraryPage
-              gamesData={GAMES_DATA}
-              searchQuery={searchQuery}
-              onSelectGame={(app) => {
-                if (window.gtag)
-                  window.gtag('event', 'jeu_selectionne', {
-                    event_category: 'nouveauJeu',
-                    event_label: app.name,
-                    value: 1,
-                  });
-                handleSelectApp(app);
-              }}
-            />
+            {currentView === 'favorites' ? (
+              <FavoritesPage
+                gamesData={GAMES_DATA}
+                onSelectGame={(app) => {
+                  if (window.gtag)
+                    window.gtag('event', 'jeu_selectionne', {
+                      event_category: 'nouveauJeu',
+                      event_label: app.name,
+                      value: 1,
+                    });
+                  handleSelectApp(app);
+                }}
+              />
+            ) : (
+              <LibraryPage
+                gamesData={GAMES_DATA}
+                searchQuery={searchQuery}
+                onSelectGame={(app) => {
+                  if (window.gtag)
+                    window.gtag('event', 'jeu_selectionne', {
+                      event_category: 'nouveauJeu',
+                      event_label: app.name,
+                      value: 1,
+                    });
+                  handleSelectApp(app);
+                }}
+              />
+            )}
           </Box>
         </Box>
       </Fade>

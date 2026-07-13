@@ -1,6 +1,6 @@
 import { Box, Typography } from '@mui/material';
 
-const HeroHeader = () => (
+const HeroHeader = ({ title = 'Faites votre choix', subtitle }) => (
   <Box sx={{ mb: 8, position: 'relative' }}>
     {/* Ambient blur orb */}
     <Box sx={{
@@ -21,14 +21,29 @@ const HeroHeader = () => (
         fontFamily: '"Newsreader", serif',
         fontSize: { xs: '1.4rem', md: '2.5rem' },
         lineHeight: 1.05,
-        mb: 3,
+        mb: subtitle ? 1.5 : 3,
         color: 'text.primary',
         maxWidth: 680,
         position: 'relative',
       }}
     >
-     Faites votre choix
+     {title}
     </Typography>
+
+    {subtitle && (
+      <Typography
+        sx={{
+          fontFamily: '"Space Grotesk", sans-serif',
+          fontSize: '0.85rem',
+          color: 'text.secondary',
+          maxWidth: 560,
+          mb: 3,
+          position: 'relative',
+        }}
+      >
+        {subtitle}
+      </Typography>
+    )}
 
     {/* Accent bar */}
     <Box sx={{ height: 4, width: 96, bgcolor: '#fd6fcc', borderRadius: 2 }} />
