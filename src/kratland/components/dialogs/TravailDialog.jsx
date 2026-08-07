@@ -80,7 +80,10 @@ function EffectChip({ icon, label, value, mult = 1 }) {
 // ─── Carte de mode ────────────────────────────────────────────────────────────
 
 function ModeCard({ mode, selected, act, onClick }) {
+  const isRange    = act.salaryMin != null && act.salaryMax != null
   const salary     = Math.round((act.salary ?? 0) * mode.salaryMult)
+  const salaryMin  = isRange ? Math.round(act.salaryMin * mode.salaryMult) : null
+  const salaryMax  = isRange ? Math.round(act.salaryMax * mode.salaryMult) : null
   const malusMult  = mode.malusMult
 
   return (
@@ -109,8 +112,11 @@ function ModeCard({ mode, selected, act, onClick }) {
             )}
           </Typography>
         </Box>
-        <Typography sx={{ fontFamily: '"Noto Serif", serif', fontWeight: 700, fontSize: '0.95rem', color: salary === 0 ? 'text.disabled' : 'warning.dark' }}>
-          {salary > 0 ? `+${salary}g` : salary === 0 ? '0g' : `${salary}g`}
+        <Typography sx={{ fontFamily: '"Noto Serif", serif', fontWeight: 700, fontSize: '0.95rem',
+          color: (isRange ? salaryMax === 0 : salary === 0) ? 'text.disabled' : 'warning.dark' }}>
+          {isRange
+            ? (salaryMax === 0 ? '0g' : `${salaryMin}–${salaryMax}g`)
+            : (salary > 0 ? `+${salary}g` : salary === 0 ? '0g' : `${salary}g`)}
         </Typography>
       </Box>
 
@@ -131,9 +137,11 @@ function ModeCard({ mode, selected, act, onClick }) {
 // ─── Dialog principal ─────────────────────────────────────────────────────────
 
 export default function TravailDialog({ act, open, onClose }) {
-  const { actions }      = useKrat()
+  const { state, actions } = useKrat()
+  const taxMultiplier = state.city?.taxMultiplier ?? 1
+  const taxRate        = Math.min(Math.max(taxMultiplier - 1, 0), 1) // borné à 100% pour éviter un salaire négatif
   const [modeId, setModeId] = useState('normal')
-  const [result, setResult] = useState(null)  // null | 'done' | 'caught'
+  const [result, setResult] = useState(null)  // null | { status: 'done'|'caught', salary }
 
   useEffect(() => {
     if (open) { setModeId('normal'); setResult(null) }
@@ -143,23 +151,38 @@ export default function TravailDialog({ act, open, onClose }) {
 
   const selectedMode = MODES.find(m => m.id === modeId)
 
+  // Salaire de base : fixe (act.salary) ou tiré au sort dans [salaryMin, salaryMax] (ex. pépites de la mine)
+  function rollBaseSalary() {
+    if (act.salaryMin != null && act.salaryMax != null) {
+      return Math.floor(Math.random() * (act.salaryMax - act.salaryMin + 1)) + act.salaryMin
+    }
+    return act.salary ?? 0
+  }
+
   function handleWork() {
     const mode = selectedMode
 
     if (mode.illegal && Math.random() < mode.catchChance) {
       // Pris la main dans le sac — salaire nul + double pénalité réputation
       actions.doWork({ salary: 0, forme: act.forme ?? 0, faim: act.faim ?? 0, reputation: (act.reputation ?? 0) + mode.repExtra * 2 })
-      setResult('caught')
+      setResult({ status: 'caught', salary: 0 })
       return
     }
 
+    const grossSalary = Math.round(rollBaseSalary() * mode.salaryMult)
+
+    // Impôt municipal : taxMultiplier 1.1 décidé par le maire → -10% pour le joueur, reversés au budget de la ville
+    const taxCut    = Math.round(grossSalary * taxRate)
+    const netSalary = grossSalary - taxCut
+
     actions.doWork({
-      salary:     Math.round((act.salary ?? 0) * mode.salaryMult),
+      salary:     netSalary,
       forme:      Math.round((act.forme      ?? 0) * mode.malusMult),
       faim:       Math.round((act.faim       ?? 0) * mode.malusMult),
       reputation: Math.round((act.reputation ?? 0) * mode.malusMult) + mode.repExtra,
     })
-    setResult('done')
+    if (taxCut > 0) actions.addCityBudget(taxCut)
+    setResult({ status: 'done', salary: netSalary, taxCut })
   }
 
   if (result) {
@@ -167,17 +190,27 @@ export default function TravailDialog({ act, open, onClose }) {
       <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
         <DialogContent sx={{ py: 4, textAlign: 'center' }}>
           <MaterialIcon
-            icon={result === 'caught' ? 'gavel' : 'payments'}
-            sx={{ fontSize: '3rem', color: result === 'caught' ? 'error.main' : 'warning.main', mb: 2 }}
+            icon={result.status === 'caught' ? 'gavel' : 'payments'}
+            sx={{ fontSize: '3rem', color: result.status === 'caught' ? 'error.main' : 'warning.main', mb: 2 }}
           />
           <Typography variant="h6" sx={{ mb: 1 }}>
-            {result === 'caught' ? 'Pris la main dans le sac !' : 'Journée de travail terminée.'}
+            {result.status === 'caught' ? 'Pris la main dans le sac !' : 'Journée de travail terminée.'}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-            {result === 'caught'
+            {result.status === 'caught'
               ? "Le patron vous jette dehors sans un sou. Votre réputation en prend un coup sévère."
               : "Vous repartez plus pauvre en énergie mais plus riche en expérience (et en or)."}
           </Typography>
+          {result.status === 'done' && result.salary > 0 && (
+            <Typography variant="h5" sx={{ fontFamily: '"Noto Serif", serif', color: 'warning.dark', mt: 2 }}>
+              +{result.salary}g
+            </Typography>
+          )}
+          {result.status === 'done' && result.taxCut > 0 && (
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, fontStyle: 'italic' }}>
+              (dont {result.taxCut}g prélevés par la municipalité)
+            </Typography>
+          )}
         </DialogContent>
         <DialogActions sx={{ justifyContent: 'center', pb: 2 }}>
           <Button variant="contained" onClick={onClose}>Fermer</Button>
@@ -196,8 +229,15 @@ export default function TravailDialog({ act, open, onClose }) {
           <Box>
             <Typography variant="h6" sx={{ lineHeight: 1.2 }}>{act.label}</Typography>
             <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
-              Salaire de base : {act.salary ?? 0}g
+              {act.salaryMin != null
+                ? `Gain aléatoire : ${act.salaryMin}–${act.salaryMax}g`
+                : `Salaire de base : ${act.salary ?? 0}g`}
             </Typography>
+            {taxRate > 0 && (
+              <Typography variant="caption" sx={{ display: 'block', fontSize: '0.6rem', color: 'error.main', fontWeight: 600 }}>
+                Taxe municipale en vigueur : -{Math.round(taxRate * 100)}% sur le salaire
+              </Typography>
+            )}
           </Box>
         </Box>
       </DialogTitle>

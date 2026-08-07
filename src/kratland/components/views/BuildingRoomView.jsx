@@ -201,15 +201,22 @@ export default function BuildingRoomView() {
   const [evasionOpen,        setEvasionOpen]        = useState(false)
   const [hireSnack,          setHireSnack]          = useState(null)
 
+  // Taxe municipale du maire, appliquée au prix affiché/payé de tout ce qui se vend dans les commerces de la ville.
+  const taxMultiplier = state.city?.taxMultiplier ?? 1
+
   // Disponibilité boutique tirée au sort à chaque entrée dans le bâtiment
   const [shopItems, setShopItems] = useState([])
   useEffect(() => {
     setShopItems(
       Object.entries(ITEM_TYPES)
         .filter(([, item]) => item.inBuildingShop === building.type)
-        .map(([key, item]) => ({ key, ...item, available: rollAvailability(item.rarete ?? 'common') }))
+        .map(([key, item]) => ({
+          key, ...item,
+          prix:      Math.round(item.prix * taxMultiplier),
+          available: rollAvailability(item.rarete ?? 'common'),
+        }))
     )
-  }, [building.id, building.type])
+  }, [building.id, building.type, taxMultiplier])
 
   async function handleAction(actionId) {
     if (actionId === 'exit')          { actions.exitBuilding(); return }
@@ -368,6 +375,11 @@ export default function BuildingRoomView() {
                       <Typography variant="overline" color="text.secondary" sx={{ fontSize: '0.65rem' }}>
                         Boutique
                       </Typography>
+                      {taxMultiplier !== 1 && (
+                        <Typography variant="caption" sx={{ fontSize: '0.6rem', color: 'error.main', fontWeight: 700, ml: 'auto' }}>
+                          Taxe municipale ×{taxMultiplier.toFixed(1)}
+                        </Typography>
+                      )}
                     </Box>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                       {shopItems.map(item => (

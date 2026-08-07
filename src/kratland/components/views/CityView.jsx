@@ -36,6 +36,9 @@ const BUILDING_EMOJI = {
   pharmacie:    '⚕️',
   prison:       '⛓️',
   maison:       '🏠',
+  mine:         '⛏️',
+  usine:        '🏭',
+  maison_close: '💋',
 }
 
 // ─── Cellule ──────────────────────────────────────────────────────────────────

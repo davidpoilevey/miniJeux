@@ -32,12 +32,14 @@ Un record par ville instanciée dans le monde. Le catalog statique (`CITY_GEO`) 
 
 | Colonne  | Type          | Notes |
 |----------|---------------|-------|
-| `id`     | string (auto) | Clé PB interne |
-| `cityId` | string        | Clé sémantique : `"haguenau"`, `"strasbourg"`, etc. Doit correspondre à une clé de `CITY_GEO` |
-| `name`   | string        | Nom affiché |
-| `mayor`  | string        | Nom du maire actuel |
+| `id`            | string (auto) | Clé PB interne |
+| `cityId`        | string        | Clé sémantique : `"haguenau"`, `"strasbourg"`, etc. Doit correspondre à une clé de `CITY_GEO` |
+| `name`          | string        | Nom affiché |
+| `mayor`         | string        | Nom du maire actuel |
+| `taxMultiplier` | number        | Décret fiscal du maire, 1.0 (exempt) à 3.0 (pillage). Renchérit les prix des commerces de la ville (`prix × taxMultiplier`) et prélève la même proportion (bornée à 100%) sur les salaires versés en ville. Réglable via le Bureau du Maire (`BureauDuMaireDialog` → `TaxesPanel`) |
+| `budget`        | number        | Trésor municipal, alimenté par la part "impôt" des ventes et des salaires (voir `KratContext.addCityBudget`). Affiché au maire dans le Bureau du Maire. Pas d'usage de dépense pour l'instant — c'est juste un compteur qui monte |
 
-**Opérations** : `getFullList({ filter: 'cityId="haguenau"' })` au chargement d'une ville. CRUD complet dans l'AdminPanel.
+**Opérations** : `getFullList({ filter: 'cityId="haguenau"' })` au chargement d'une ville. CRUD complet dans l'AdminPanel. `taxMultiplier`/`budget` mis à jour par re-fetch + `update` (pas de transaction atomique — deux joueurs qui paient une taxe en même temps peuvent s'écraser l'un l'autre, acceptable pour ce projet).
 
 > Si aucun record n'existe pour un `cityId`, `fetchCity` utilise `CITY_GEO` comme fallback tout en chargeant quand même les bâtiments.
 
@@ -97,6 +99,23 @@ Fil d'actualités du monde, affiché dans l'accordion "Journal" du HUD.
 | `authorName` | string        | Nom du joueur auteur |
 
 **Opérations** : `getList(1, 20, { sort: '-created' })` au montage du HUD ; `subscribe('*', callback)` pour les nouvelles en temps réel (unsubscribe dans le `useEffect` cleanup) ; `create({...})` lors d'une action "Parler" dans `CharacterDialog`.
+
+---
+
+## Collection `kratItems`
+
+Stockage des coffres (un coffre par bâtiment, créé à la volée au premier dépôt — pas de record tant que le coffre n'a jamais servi). Utilisée uniquement par `CoffreDialog` (`components/dialogs/CoffreDialog.jsx`) et évoquée dans `KratContext.buildHouse` (commentaire "le coffre sera créé à la volée").
+
+| Colonne    | Type          | Notes |
+|------------|---------------|-------|
+| `id`       | string (auto) | Clé PB |
+| `typeId`   | string        | Clé d'objet (`ITEM_TYPES`), ou `"gold"` pour l'or déposé — l'or du coffre est un record comme un autre, distinct de `kratPlayers.gold` |
+| `qty`      | number        | Quantité stockée. Le record est supprimé (`delete`) quand `qty` retombe à 0 plutôt que d'être gardé à 0 |
+| `location` | JSON          | `{ city: cityId, roomId: 'coffre', buildingId }` — `roomId` vaut toujours la string fixe `'coffre'`, ce n'est pas une vraie pièce de `ROOM_DEFINITIONS` |
+
+**Opérations** : `getFullList()` puis filtre client-side sur `location.roomId === 'coffre' && location.buildingId === buildingId` (pas de filtre serveur sur JSON ici, contrairement à `kratBuildings`/`kratNpcs`) ; `create`/`update(qty)`/`delete` au dépôt/retrait, un record par `typeId` par coffre.
+
+**Accès** : propriétaire du bâtiment (`building.ownerId === player.id` ou `buildingId === 'maison_' + player.id`) → accès libre. Non-propriétaire → tentative de forcer le coffre, 50/50 tiré une seule fois à l'ouverture du dialog (`forcedRef`), échec = -5 réputation et aucun accès au contenu.
 
 ---
 

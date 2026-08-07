@@ -63,6 +63,7 @@ const Alpiniste = lazy(() => import( './miniJeux/Alpiniste'));
 const B8Board = lazy(() => import( './b8/B8Board'));
 const RushHour = lazy(() => import( './miniJeux/RushHour'));
 const Perudo = lazy(() => import( './miniJeux/Perudo'));
+const Le421 = lazy(() => import( './miniJeux/Le421'));
 const Flipper = lazy(() => import( './flipper/FlipperGame'));
 const CrawlingBlob = lazy(() => import( './blob/Blob'));
 const CellularEvolutionSim = lazy(() => import( './blob/CellularBlob'));
@@ -98,6 +99,7 @@ const ChopezMoi = lazy(() => import( './miniJeux/ChopezMoi'));
 const JeuQuiTeJuge = lazy(() => import( './miniJeux/JeuQuiTeJuge'));
 const Monopoly = lazy(() => import( './monopoly/Monopoly'));
 const WarGame = lazy(() => import( './wargame/WarGame'));
+const JeuPolitique = lazy(() => import( './politique/JeuPolitique'));
 const KamonLayout = lazy(() => import( './kamon/KamonLayout'));
   
 const EmpileGame = lazy(() => import( './kamon/EmpileGame'));
@@ -1036,7 +1038,17 @@ export const GAMES_DATA = [
         description: "Un bon vieu Perudo, le jeu de dés pour mec bourrés",
         status: 'warning',
         tags: [ 'hasard',  'mobileFriendly', 'iaInside']
-      }, 
+      },
+      {
+        name:"Le 421",
+        id:'le421',
+        component: Le421 ,
+        image:'https://operator-front-static-cdn.winamax.fr/img/editorial/2022/07/08/shots.gif',
+        icon: 'Casino',
+        description: "Le jeu de dés du comptoir : 3 lancers, la meilleure combinaison rafle la manche",
+        status: 'success',
+        tags: [ 'hasard', 'mobileFriendly', 'iaInside', 'multijoueur']
+      },
       {
         name:"Sorcery", 
         id:'sorcery',
@@ -1064,6 +1076,15 @@ export const GAMES_DATA = [
         description: "Tentative de war game... loin d'etre finie",
         status: 'warning',
         tags: [ 'strategie',  'ambitieux', 'workInProgress']
+      },
+      {
+        name: "Jeu politique",
+        id: 'jeuPolitique',
+        component: JeuPolitique,
+        icon: 'HowToVote',
+        description: "Simulation politique en tours différés. Gérer un parti, ses médias, son estime… et la tentation de l'illégalité.",
+        status: 'warning',
+        tags: ['strategie', 'gestion', 'original', 'zeroJoueur', 'workInProgress', 'ambitieux']
       },
       {
         name: 'Football Entraîneur',

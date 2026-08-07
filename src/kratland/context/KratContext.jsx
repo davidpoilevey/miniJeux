@@ -131,6 +131,7 @@ async function fetchCity(cityId) {
       name:         cr?.name          ?? cityId,
       mayor:        cr?.mayor         ?? '',
       taxMultiplier: cr?.taxMultiplier ?? 1.0,
+      budget:        cr?.budget        ?? 0,
       buildings: bldgRecs.map(b => ({ id: b.buildingId, position: b.position, type: b.type, ownerId: b.ownerId ?? null })),
       width:     geo.width,
       height:    geo.height,
@@ -190,7 +191,7 @@ const initialState = {
     exits: [],
   },
 
-  city:     { id: '', name: '', mayor: '', buildings: [], width: 12, height: 8, exits: [] },
+  city:     { id: '', name: '', mayor: '', buildings: [], budget: 0, width: 12, height: 8, exits: [] },
 
   building: { id: '', name: '', type: '', roomConfig: '', ownerId: null, description: '', roomImageUrl: null,
                rooms: [], currentRoomId: 'entrance', inhabitants: [], roomItems: [] },
@@ -247,6 +248,9 @@ function kratReducer(state, action) {
 
     case 'SET_TAX_MULTIPLIER':
       return { ...state, city: { ...state.city, taxMultiplier: action.value } }
+
+    case 'ADD_CITY_BUDGET':
+      return { ...state, city: { ...state.city, budget: (state.city.budget ?? 0) + action.amount } }
 
     case 'ADD_CITY_BUILDING':
       return { ...state, city: { ...state.city, buildings: [...state.city.buildings, action.building] } }
@@ -450,7 +454,7 @@ function kratReducer(state, action) {
 
     case 'ENTER_CITY': {
       const geo  = CITY_GEO[action.cityId] ?? { width: 12, height: 8, exits: [] }
-      const city = { id: action.cityId, name: '', mayor: '', buildings: [], ...geo }
+      const city = { id: action.cityId, name: '', mayor: '', buildings: [], budget: 0, ...geo }
       return {
         ...state,
         loading:     true,
@@ -689,6 +693,15 @@ export function KratProvider({ children, pbId, onAuthError }) {
         gold:       state.player.gold - totalPrice,
         inventaire: newInventaire,
       }).catch(() => {})
+
+      // Fiscalité municipale : la part du prix catalogue au-delà de 1× (taxMultiplier du maire) revient au budget de la ville.
+      // Calculée sur le prix catalogue, indépendamment d'un éventuel marchandage négocié par le joueur.
+      const taxMultiplier = state.city?.taxMultiplier ?? 1
+      if (taxMultiplier > 1 && itemDef?.prix) {
+        const taxUnit    = Math.round(itemDef.prix * (taxMultiplier - 1))
+        const taxRevenue = taxUnit * (itemDef.stackable ? qty : 1)
+        if (taxRevenue > 0) actions.addCityBudget(taxRevenue)
+      }
     },
 
     becomeMayor: () => {
@@ -708,6 +721,22 @@ export function KratProvider({ children, pbId, onAuthError }) {
         .getFullList({ filter: `cityId="${state.city.id}"` })
         .then(recs => {
           if (recs.length) pb.collection('kratCities').update(recs[0].id, { taxMultiplier: value }).catch(() => {})
+        })
+        .catch(() => {})
+    },
+
+    // Crédite le budget municipal (impôts sur ventes/salaires). Re-fetch le record pour limiter les écrasements concurrents.
+    addCityBudget: (amount) => {
+      const delta = Math.round(amount ?? 0)
+      if (!delta || !state.city?.id) return
+      dispatch({ type: 'ADD_CITY_BUDGET', amount: delta })
+      pb.collection('kratCities')
+        .getFullList({ filter: `cityId="${state.city.id}"` })
+        .then(recs => {
+          if (recs.length) {
+            const rec = recs[0]
+            pb.collection('kratCities').update(rec.id, { budget: (rec.budget ?? 0) + delta }).catch(() => {})
+          }
         })
         .catch(() => {})
     },

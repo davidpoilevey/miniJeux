@@ -71,9 +71,16 @@ function TaxesPanel({ onBack }) {
       <Button size="small" onClick={onBack} startIcon={<MaterialIcon icon="arrow_back" />} sx={{ mb: 2 }}>
         Retour
       </Button>
-      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Ce multiplicateur s'applique au prix de toutes les ventes dans les commerces de la ville.
-        Un taux élevé enrichit les caisses municipales… mais mécontente le peuple.
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Ce multiplicateur renchérit tout ce qui se vend dans les commerces de la ville, et prélève la même
+        proportion sur les salaires des travailleurs — chaque impôt collecté rejoint le budget municipal.
+        Un taux élevé enrichit les caisses… mais mécontente le peuple.
+      </Typography>
+      <Typography variant="body2" sx={{ mb: 3 }}>
+        Budget municipal actuel :{' '}
+        <Typography component="span" sx={{ fontWeight: 700, color: 'warning.dark', fontFamily: '"Noto Serif", serif' }}>
+          {(state.city.budget ?? 0).toLocaleString('fr-FR')}g
+        </Typography>
       </Typography>
       <Box sx={{ px: 2 }}>
         <Slider
@@ -257,7 +264,7 @@ export default function BureauDuMaireDialog({ open, onClose }) {
         <Box>
           <Typography variant="h6" component="span">{PANEL_LABELS[panel]}</Typography>
           <Typography variant="caption" color="text.disabled" sx={{ display: 'block', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            {state.city.name} · Maire : {state.city.mayor}
+            {state.city.name} · Maire : {state.city.mayor} · Trésor : {(state.city.budget ?? 0).toLocaleString('fr-FR')}g
           </Typography>
         </Box>
       </DialogTitle>

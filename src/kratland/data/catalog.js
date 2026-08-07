@@ -49,6 +49,10 @@ export const BUILDING_TYPES = {
   bibliotheque:{ label: 'Bibliothèque', icon: 'menu_book' },
   laboratoire:{ label: 'Laboratoire', icon: 'science' },
   maison:    { label: 'Maison',    icon: 'home' },
+
+  mine:         { label: 'Mine d\'or',    icon: 'terrain' },
+  usine:        { label: 'Usine',        icon: 'precision_manufacturing' },
+  maison_close: { label: 'Maison Close', icon: 'nightlife' },
 }
 
 // ─── Actions contextuelles par type de bâtiment et par pièce ─────────────────
@@ -302,6 +306,49 @@ export const CONTEXTUAL_ACTIONS = {
       { id: 'experiment', label: 'Expérimenter',          icon: 'biotech',    primary: false },
       { id: 'identify',   label: 'Identifier un objet',   icon: 'visibility', primary: false },
       { id: 'work',       label: 'Nettoyer les cuves de synthèse (sans EPI)', icon: 'cleaning_services', primary: false, salary: 90, forme: -12, faim: -3, reputation: -1 },
+    ],
+  },
+
+  mine: {
+    entrance: [
+      { id: 'exit', label: 'Sortir dans la ville', icon: 'door_front', primary: true },
+      { id: 'work', label: 'Piocher dans la roche', icon: 'terrain', primary: false,
+        salaryMin: 20, salaryMax: 300, forme: -12, faim: -7, reputation: 0 },
+    ],
+  },
+
+  usine: {
+    entrance: [
+      { id: 'exit', label: 'Sortir dans la ville', icon: 'door_front', primary: true },
+      { id: 'work', label: 'Travailler à la chaîne', icon: 'precision_manufacturing', primary: false,
+        salary: 100, forme: -12, faim: -6, reputation: -1 },
+    ],
+  },
+
+  maison_close: {
+    entrance: [
+      { id: 'exit', label: 'Sortir dans la ville', icon: 'door_front', primary: true },
+      { id: 'moment_discret', label: 'Un moment discret (25g)', icon: 'favorite', primary: false,
+        auto: true, confirmLabel: 'Profiter',
+        description: "Un rideau tiré, une pièce qui sent l'encens. De quoi souffler un peu.",
+        condition: state => state.player.gold >= 25,
+        onSuccess: { forme: 8, gold: -25 },
+        successMessage: "Vous ressortez plus détendu. La tension retombe, un peu.",
+      },
+      { id: 'suite_privee', label: 'Suite privée (70g)', icon: 'king_bed', primary: true,
+        auto: true, confirmLabel: 'Réserver',
+        description: "Une chambre au calme, du vin, et personne pour vous déranger.",
+        condition: state => state.player.gold >= 70,
+        onSuccess: { forme: 16, reputation: 1, gold: -70 },
+        successMessage: "Vous vous sentez comme neuf. Ça valait chaque pièce.",
+      },
+      { id: 'nuit_entiere', label: 'Nuit entière (150g)', icon: 'nightlife', primary: false,
+        auto: true, confirmLabel: "S'offrir la nuit",
+        description: "Le grand jeu. Une nuit entière à ne penser à rien.",
+        condition: state => state.player.gold >= 150,
+        onSuccess: { forme: 24, reputation: 2, gold: -150 },
+        successMessage: "Vous ressortez au petit matin, l'esprit clair et le corps reposé.",
+      },
     ],
   },
 

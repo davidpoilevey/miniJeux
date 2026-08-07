@@ -164,7 +164,8 @@ function VillesTab() {
 
 // ─── Tab : Bâtiments ──────────────────────────────────────────────────────────
 
-const BLDG_ICONS = { taverne:'local_bar', mairie:'account_balance', forge:'hardware', marche:'storefront', temple:'temple_hindu' }
+const BLDG_ICONS = { taverne:'local_bar', mairie:'account_balance', forge:'hardware', marche:'storefront', temple:'temple_hindu',
+  mine:'terrain', usine:'precision_manufacturing', maison_close:'nightlife' }
 const BLDG_BLANK = { buildingId: '', name: '', type: 'taverne', roomConfig: 'entrance_shop', position: '' }
 
 function BatimentsTab() {
