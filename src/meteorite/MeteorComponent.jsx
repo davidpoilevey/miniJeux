@@ -38,47 +38,41 @@ import debris2 from './images/debris2.png';
 import debris3 from './images/debrisEnflamme.png';
 
 
+// La taille à l'écran ne dépend plus du stade : elle suit la progression (log) entre minMass et maxMass
+// evaporation : fraction de masse perdue par seconde (on ne redescend jamais sous minMass)
+const vent = (rate) => ({ rate, label: 'Vent stellaire', color: '#FFD27F' });
+const hawking = (rate) => ({ rate, label: 'Rayonnement de Hawking', color: '#B39DFF' });
+
 export const STAGES = [
-    { name: 'Débris', minMass: 0, maxMass: 100, playerScale: 10, bodyMassRange: [2, 35] , color: '#444444', glow: '#999999'},
-    { name: 'Météorite', minMass: 100, maxMass: 500, playerScale: 3, bodyMassRange: [4, 50], color: '#666666', glow: '#bbbbbb' },
-    { name: 'Astéroïde', minMass: 500, maxMass: 2000, playerScale: 2, bodyMassRange: [20, 600] , color: '#990009', glow: '#dddddd'},
-    { name: 'Planétoïde', minMass: 2000, maxMass: 6000, playerScale: 0.8, bodyMassRange: [200, 6000] , color: '#9f942f', glow: '#dbdb38'},
-    { name: 'Planète Rocheuse', minMass: 6000, maxMass: 200000, playerScale: 0.1, bodyMassRange: [3000, 60000], color: '#4682B4', glow: '#5F9FD4' },
-    { name: 'Géante Gazeuse', minMass: 200000, maxMass: 1000000, playerScale: 0.05, bodyMassRange: [25000, 500000], color: '#B8860B', glow: '#DAA520'  },
-    { name: 'Naine Brune', minMass: 1000000, maxMass: 50000000, playerScale: 0.02, bodyMassRange: [500000, 20000000], color: '#926c0b', glow: '#c58027'  },
-    { name: 'Étoile Naine', minMass: 50000000, maxMass: 100000000, playerScale: 0.007, bodyMassRange: [2500000, 600000000] , color: '#d5650f', glow: '#e7681a' },
-    { name: 'Étoile Moyenne', minMass: 1000000000, maxMass: 5000000000, playerScale: 0.001, bodyMassRange: [100000000, 3000000000] , color: '#c3c010', glow: '#eaea3c' },
-    { name: 'Géante Rouge', minMass: 5000000000, maxMass: 90000000000, playerScale: 0.0004, bodyMassRange: [2000000000, 30000000000], color: '#cf0d2a', glow: '#e34771'  },
-    { name: 'Supergéante', minMass: 90000000000, maxMass: 1000000000000, playerScale: 0.0001, bodyMassRange: [30000000000, 600000000000] , color: '#c8c054', glow: '#ebe8ab' },
-    { name: 'Étoile à Neutrons', minMass: 1000000000000, maxMass: 10000000000000, playerScale: 0.00003, bodyMassRange: [200000000000, 7000000000000] , color: '#24a3ce', glow: '#42b4d6' },
-    { name: 'Trou Noir Stellaire', minMass: 10000000000000, maxMass: 1000000000000000, playerScale: 0.000006, bodyMassRange: [1000000000000, 400000000000000] , color: '#0b0bb8', glow: '#515be3' },
-    { name: 'Trou Noir Supermassif', minMass: 1000000000000000, maxMass: Infinity, playerScale: 0.000001, bodyMassRange: [10000000000000, 2000000000000000 ], color: '#222222', glow: '#000000'  }
+    { name: 'Débris', minMass: 0, maxMass: 100, color: '#444444', glow: '#999999'},
+    { name: 'Météorite', minMass: 100, maxMass: 500, color: '#666666', glow: '#bbbbbb' },
+    { name: 'Astéroïde', minMass: 500, maxMass: 2000, color: '#990009', glow: '#dddddd'},
+    { name: 'Planétoïde', minMass: 2000, maxMass: 6000, color: '#9f942f', glow: '#dbdb38'},
+    { name: 'Planète Rocheuse', minMass: 6000, maxMass: 200000, color: '#4682B4', glow: '#5F9FD4' },
+    { name: 'Géante Gazeuse', minMass: 200000, maxMass: 1000000, color: '#B8860B', glow: '#DAA520'  },
+    { name: 'Naine Brune', minMass: 1000000, maxMass: 50000000, color: '#926c0b', glow: '#c58027'  },
+    { name: 'Étoile Naine', minMass: 50000000, maxMass: 1000000000, color: '#d5650f', glow: '#e7681a', evaporation: vent(0.008) },
+    { name: 'Étoile Moyenne', minMass: 1000000000, maxMass: 5000000000, color: '#c3c010', glow: '#eaea3c', evaporation: vent(0.010) },
+    { name: 'Géante Rouge', minMass: 5000000000, maxMass: 90000000000, color: '#cf0d2a', glow: '#e34771', evaporation: vent(0.012) },
+    { name: 'Supergéante', minMass: 90000000000, maxMass: 1000000000000, color: '#c8c054', glow: '#ebe8ab', evaporation: vent(0.014) },
+    { name: 'Étoile à Neutrons', minMass: 1000000000000, maxMass: 10000000000000, color: '#24a3ce', glow: '#42b4d6', evaporation: { rate: 0.017, label: 'Rayonnement', color: '#9FE8FF' } },
+    { name: 'Trou Noir Stellaire', minMass: 10000000000000, maxMass: 1000000000000000, color: '#0b0bb8', glow: '#515be3', evaporation: hawking(0.02) },
+    // Atteindre maxMass ici = victoire
+    { name: 'Trou Noir Supermassif', minMass: 1000000000000000, maxMass: 1e17, color: '#222222', glow: '#000000', evaporation: hawking(0.025) }
 ];
-// Fonction utilitaire à ajouter (peut être dans un fichier utils ou dans ton composant)
-export const getRandomVariantFromMass = (mass) => {
-  // Trouve le stage correspondant à cette masse
-  const stageIndex = STAGES.findIndex(stage => 
-    mass >= stage.minMass && mass < stage.maxMass
-  );
-  
-  // Si aucun stage trouvé (masse > dernier stage), prend le dernier
-  const finalStageIndex = stageIndex !== -1 ? stageIndex : STAGES.length - 1;
-  
-  // Récupère les variants de ce stage
-  const variants = STAGE_VARIANTS[finalStageIndex];
-  
-  if (!variants || variants.length === 0) {
-    console.warn(`Pas de variants pour le stage ${finalStageIndex}`);
-    return null;
+
+export const stageIndexForMass = (mass) => {
+  for (let i = STAGES.length - 1; i > 0; i--) {
+    if (mass >= STAGES[i].minMass) return i;
   }
-  
-  // Retourne un variant aléatoire
+  return 0;
+};
+
+export const getRandomVariantFromMass = (mass) => {
+  const stageIndex = stageIndexForMass(mass);
+  const variants = STAGE_VARIANTS[stageIndex];
   const randomVariant = variants[Math.floor(Math.random() * variants.length)];
-  
-  return {
-    ...randomVariant,
-    stageIndex: finalStageIndex
-  };
+  return { ...randomVariant, stageIndex };
 };
 export function getVariantById(id) {
   for (const stage of Object.values(STAGE_VARIANTS)) {
@@ -371,17 +365,25 @@ export const STAGE_VARIANTS = {
 };
 
 export function saveMeteor(world) {
-    const data = JSON.stringify(world);
-    localStorage.setItem("meteor", data);
+    // Les effets visuels et les traînées ne valent pas la peine d'être sauvegardés
+    const { particles, absorbing, view, ...rest } = world;
+    const data = JSON.stringify({ ...rest, bodies: rest.bodies.map(({ trail, ...body }) => body) });
+    try {
+        localStorage.setItem("meteor", data);
+    } catch (e) {
+        console.warn("Sauvegarde impossible :", e);
+    }
+}
+export function clearMeteor() {
+    localStorage.removeItem("meteor");
 }
 export function loadMeteor() {
-    const data = localStorage.getItem("meteor");
-    if (!data) {
-        console.warn("Aucune sauvegarde trouvée.");
+    try {
+        const data = localStorage.getItem("meteor");
+        return data ? JSON.parse(data) : null;
+    } catch (e) {
         return null;
     }
-    const world = JSON.parse(data);
-    return world;
 }
 export const GameOverBox=({score, resetGame, continueGame, getStage})=>{
 
@@ -409,7 +411,7 @@ export const GameOverBox=({score, resetGame, continueGame, getStage})=>{
                                 border: '2px solid #f44336'
                             }}
                         >
-                            <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 2, color: '#f44336' }}>
+                            <Typography variant="h3" sx={{ fontWeight: 'bold', mb: 2, color: '#f44336', fontSize: { xs: '1.8rem', md: '3rem' } }}>
                                 Collision Fatale!
                             </Typography>
                             <Typography variant="h6" sx={{ mb: 1 }}>
@@ -456,7 +458,7 @@ export const InstructionBox=({})=>{
  return <Box sx={{ mt: 3, maxWidth: 600, textAlign: 'center' }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
                     <Typography variant="body2" sx={{ color: '#9e9e9e' }}>
-                        🚀 Déplacez la souris pour diriger votre météorite
+                        🚀 Visez avec la souris, maintenez Espace ou le clic (le doigt sur mobile) pour propulser
                     </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1, mb: 1 }}>
@@ -465,8 +467,11 @@ export const InstructionBox=({})=>{
                     </Typography>
                 </Box>
                 <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                    <Typography variant="body2" sx={{ color: '#FFA502' }}>
+                        ⚠️ Contour orange : vous perdez la moitié de votre masse.
+                    </Typography>
                     <Typography variant="body2" sx={{ color: '#f44336' }}>
-                        ⚠️ Évitez les corps avec contour rouge (plus massifs)
+                        Rouge pulsant : mortel
                     </Typography>
                 </Box>
             </Box>

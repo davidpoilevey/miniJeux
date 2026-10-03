@@ -1,14 +1,14 @@
-import { InstructionBox } from "./MeteorComponent"
+import { InstructionBox, STAGES } from "./MeteorComponent"
+import { stageProgress } from "./engine";
 
 import { Box, Typography, Button, LinearProgress } from '@mui/material';
 
-export const StatBox = ({ resetGame, getStage, score, mass, currentStage }) => {
+export const StatBox = ({ resetGame, getStage, score, mass }) => {
     const stage = getStage();
-    const progress = ((mass - stage.minMass) / (stage.maxMass - stage.minMass)) * 100;
-    const clampedProgress = Math.min(Math.max(progress, 0), 100);
+    const clampedProgress = stageProgress(mass, STAGES.indexOf(stage)) * 100;
 
     return (
-        <Box sx={{ mb: 2, display: 'flex', gap: 4, alignItems: 'center' }}>
+        <Box sx={{ mb: 2, display: 'flex', gap: { xs: 2, md: 4 }, alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' }}>
             <Button 
                 variant="outlined"
                 onClick={resetGame}
@@ -91,6 +91,11 @@ export const StatBox = ({ resetGame, getStage, score, mass, currentStage }) => {
                             {stage.maxMass === Infinity ? '∞' : humanMass(stage.maxMass)}
                         </Typography>
                     </Box>
+                    {stage.evaporation && (
+                        <Typography variant="caption" sx={{ color: stage.evaporation.color, fontSize: '0.65rem', display: 'block' }}>
+                            ☄️ {stage.evaporation.label} : −{(stage.evaporation.rate * 100).toFixed(1)} %/s
+                        </Typography>
+                    )}
                 </Box>
             </Box>
 

@@ -54,6 +54,7 @@ const TowerDefense = lazy(() => import( './towerDefense/TowerDefense'));
 const Flip7 = lazy(() => import( './flip7/Flip7'));
 const MeeManager = lazy(() => import( './mee/MeeManager'));
 const Civilization = lazy(() => import( './civ/Civilization'));
+const DungeonMaster = lazy(() => import( './dungeon/DungeonMaster'));
 const FarmerGame = lazy(() => import( './farmer/FarmerGame'));
 const GodBoard = lazy(() => import( './godBoard/GodBoard'));
 const RPG = lazy(() => import( './rpg/RPG'));
@@ -65,6 +66,7 @@ const RushHour = lazy(() => import( './miniJeux/RushHour'));
 const Perudo = lazy(() => import( './miniJeux/Perudo'));
 const Le421 = lazy(() => import( './miniJeux/Le421'));
 const Flipper = lazy(() => import( './flipper/FlipperGame'));
+const MotoRace = lazy(() => import( './moto/MotoRace'));
 const CrawlingBlob = lazy(() => import( './blob/Blob'));
 const CellularEvolutionSim = lazy(() => import( './blob/CellularBlob'));
 const Pissotiere = lazy(() => import( './miniJeux/Pissotiere'));
@@ -582,6 +584,16 @@ export const GAMES_DATA = [
         tags: [ 'gestion', 'strategie', 'original', 'adulte', 'premium']
       },
       {
+        name: 'Dungeon Master',
+        id: 'dungeonMaster',
+        component: DungeonMaster,
+        icon: 'Castle',
+        description: "Le donjon en vue subjective de mon Atari ST",
+        regle: "Z/↑ avancer, S/↓ reculer, A/← et E/→ tourner, Q/D pas de côté. Espace : frapper ou ouvrir un coffre. P : boire une potion. M (maintenu) : carte. 300 s par niveau : chaque seconde restante à la sortie rapporte un point",
+        status: 'warning',
+        tags: ['rpg', 'retro', 'clavier', 'remake', 'workInProgress']
+      },
+      {
         name: 'Final Fantasy 0.1',
         component: FinalFantasy10 ,
         icon: 'AutoAwesomeMotion',
@@ -1027,7 +1039,17 @@ export const GAMES_DATA = [
         description: "Un flipper assisté",
         status: 'warning',
         tags: [ 'hasard',  'physique', 'action', 'workInProgress']
-      }, 
+      },
+      {
+        name:"Moto Rash",
+        id:'motoRash',
+        component: MotoRace ,
+        image:'',
+        icon: 'TwoWheeler',
+        description: "Course de motos sur routes de campagne, façon Road Rash",
+        status: 'warning',
+        tags: [ 'action', 'retro', 'remake', 'workInProgress']
+      },
       {
         name:"Perudo", 
         id:'perudo',

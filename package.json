@@ -21,6 +21,7 @@
     "deepl": "^1.0.13",
     "framer-motion": "^12.29.0",
     "gh-pages": "^6.3.0",
+    "gifuct-js": "^2.1.2",
     "konva": "^9.2.0",
     "matter-js": "^0.20.0",
     "pocketbase": "^0.26.8",

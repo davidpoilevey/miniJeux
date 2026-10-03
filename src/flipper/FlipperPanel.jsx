@@ -1,4 +1,5 @@
-import { Box, Button, Divider, Typography } from '@mui/material';
+import { Box, Button, Divider, MenuItem, Select, Typography } from '@mui/material';
+import { INITIAL_STATE } from './gameState';
 
 const Heart = ({ filled }) => (
   <Typography component="span" sx={{ fontSize: 22, filter: filled ? 'none' : 'grayscale(1) opacity(0.3)' }}>
@@ -6,7 +7,12 @@ const Heart = ({ filled }) => (
   </Typography>
 );
 
-export default function FlipperPanel({ state, onRestart }) {
+// "bumperLand" → "Bumper Land"
+const levelLabel = (name) => name
+  .replace(/([a-z])([A-Z])/g, '$1 $2')
+  .replace(/^./, (c) => c.toUpperCase());
+
+export default function FlipperPanel({ state, levels, level, onLevelChange, onRestart, onEdit }) {
   const { score, lives, message, steps } = state;
 
   return (
@@ -20,6 +26,25 @@ export default function FlipperPanel({ state, onRestart }) {
       borderLeft: '2px solid #2a2a5a',
       color: '#fff',
     }}>
+
+      {/* Niveau */}
+      {levels.length > 1 && (
+        <Select
+          size="small"
+          value={level}
+          onChange={(e) => onLevelChange(e.target.value)}
+          // sans ça le focus revient sur le select et Espace le rouvre au lieu de lancer
+          MenuProps={{ disableRestoreFocus: true }}
+          sx={{
+            color: '#fff', fontSize: 14, bgcolor: '#1a1a3e',
+            '.MuiOutlinedInput-notchedOutline': { borderColor: '#2a2a5a' },
+            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#f5a623' },
+            '.MuiSvgIcon-root': { color: '#888' },
+          }}
+        >
+          {levels.map((name) => <MenuItem key={name} value={name}>{levelLabel(name)}</MenuItem>)}
+        </Select>
+      )}
 
       {/* Score */}
       <Box>
@@ -39,7 +64,7 @@ export default function FlipperPanel({ state, onRestart }) {
           Vies
         </Typography>
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          {[...Array(3)].map((_, i) => <Heart key={i} filled={i < lives} />)}
+          {[...Array(INITIAL_STATE.lives)].map((_, i) => <Heart key={i} filled={i < lives} />)}
         </Box>
       </Box>
 
@@ -95,6 +120,12 @@ export default function FlipperPanel({ state, onRestart }) {
       >
         Recommencer
       </Button>
+
+      {onEdit && (
+        <Button variant="outlined" onClick={onEdit} fullWidth sx={{ color: '#00e5ff', borderColor: '#00e5ff55' }}>
+          ✏️ Éditer (E)
+        </Button>
+      )}
 
       {/* Contrôles */}
       <Box sx={{ textAlign: 'center' }}>

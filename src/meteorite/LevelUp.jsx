@@ -1,15 +1,14 @@
+import { useMemo } from "react";
 import { Box, Button, Paper, Typography } from "@mui/material"
 
 import { loadMeteor, STAGES } from "./MeteorComponent";
 
-export const LevelUpPending = ({ availableVariants, pendingStage, confirmImageAndAdvance, mass }) => {
-    const savedGame = loadMeteor();
+export const LevelUpPending = ({ availableVariants, pendingStage, onChoose, onLoad, mass }) => {
+    const savedGame = useMemo(loadMeteor, [pendingStage]);
     const hasSavedGame = savedGame !== null && pendingStage === 0;
 
     const handleLoadGame = () => {
-        if (savedGame) {
-            confirmImageAndAdvance(null, savedGame); // Passe la sauvegarde au lieu d'un variant
-        }
+        if (savedGame) onLoad(savedGame);
     };
 
     return (
@@ -21,8 +20,10 @@ export const LevelUpPending = ({ availableVariants, pendingStage, confirmImageAn
                 right: 0,
                 bottom: 0,
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: { xs: 'flex-start', md: 'center' },
                 justifyContent: 'center',
+                overflowY: 'auto',
+                p: 1,
                 backgroundColor: 'rgba(0, 0, 0, 0.95)',
                 borderRadius: '8px'
             }}
@@ -98,7 +99,7 @@ export const LevelUpPending = ({ availableVariants, pendingStage, confirmImageAn
                         <Paper
                             key={variant.id}
                             elevation={4}
-                            onClick={() => confirmImageAndAdvance(variant)}
+                            onClick={() => onChoose(variant)}
                             sx={{
                                 width: 180,
                                 p: 2,
@@ -156,7 +157,7 @@ export const LevelUpPending = ({ availableVariants, pendingStage, confirmImageAn
 
 
 
-export const MiniMap = ({ player, bodies, worldSize, updateState }) => {
+export const MiniMap = ({ player, bodies, worldSize }) => {
   const mapSize = 150; // Taille de la mini-map en pixels
   const scale = mapSize / worldSize;
  const playerx = (player.x * scale) % mapSize;
@@ -196,15 +197,15 @@ export const MiniMap = ({ player, bodies, worldSize, updateState }) => {
         />
         
         {/* Bodies */}
-        {bodies.map((body, i) => {
+        {bodies.map((body) => {
           const x = (body.x * scale) % mapSize;
           const y = (body.y * scale) % mapSize;
-          const size = Math.max(2, Math.min(8, Math.sqrt(body.mass) * 0.3));
+          const size = Math.max(1.5, Math.min(7, 3 * Math.sqrt(body.mass / player.mass)));
           const isDanger = body.mass > player.mass;
-          const isSatellite = !isDanger && body.mass > (player.mass/4);
-          
+          const isSatellite = body.isSatellite;
+
           return (
-            <g key={i}>
+            <g key={body.id}>
               {/* Lueur pour les gros objets dangereux */}
               {isDanger && (
                 <circle
@@ -221,14 +222,14 @@ export const MiniMap = ({ player, bodies, worldSize, updateState }) => {
                 cx={x}
                 cy={y}
                 r={size}
-                fill={isSatellite ? '#FFD700' : (isDanger ? '#FF4757' : body.color || '#4682B4')}
+                fill={isSatellite ? '#FFD700' : (isDanger ? (body.mass > player.mass * 2 ? '#FF4757' : '#FFA502') : body.color || '#4682B4')}
                 stroke={isDanger ? '#FF4757' : 'rgba(255, 255, 255, 0.3)'}
                 strokeWidth="0.5"
                 opacity={isDanger ? 1 : 0.7}
               />
               
               {/* Pulse pour les très dangereux */}
-              {isDanger && body.mass > player.mass * 1.5 && (
+              {isDanger && body.mass > player.mass * 2 && (
                 <circle
                   cx={x}
                   cy={y}
