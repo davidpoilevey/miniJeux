@@ -9,6 +9,13 @@ import sonGold from './gold.mp3';
 import sonSlash from './slash.mp3';
 import sonfinNiveau from './finNiveau.mp3';
 import sonFire from './fire.mp3';
+import sonPunch from './punch-impact.mp3';
+import sonExplosion from './explosion.mp3';
+import sonExplosion2 from './explosion2.mp3';
+import sonCoupReussi from './coupReussi.mp3';
+import sonCoupVide from './coupVide.mp3';
+import sonMetalImpact from './metalImpact.mp3';
+import sonLevelUp from './levelup.mp3';
 
 export const soundMap = {
   glou: sonGlou,
@@ -20,6 +27,13 @@ export const soundMap = {
   finNiveau:sonfinNiveau,
   marche:sonMarche,
   gold: sonGold,
+  punch: sonPunch,
+  explosion: sonExplosion,
+  explosion2: sonExplosion2,
+  coupReussi: sonCoupReussi,
+  coupVide: sonCoupVide,
+  metalImpact: sonMetalImpact,
+  levelUp: sonLevelUp,
 };
 class SoundManager {
   constructor() {
