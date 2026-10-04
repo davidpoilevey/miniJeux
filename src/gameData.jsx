@@ -55,6 +55,7 @@ const Flip7 = lazy(() => import( './flip7/Flip7'));
 const MeeManager = lazy(() => import( './mee/MeeManager'));
 const Civilization = lazy(() => import( './civ/Civilization'));
 const DungeonMaster = lazy(() => import( './dungeon/DungeonMaster'));
+const DoomLike = lazy(() => import( './doomlike/DoomLike'));
 const FarmerGame = lazy(() => import( './farmer/FarmerGame'));
 const GodBoard = lazy(() => import( './godBoard/GodBoard'));
 const RPG = lazy(() => import( './rpg/RPG'));
@@ -297,7 +298,7 @@ export const GAMES_DATA = [
         name:"Kratland", 
         id:'kratland',
         component: Kratland,
-        image:'',
+        image:'https://kraland.ragondin-earth.org/images/3/1/dep02.gif',
         icon: 'LocalCasino',
         description: "Inspiré de Kraland, mais en plus desert",
         status: 'success',
@@ -587,11 +588,22 @@ export const GAMES_DATA = [
         name: 'Dungeon Master',
         id: 'dungeonMaster',
         component: DungeonMaster,
+        image:'https://media.senscritique.com/media/000021083800/0/dungeon_master.png',
         icon: 'Castle',
         description: "Le donjon en vue subjective de mon Atari ST",
         regle: "Z/↑ avancer, S/↓ reculer, A/← et E/→ tourner, Q/D pas de côté. Espace : frapper ou ouvrir un coffre. P : boire une potion. M (maintenu) : carte. 300 s par niveau : chaque seconde restante à la sortie rapporte un point",
         status: 'warning',
-        tags: ['rpg', 'retro', 'clavier', 'remake', 'workInProgress']
+        tags: ['rpg', 'action', 'clavier', 'remake', 'premium']
+      },
+      {
+        name: 'DoomLike',
+        id: 'doomLike',
+        component: DoomLike,
+        icon: 'GpsFixed',
+        description: "Des salles, des monstres, un fusil à pompe. Le fiston a dit Quake, on commence par Doom",
+        regle: "Clique dans l'écran pour capturer la souris (Échap : pause). Souris : viser (haut et bas aussi : un headshot fait ×4, et on vise mieux à l'arrêt qu'en courant), clic : tirer. Z Q S D : bouger. On démarre au pistolet : Uzi, fusil à pompe et lance-roquettes traînent quelque part, marche dessus pour les ramasser. 1 à 4 ou molette : changer d'arme. Chaque monstre tué rapporte des $ (+50 % au headshot), à dépenser en viseurs dans la boutique. Nettoie la salle !",
+        status: 'warning',
+        tags: ['action', 'clavier', 'retro', 'workInProgress']
       },
       {
         name: 'Final Fantasy 0.1',
@@ -1034,21 +1046,21 @@ export const GAMES_DATA = [
         name:"Flipper", 
         id:'flipper',
         component: Flipper ,
-        image:'',
+        image:'https://www.arcadeflipper.com/wp-content/uploads/2025/03/WhatsApp-Image-2023-04-25-at-15.12.11.jpeg',
         icon: 'SportsBaseball',
         description: "Un flipper assisté",
         status: 'warning',
-        tags: [ 'hasard',  'physique', 'action', 'workInProgress']
+        tags: [ 'hasard',  'physique', 'action', 'premium', 'clavier']
       },
       {
         name:"Moto Rash",
         id:'motoRash',
         component: MotoRace ,
-        image:'',
+        image:'https://www.abandonware-france.org/images_abandonware/jeux/10203Image002.png',
         icon: 'TwoWheeler',
         description: "Course de motos sur routes de campagne, façon Road Rash",
         status: 'warning',
-        tags: [ 'action', 'retro', 'remake', 'workInProgress']
+        tags: [ 'action', 'retro', 'remake', 'premium', 'clavier']
       },
       {
         name:"Perudo", 
@@ -1103,10 +1115,11 @@ export const GAMES_DATA = [
         name: "Jeu politique",
         id: 'jeuPolitique',
         component: JeuPolitique,
+        image:'https://newsimg.bbc.co.uk/media/images/40452000/jpg/_40452169_prezgames-ubisoft203.jpg',
         icon: 'HowToVote',
         description: "Simulation politique en tours différés. Gérer un parti, ses médias, son estime… et la tentation de l'illégalité.",
         status: 'warning',
-        tags: ['strategie', 'gestion', 'original', 'zeroJoueur', 'workInProgress', 'ambitieux']
+        tags: ['strategie', 'gestion', 'original', 'zeroJoueur']
       },
       {
         name: 'Football Entraîneur',
