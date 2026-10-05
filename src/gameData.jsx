@@ -23,6 +23,8 @@ const Evo12 = lazy(() => import( './b12/Evo12'));
 const Geo13 = lazy(() => import( './b13/Geo13'));
 const WorldBox =  lazy(() => import( './worldBox/WorldBox'));
 const Carbonifere14 = lazy(() => import( './b14/Carbonifere14'));
+const Bacterie15 = lazy(() => import( './b15/Bacterie15'));
+const Bacterie16 = lazy(() => import( './b16/Bacterie16'));
 const AwaleBoard = lazy(() => import( './awale/AwaleBoard'));
 const Bomberman = lazy(() => import( './bomberman/components/BombermanGame'));
 const Jardin = lazy(() => import( './jds/components/Jardin'));
@@ -391,6 +393,28 @@ export const GAMES_DATA = [
   {
     categorie: 'Ca bouge tout seul',
     jeux: [
+      {
+        name: 'Bactérie 16',
+        id: 'bacterie16',
+        component: Bacterie16,
+        icon: 'DirectionsRun',
+        image:'https://www.shutterstock.com/image-vector/simplest-unicellular-organisms-set-bacteria-600nw-2539127381.jpg',
+        description: "Les marcheurs : des corps qui apprennent à avancer, génération après génération.",
+        status: 'warning',
+        regle: "Zéro joueur. Chaque génération, 100 créatures (os, muscles, griffes) courent 15 s sur la même piste. Les plus loin se reproduisent avec mutations : membres et muscles apparaissent ou disparaissent. Cliquez un champion dans la galerie pour revoir sa course.",
+        tags: ['zeroJoueur', 'bacterie', 'evolution', 'physique', 'ambitieux']
+      },
+      {
+        name: 'Bactérie 15.5',
+        id: 'bacterie15',
+        component: Bacterie15,
+        icon: 'Biotech',
+        image:'https://www.shutterstock.com/image-vector/simplest-unicellular-organisms-set-bacteria-600nw-2539127381.jpg',
+        description: "L'aboutissement : une gélose, 18 gènes, une seule règle. Le reste émerge.",
+        status: 'warning',
+        regle: "Zéro joueur. Une bactérie par case : elle mange ce que ses enzymes digèrent, rejette le déchet suivant (sucre → acide → déchet), sécrète ou non une toxine, se divise dans la meilleure case libre. Regardez les guildes s'organiser et la guerre chimique tourner en pierre-feuille-ciseaux. Cliquez une bactérie pour lire son génome.",
+        tags: ['zeroJoueur', 'bacterie', 'evolution', 'ambitieux']
+      },
       {
         name: 'Ecosysteme',
         component: B8Board,
