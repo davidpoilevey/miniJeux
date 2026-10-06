@@ -394,13 +394,13 @@ export const GAMES_DATA = [
     categorie: 'Ca bouge tout seul',
     jeux: [
       {
-        name: 'Bactérie 16',
+        name: 'Organism Race 16',
         id: 'bacterie16',
         component: Bacterie16,
         icon: 'DirectionsRun',
-        image:'https://www.shutterstock.com/image-vector/simplest-unicellular-organisms-set-bacteria-600nw-2539127381.jpg',
+        image:'https://mistercrabs.com/x/cdn/?https://storage.googleapis.com/wzukusers/user-26743091/images/5cd33f2724080Xl22qDo/hermit-crab-1-cartoon_d400.png',
         description: "Les marcheurs : des corps qui apprennent à avancer, génération après génération.",
-        status: 'warning',
+        status: 'success',
         regle: "Zéro joueur. Chaque génération, 100 créatures (os, muscles, griffes) courent 15 s sur la même piste. Les plus loin se reproduisent avec mutations : membres et muscles apparaissent ou disparaissent. Cliquez un champion dans la galerie pour revoir sa course.",
         tags: ['zeroJoueur', 'bacterie', 'evolution', 'physique', 'ambitieux']
       },
@@ -419,7 +419,7 @@ export const GAMES_DATA = [
         name: 'Ecosysteme',
         component: B8Board,
         icon: 'Biotech', 
-        image:'https://www.shutterstock.com/image-vector/simplest-unicellular-organisms-set-bacteria-600nw-2539127381.jpg',
+        image:'https://www.youtube.com/watch?v=_ZqDZfe6ER4',
         description: 'Bacterie 8.0. Y a carrement une video https://youtu.be/_ZqDZfe6ER4',
         status: 'success',
         tags: ['zeroJoueur', 'bacterie', 'evolution',  'ambitieux', 'premium']
@@ -497,7 +497,7 @@ export const GAMES_DATA = [
         id: 'cellular-blob',
         name: 'Cellular Blob',
         component: CellularEvolutionSim ,
-        description: 'Tentative d evolution multi-celullaire',
+        description: 'Tentative d evolution multi-celullaire par croissance/division',
         icon: 'BugReport',
         image:'https://www.shutterstock.com/image-vector/simplest-unicellular-organisms-set-bacteria-600nw-2539127381.jpg',
         status: 'info',
@@ -505,9 +505,9 @@ export const GAMES_DATA = [
       },
       {
         id: 'cellular-crawlingblob',
-        name: 'Cellular Blob',
+        name: 'Crawling Blob',
         component: CrawlingBlob ,
-        description: "Tentative d evolution multi-celullaire, mais c'est pas fini",
+        description: "Tentative d evolution multi-celullaire, par selection naturelle, mais c'est pas fini.. CrabRace 15 est l'aboutissement",
         icon: 'BugReport',
         image:'https://www.shutterstock.com/image-vector/simplest-unicellular-organisms-set-bacteria-600nw-2539127381.jpg',
         status: 'info',
@@ -623,7 +623,8 @@ export const GAMES_DATA = [
         name: 'DoomLike',
         id: 'doomLike',
         component: DoomLike,
-        icon: 'GpsFixed',
+      image:'https://media.senscritique.com/media/000021083800/0/dungeon_master.png',
+          icon: 'GpsFixed',
         description: "Des salles, des monstres, un fusil à pompe. Le fiston a dit Quake, on commence par Doom",
         regle: "Clique dans l'écran pour capturer la souris (Échap : pause). Souris : viser (haut et bas aussi : un headshot fait ×4, et on vise mieux à l'arrêt qu'en courant), clic : tirer. Z Q S D : bouger. On démarre au pistolet : Uzi, fusil à pompe et lance-roquettes traînent quelque part, marche dessus pour les ramasser. 1 à 4 ou molette : changer d'arme. Chaque monstre tué rapporte des $ (+50 % au headshot), à dépenser en viseurs dans la boutique. Nettoie la salle !",
         status: 'warning',
@@ -657,7 +658,7 @@ export const GAMES_DATA = [
         name:"Feu de cheminee", 
         id:'cheminee',
         component: FirePlace ,
-        image:'https://sf1.lechasseurfrancais.com/wp-content/uploads/2024/01/feu-scaled.jpg',
+        image:'https://fr.lemarquier.com/photos/categories/49/background/square/uploaded_KLFR_638978733603289445.jpg',
         icon: 'Fireplace',
         description: "Comment bien allumer un feu de cheminee",
         status: 'success',
@@ -704,6 +705,15 @@ export const GAMES_DATA = [
         status: 'success',
         regle:"Suivez les instructions du genie pour avancer. Gerez bien votre stock et si vous etes en galere, accedez au menu pour Cheat dans l'Entrepot.. Mais faites attention au X Mode",
         tags: [ 'gestion', 'elevage', 'original', 'humour', 'premium']
+      },  {
+        name:"Cult-Manager", 
+        id:'cultManager',
+        component: CultManagementGame ,
+        image:'https://c.files.bbci.co.uk/7599/production/_112050103_cult_3.png',
+        icon: 'Psychology',
+        description: "Devenez un gourou d'une secte machiavelique",
+        status: 'warning',
+        tags: [ 'adulte', 'humour', 'original',  'mobileFriendly', 'premium']
       },
       {
         name: 'Bite Life',
@@ -736,6 +746,15 @@ export const GAMES_DATA = [
         description: "Copie illegale de Star drifter. Grossissez de debris spatial a etoile a neutron ou trou noir",
         status: 'success',
         tags: [ 'physique',  'ambitieux', 'remake', 'premium']
+      }, {
+        name: "Jeu politique",
+        id: 'jeuPolitique',
+        component: JeuPolitique,
+        image:'https://newsimg.bbc.co.uk/media/images/40452000/jpg/_40452169_prezgames-ubisoft203.jpg',
+        icon: 'HowToVote',
+        description: "Simulation politique en tours différés. Gérer un parti, ses médias, son estime… et la tentation de l'illégalité.",
+        status: 'warning',
+        tags: ['strategie', 'gestion', 'original', 'zeroJoueur']
       },
       {
         name: 'Balance Infernale',
@@ -789,66 +808,7 @@ export const GAMES_DATA = [
       }
     ]
   },
-  {
-    categorie: 'Experiences',
-    jeux: [
-      {
-        name:"Kaleidopoeme", 
-        id:'poemeGame',
-        component: HaikuGarden ,
-        icon: 'FilterVintage',
-        description: "Voila ce qui arrive quand Prune et Claude imaginent un jeu",
-        status: 'info',
-        tags: [ 'original', 'basique']
-      },
-      {
-        name: 'Open library',
-        component: OpenLibrary ,
-        icon: 'MenuBook',
-        description: 'exercide de requetes sur cette API',
-        status: 'info',
-        tags: ['original', 'basique']
-      },
-      {
-        name: 'Conway',
-        component: GameOfLife ,
-        favori:0.9,
-        icon: 'GridOn', 
-        image:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCC1IR7RKw1-TlEl0G3sYmqi9aXR93q47atg&s',
-        description: 'automates cellulaires',
-        status: 'info',
-        tags: ['zeroJoueur', 'evolution', 'mobileFriendly', 'physique']
-      },
-      {
-        name: 'TI 87',
-        component: Calculator ,
-        icon: 'Calculate',
-        description: 'Simulation des capacités de la Texas Instrument 87 de mon enfance',
-        status: 'info',
-        tags: [ 'remake', 'clavier']
-      },
-      {
-        name: 'OhCestBeau',
-        component: ClickTouche,
-        icon: 'ColorLens',
-        regle:"A definir",
-        description: 'Pour se reposer les neurones',
-        status: 'warning',
-        tags: [ 'basique', 'souris']
-      },
-      {
-        name: 'Jardin magique',
-        component: Jardin ,
-        icon: 'LocalFlorist',
-        description: 'Pour Severine',
-        status: 'info',
-        regle: <><Typography paragraph={true}>Cliquer pour ajouter une plante.
-            L'icone "?" a cote du nom va chercher une image, celui a cote de la description va chercher les infos pour la plante.
-            Placer les plantes dans le jardin.</Typography></>,
-        tags: [ 'gestion', 'original']
-      }
-    ]
-  },
+  
   {
     categorie: 'Ca rigole',
     isMiniJeux: true,
@@ -1037,16 +997,7 @@ export const GAMES_DATA = [
   {
     categorie: 'Work in progress',
     jeux: [
-     {
-        name:"Cult-Manager", 
-        id:'cultManager',
-        component: CultManagementGame ,
-        image:'https://c.files.bbci.co.uk/7599/production/_112050103_cult_3.png',
-        icon: 'Psychology',
-        description: "Devenez un gourou d'une secte machiavelique",
-        status: 'warning',
-        tags: [ 'adulte', 'humour', 'original',  'mobileFriendly', 'premium']
-      }, {
+    {
         name:"Gipsy", 
         id:'gipsy',
         component: GipsyGame ,
@@ -1135,16 +1086,7 @@ export const GAMES_DATA = [
         status: 'warning',
         tags: [ 'strategie',  'ambitieux', 'workInProgress']
       },
-      {
-        name: "Jeu politique",
-        id: 'jeuPolitique',
-        component: JeuPolitique,
-        image:'https://newsimg.bbc.co.uk/media/images/40452000/jpg/_40452169_prezgames-ubisoft203.jpg',
-        icon: 'HowToVote',
-        description: "Simulation politique en tours différés. Gérer un parti, ses médias, son estime… et la tentation de l'illégalité.",
-        status: 'warning',
-        tags: ['strategie', 'gestion', 'original', 'zeroJoueur']
-      },
+     
       {
         name: 'Football Entraîneur',
         id: 'footballCoach',
@@ -1155,6 +1097,65 @@ export const GAMES_DATA = [
         regle: "Touches tactiques : [A] Attaque  [D] Défense  [T] Tacle  [G] Garder  [P] Presse haute  [F] Fuite  [C] Centre  [X] Dribble dangereux  [R] Repli  [M] Marquage  [Z] Zone  [H] Haut rythme  [S] Substitution. Le match dure 90 minutes (3 min réelles).",
         status: 'warning',
         tags: ['action', 'strategie', 'clavier', 'zeroJoueur']
+      }
+    ]
+  },{
+    categorie: 'Experiences',
+    jeux: [
+      {
+        name:"Kaleidopoeme", 
+        id:'poemeGame',
+        component: HaikuGarden ,
+        icon: 'FilterVintage',
+        description: "Voila ce qui arrive quand Prune et Claude imaginent un jeu",
+        status: 'info',
+        tags: [ 'original', 'basique']
+      },
+      {
+        name: 'Open library',
+        component: OpenLibrary ,
+        icon: 'MenuBook',
+        description: 'exercide de requetes sur cette API',
+        status: 'info',
+        tags: ['original', 'basique']
+      },
+      {
+        name: 'Conway',
+        component: GameOfLife ,
+        favori:0.9,
+        icon: 'GridOn', 
+        image:'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSCC1IR7RKw1-TlEl0G3sYmqi9aXR93q47atg&s',
+        description: 'automates cellulaires',
+        status: 'info',
+        tags: ['zeroJoueur', 'evolution', 'mobileFriendly', 'physique']
+      },
+      {
+        name: 'TI 87',
+        component: Calculator ,
+        icon: 'Calculate',
+        description: 'Simulation des capacités de la Texas Instrument 87 de mon enfance',
+        status: 'info',
+        tags: [ 'remake', 'clavier']
+      },
+      {
+        name: 'OhCestBeau',
+        component: ClickTouche,
+        icon: 'ColorLens',
+        regle:"A definir",
+        description: 'Pour se reposer les neurones',
+        status: 'warning',
+        tags: [ 'basique', 'souris']
+      },
+      {
+        name: 'Jardin magique',
+        component: Jardin ,
+        icon: 'LocalFlorist',
+        description: 'Pour Severine.. un des protos, la version finale est sur https://bdd.poilevey.org',
+        status: 'info',
+        regle: <><Typography paragraph={true}>Cliquer pour ajouter une plante.
+            L'icone "?" a cote du nom va chercher une image, celui a cote de la description va chercher les infos pour la plante.
+            Placer les plantes dans le jardin.</Typography></>,
+        tags: [ 'gestion', 'original']
       }
     ]
   }
