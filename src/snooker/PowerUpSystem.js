@@ -75,6 +75,7 @@ export class PowerUpSystem {
 
     switch (type) {
       case 'BONUS_POINTS':
+        newGameState.scores = [...gameState.scores];
         newGameState.scores[gameState.currentPlayer - 1] += 2;
         break;
 

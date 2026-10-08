@@ -3,9 +3,11 @@ import { Box, Typography, Button, Stack } from '@mui/material';
 import SportsCricketIcon from '@mui/icons-material/SportsCricket';
 import { PhysicsEngine, SnookerLogic } from './Physics';
 import { PowerUpSystem, POWER_UP_TYPES } from './PowerUpSystem';
+import { COLOR_ORDER, getTarget, resolveShot } from './Rules';
 import GameCanvas from './GameCanvas';
 import PlayerPanel from './PlayerPanel';
 import GameInfo from './GameInfo';
+import TurnBanner from './TurnBanner';
 
 // ============================================================================
 // CONSTANTES DU JEU
@@ -19,15 +21,49 @@ const POCKET_RADIUS = 20;
 const BASE_FRICTION = 0.99;
 const MIN_SPEED = 0.1;
 
-const BALL_POINTS = {
-  red: 1,
-  yellow: 2,
-  green: 3,
-  brown: 4,
-  blue: 5,
-  pink: 6,
-  black: 7
+// Effet sur la blanche (SHIFT pendant la visée)
+const SPIN_TRANSFER = 0.65;     // part de la vitesse d'avant le choc rendue par l'effet
+const SPIN_DECAY = 0.993;       // l'effet s'use en roulant
+const SPIN_ROLL = 0.003;        // avant le choc : le coulé roule plus loin, le rétro freine
+const SPIN_SENSITIVITY = 80;    // pixels de souris pour passer de 0 à l'effet max
+const SIDE_SPIN = {
+  transfer: 0.5,                // déviation sur la bande, en part de la vitesse d'impact
+  cushionLoss: 0.6              // part de l'effet latéral qui survit à chaque bande
 };
+// Le point de frappe reste dans la bille : (side, spin) borné au disque unité
+const clampHit = (side, spin) => {
+  const d = Math.hypot(side, spin);
+  return d > 1 ? { side: side / d, spin: spin / d } : { side, spin };
+};
+
+const PLAYERS = [
+  { emoji: '😎', color: '#FF9800' },
+  { emoji: '🤓', color: '#29B6F6' }
+];
+
+const INITIAL_GAME_STATE = {
+  currentPlayer: 1,
+  scores: [0, 0],
+  phase: 'red',
+  redsRemaining: 15,
+  isAiming: false,
+  isShooting: false,
+  aimAngle: 0,
+  aimPower: 0,
+  spin: 0,          // -1 rétro … +1 coulé
+  side: 0,          // -1 gauche … +1 droite
+  spinMode: false,  // SHIFT enfoncé : la souris règle l'effet, la visée est gelée
+  lastShot: null, // { severity, text } — résumé du dernier coup
+  gameOver: false,
+  // Power-ups
+  freeShot: false,
+  jokerActive: false,
+  doublePoints: false,
+  visionActive: false,
+  activeEffect: null // { type, endTime, ... }
+};
+
+const newShot = () => ({ firstHit: null, pocketed: [], visionCollected: false });
 
 // ============================================================================
 // COMPOSANT PRINCIPAL
@@ -35,35 +71,17 @@ const BALL_POINTS = {
 
 export default function SnookerGame() {
   const containerRef = useRef(null);
-  const [canvasSize, setCanvasSize] = useState({ 
-    width: 1200, 
-    height: 700, 
-    tableWidth: 1000, 
-    tableHeight: 500 
+  const [canvasSize, setCanvasSize] = useState({
+    width: 1200,
+    height: 700,
+    tableWidth: 1000,
+    tableHeight: 500
   });
-  
+
   const [balls, setBalls] = useState([]);
   const [pockets, setPockets] = useState([]);
-  
-  const [gameState, setGameState] = useState({
-    currentPlayer: 1,
-    scores: [0, 0],
-    phase: 'red',
-    redsRemaining: 15,
-    isAiming: false,
-    isShooting: false,
-    aimAngle: 0,
-    aimPower: 0,
-    firstBallHit: null,
-    ballsPocketed: [],
-    faultInfo: null,
-    // Power-ups
-    freeShot: false,
-    jokerActive: false,
-    doublePoints: false,
-    visionActive: false,
-    activeEffect: null // { type, endTime, ... }
-  });
+
+  const [gameState, setGameState] = useState(INITIAL_GAME_STATE);
 
   const [powerUp, setPowerUp] = useState({
     active: null,
@@ -73,20 +91,31 @@ export default function SnookerGame() {
     collectAnimation: 1.0
   });
 
-  const animationFrameRef = useRef(null);
   const mouseDownPos = useRef(null);
+  const lastMouseRef = useRef(null);
+  // Déplacement de souris fait sous SHIFT, retiré de la visée pour qu'elle ne saute pas au relâchement
+  const aimOffsetRef = useRef({ x: 0, y: 0 });
+
+  // Refs lues par la boucle d'animation : toujours à jour, contrairement aux closures
+  const ballsRef = useRef(balls);
+  const gameStateRef = useRef(gameState);
+  const powerUpRef = useRef(powerUp);
+  const shotRef = useRef(newShot());
+  ballsRef.current = balls;
+  gameStateRef.current = gameState;
+  powerUpRef.current = powerUp;
 
   // Calcul de la taille responsive
   useEffect(() => {
     const updateSize = () => {
       if (!containerRef.current) return;
-      
+
       const containerWidth = containerRef.current.offsetWidth;
       const tableWidth = Math.min(containerWidth - 32, MAX_TABLE_WIDTH);
       const tableHeight = tableWidth / TABLE_RATIO;
       const width = tableWidth + TABLE_MARGIN * 2;
       const height = tableHeight + TABLE_MARGIN * 2;
-      
+
       setCanvasSize({ width, height, tableWidth, tableHeight });
     };
 
@@ -95,22 +124,37 @@ export default function SnookerGame() {
     return () => window.removeEventListener('resize', updateSize);
   }, []);
 
+  // SHIFT : mode réglage de l'effet (pour l'affichage de la jauge)
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== 'Shift') return;
+      const down = e.type === 'keydown';
+      setGameState(prev => (prev.spinMode === down ? prev : { ...prev, spinMode: down }));
+    };
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('keyup', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keyup', onKey);
+    };
+  }, []);
+
   // Initialisation
   useEffect(() => {
     if (canvasSize.tableWidth > 0) {
       setBalls(SnookerLogic.initializeBalls(
-        canvasSize.tableWidth, 
-        canvasSize.tableHeight, 
-        TABLE_MARGIN, 
+        canvasSize.tableWidth,
+        canvasSize.tableHeight,
+        TABLE_MARGIN,
         BALL_RADIUS
       ));
       setPockets(SnookerLogic.getPockets(
-        canvasSize.tableWidth, 
-        canvasSize.tableHeight, 
-        TABLE_MARGIN, 
+        canvasSize.tableWidth,
+        canvasSize.tableHeight,
+        TABLE_MARGIN,
         POCKET_RADIUS
       ));
-      
+
       // Spawn premier power-up
       spawnPowerUp();
     }
@@ -123,10 +167,10 @@ export default function SnookerGame() {
       canvasSize.tableWidth,
       canvasSize.tableHeight,
       TABLE_MARGIN,
-      balls,
+      ballsRef.current,
       BALL_RADIUS
     );
-    
+
     setPowerUp({
       active: type,
       x: pos.x,
@@ -138,115 +182,103 @@ export default function SnookerGame() {
 
   // Boucle de jeu principale
   useEffect(() => {
-    if (gameState.isShooting) {
-      const animate = () => {
-        setBalls(prevBalls => {
-          let newBalls = [...prevBalls];
-          let anyMoving = false;
-          const pocketedThisTurn = [];
+    if (!gameState.isShooting) return;
 
-          // Appliquer les effets actifs (aimant, etc.)
-          newBalls = PowerUpSystem.applyActiveEffects(
-            newBalls,
-            pockets,
-            gameState,
-            BALL_RADIUS
-          );
+    let frame;
+    const animate = () => {
+      const newBalls = ballsRef.current;
+      const { activeEffect } = gameStateRef.current;
 
-          // Friction dynamique selon les effets
-          let friction = BASE_FRICTION;
-          if (gameState.activeEffect?.type === 'SUPER_SLIP') {
-            friction = gameState.activeEffect.frictionMultiplier;
+      // Appliquer les effets actifs (aimant, etc.)
+      PowerUpSystem.applyActiveEffects(newBalls, pockets, gameStateRef.current, BALL_RADIUS);
+
+      // Friction dynamique selon les effets
+      let friction = BASE_FRICTION;
+      if (activeEffect?.type === 'SUPER_SLIP') {
+        friction = activeEffect.frictionMultiplier;
+      }
+
+      // Vitesse dynamique selon les effets
+      let speedMultiplier = 1;
+      if (activeEffect?.type === 'SLOW_MOTION') {
+        speedMultiplier = activeEffect.speedMultiplier;
+      }
+
+      newBalls.forEach((ball, i) => {
+        if (ball.pocketed) return;
+
+        // Mise à jour avec friction et vitesse modifiées
+        const ballFriction = ball.spin ? Math.min(friction + ball.spin * SPIN_ROLL, 0.998) : friction;
+        ball.x += ball.vx * speedMultiplier;
+        ball.y += ball.vy * speedMultiplier;
+        ball.vx *= ballFriction;
+        ball.vy *= ballFriction;
+        if (ball.spin) ball.spin *= SPIN_DECAY;
+        if (ball.side) ball.side *= SPIN_DECAY;
+
+        const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
+        if (speed < MIN_SPEED) {
+          ball.vx = 0;
+          ball.vy = 0;
+        }
+
+        PhysicsEngine.checkWallCollision(
+          ball,
+          canvasSize.tableWidth,
+          canvasSize.tableHeight,
+          TABLE_MARGIN,
+          BALL_RADIUS,
+          SIDE_SPIN
+        );
+
+        if (PhysicsEngine.checkPocket(ball, pockets, POCKET_RADIUS)) {
+          ball.pocketed = true;
+          ball.pocketAnimation = 1.0;
+          ball.vx = 0;
+          ball.vy = 0;
+          shotRef.current.pocketed.push(ball);
+          return;
+        }
+
+        // Collisions inter-billes
+        for (let j = i + 1; j < newBalls.length; j++) {
+          const other = newBalls[j];
+          if (!other.pocketed && PhysicsEngine.checkCollision(ball, other, BALL_RADIUS)) {
+            if (!shotRef.current.firstHit) {
+              if (ball.color === 'white') shotRef.current.firstHit = other;
+              else if (other.color === 'white') shotRef.current.firstHit = ball;
+            }
+            const spinner = ball.spin ? ball : other.spin ? other : null;
+            const vBefore = spinner && { vx: spinner.vx, vy: spinner.vy };
+            if (PhysicsEngine.resolveCollision(ball, other, BALL_RADIUS) && spinner) {
+              PhysicsEngine.applySpin(spinner, vBefore.vx, vBefore.vy, SPIN_TRANSFER);
+            }
           }
+        }
 
-          // Vitesse dynamique selon les effets
-          let speedMultiplier = 1;
-          if (gameState.activeEffect?.type === 'SLOW_MOTION') {
-            speedMultiplier = gameState.activeEffect.speedMultiplier;
+        // Collision avec power-up
+        const pu = powerUpRef.current;
+        if (ball.color === 'white' && pu.active && !pu.collecting) {
+          if (PowerUpSystem.checkCollision(ball, pu, BALL_RADIUS)) {
+            collectPowerUp();
           }
+        }
+      });
 
-          newBalls.forEach((ball, i) => {
-            if (ball.pocketed) return;
+      setBalls([...newBalls]);
 
-            // Mise à jour avec friction et vitesse modifiées
-            ball.x += ball.vx * speedMultiplier;
-            ball.y += ball.vy * speedMultiplier;
-            ball.vx *= friction;
-            ball.vy *= friction;
-
-            const speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
-            if (speed < MIN_SPEED) {
-              ball.vx = 0;
-              ball.vy = 0;
-            }
-
-            PhysicsEngine.checkWallCollision(
-              ball,
-              canvasSize.tableWidth,
-              canvasSize.tableHeight,
-              TABLE_MARGIN,
-              BALL_RADIUS
-            );
-
-            const pocket = PhysicsEngine.checkPocket(ball, pockets, POCKET_RADIUS);
-            if (pocket) {
-              ball.pocketed = true;
-              ball.pocketAnimation = 1.0;
-              pocketedThisTurn.push(ball);
-            }
-
-            if (ball.vx !== 0 || ball.vy !== 0) {
-              anyMoving = true;
-            }
-
-            // Collisions inter-billes
-            for (let j = i + 1; j < newBalls.length; j++) {
-              const other = newBalls[j];
-              if (!other.pocketed && PhysicsEngine.checkCollision(ball, other, BALL_RADIUS)) {
-                if (ball.color === 'white' && !gameState.firstBallHit) {
-                  setGameState(prev => ({ ...prev, firstBallHit: other }));
-                }
-                PhysicsEngine.resolveCollision(ball, other, BALL_RADIUS);
-              }
-            }
-
-            // Collision avec power-up
-            if (ball.color === 'white' && powerUp.active && !powerUp.collecting) {
-              if (PowerUpSystem.checkCollision(ball, powerUp, BALL_RADIUS)) {
-                collectPowerUp();
-              }
-            }
-          });
-
-          if (pocketedThisTurn.length > 0) {
-            setGameState(prev => ({
-              ...prev,
-              ballsPocketed: [...prev.ballsPocketed, ...pocketedThisTurn]
-            }));
-          }
-
-          if (!anyMoving) {
-            setGameState(prev => {
-              const newState = { ...prev, isShooting: false };
-              return processEndOfShot(newState, newBalls);
-            });
-          }
-
-          return newBalls;
-        });
-
-        animationFrameRef.current = requestAnimationFrame(animate);
-      };
-
-      animationFrameRef.current = requestAnimationFrame(animate);
-    }
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
+      // Testé après toutes les collisions : une bille mise en mouvement en fin de boucle compte aussi
+      const anyMoving = newBalls.some(b => !b.pocketed && (b.vx !== 0 || b.vy !== 0));
+      if (anyMoving) {
+        frame = requestAnimationFrame(animate);
+      } else {
+        endShot();
       }
     };
-  }, [gameState.isShooting, pockets, canvasSize, powerUp, gameState.activeEffect]);
+
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [gameState.isShooting, pockets, canvasSize]);
 
   // Animation de collecte du power-up
   useEffect(() => {
@@ -287,15 +319,19 @@ export default function SnookerGame() {
   }, [gameState.activeEffect]);
 
   const collectPowerUp = () => {
-    if (!powerUp.active) return;
+    const current = powerUpRef.current;
+    if (!current.active || current.collecting) return;
 
+    // Marqué tout de suite pour ne pas le ramasser deux fois avant le prochain rendu
+    powerUpRef.current = { ...current, collecting: true };
     setPowerUp(prev => ({ ...prev, collecting: true }));
+    if (current.active.id === 'VISION') shotRef.current.visionCollected = true;
 
-    // Appliquer l'effet du power-up
-    const result = PowerUpSystem.applyEffect(
-      powerUp.active.id,
-      gameState,
-      balls,
+    // Les effets sur les billes sont appliqués en place sur ballsRef
+    const { gameState: fx } = PowerUpSystem.applyEffect(
+      current.active.id,
+      gameStateRef.current,
+      ballsRef.current,
       pockets,
       BALL_RADIUS,
       TABLE_MARGIN,
@@ -303,138 +339,78 @@ export default function SnookerGame() {
       canvasSize.tableHeight
     );
 
-    setGameState(result.gameState);
-    setBalls(result.balls);
+    // On ne fusionne que les champs des power-ups, sans écraser le reste de l'état
+    const { scores, freeShot, jokerActive, doublePoints, visionActive, activeEffect } = fx;
+    setGameState(prev => ({ ...prev, scores, freeShot, jokerActive, doublePoints, visionActive, activeEffect }));
   };
 
-  const processEndOfShot = (state, ballsArray) => {
-    const { firstBallHit, ballsPocketed, phase, redsRemaining, currentPlayer, scores } = state;
-    
-    let newScores = [...scores];
-    let newRedsRemaining = redsRemaining;
-    let newPhase = phase;
-    let faultInfo = { valid: true, reason: null, message: null };
-    let switchPlayer = false;
+  // Remet une bille sur la table : son spot, sinon le plus haut spot libre, sinon glisse vers la gauche
+  const respotBall = (ball, allBalls) => {
+    const isFree = (x, y) => allBalls.every(o =>
+      o === ball || o.pocketed || Math.hypot(o.x - x, o.y - y) >= BALL_RADIUS * 2
+    );
 
-    const whitePocketed = ballsPocketed.some(b => b.color === 'white');
-    
-    // Validation du coup
-    const targetType = SnookerLogic.getTargetBallType(redsRemaining, phase);
-    let validShot = SnookerLogic.validateShot(firstBallHit, targetType);
+    const spots = ball.color === 'white'
+      ? [{ x: TABLE_MARGIN + canvasSize.tableWidth * 0.25, y: TABLE_MARGIN + canvasSize.tableHeight * 0.5 }]
+      : [ball, ...[...COLOR_ORDER].reverse().map(c => allBalls.find(b => b.color === c))]
+          .map(b => ({ x: b.originalX, y: b.originalY }));
 
-    // Joker override
-    if (state.jokerActive && firstBallHit) {
-      validShot = true;
+    let spot = spots.find(s => isFree(s.x, s.y));
+    if (!spot) {
+      let x = spots[0].x;
+      while (x > TABLE_MARGIN + BALL_RADIUS && !isFree(x, spots[0].y)) x -= 2;
+      spot = { x, y: spots[0].y };
     }
 
-    if (whitePocketed) {
-      faultInfo = {
-        valid: false,
-        reason: 'WHITE_POCKETED',
-        message: 'La bille blanche a été empochée'
-      };
-      switchPlayer = true;
-    } else if (!firstBallHit) {
-      faultInfo = {
-        valid: false,
-        reason: 'NO_BALL_HIT',
-        message: 'Aucune bille touchée'
-      };
-      switchPlayer = true;
-    } else if (!validShot) {
-      const expectedBall = targetType === 'red' ? 'une rouge' : 'une couleur';
-      const hitBall = firstBallHit.color === 'red' ? 'une rouge' : 'une couleur';
-      faultInfo = {
-        valid: false,
-        reason: 'WRONG_BALL_HIT',
-        message: `Vous deviez toucher ${expectedBall}, vous avez touché ${hitBall}`
-      };
-      switchPlayer = true;
-    } else {
-      // Coup valide - calculer les points
-      let pointMultiplier = 1;
-      if (state.doublePoints) {
-        pointMultiplier = 2;
-      }
+    Object.assign(ball, { x: spot.x, y: spot.y, vx: 0, vy: 0, spin: 0, side: 0, pocketed: false, pocketAnimation: 0 });
+  };
 
-      ballsPocketed.forEach(ball => {
-        if (ball.color === 'white') return;
-        
-        if (ball.color === 'red') {
-          newScores[currentPlayer - 1] += BALL_POINTS.red * pointMultiplier;
-          newRedsRemaining--;
-        } else {
-          newScores[currentPlayer - 1] += BALL_POINTS[ball.color] * pointMultiplier;
-        }
-      });
+  const endShot = () => {
+    const shot = shotRef.current;
+    const allBalls = ballsRef.current;
+    const state = gameStateRef.current;
 
-      // Logique d'alternance
-      if (phase === 'red' && ballsPocketed.some(b => b.color === 'red')) {
-        newPhase = 'color';
-      } else if (phase === 'color' && ballsPocketed.some(b => b.color !== 'red' && b.color !== 'white')) {
-        if (newRedsRemaining > 0) {
-          newPhase = 'red';
-        } else {
-          newPhase = 'final-colors';
-        }
-      } else if (ballsPocketed.length === 0 || ballsPocketed.every(b => b.color === 'white')) {
-        switchPlayer = true;
-      }
+    const colorsBefore = allBalls
+      .filter(b => COLOR_ORDER.includes(b.color) && (!b.pocketed || shot.pocketed.includes(b)))
+      .map(b => b.color);
 
-      // Remettre les couleurs si des rouges restent
-      if (newRedsRemaining > 0) {
-        ballsArray.forEach(ball => {
-          if (ball.pocketed && ball.color !== 'red' && ball.color !== 'white' && ball.originalX) {
-            ball.pocketed = false;
-            ball.pocketAnimation = 0;
-            ball.x = ball.originalX;
-            ball.y = ball.originalY;
-          }
-        });
-      }
+    const result = resolveShot({
+      state,
+      firstHit: shot.firstHit?.color ?? null,
+      potted: shot.pocketed.map(b => b.color),
+      colorsBefore,
+      redsLeft: allBalls.filter(b => b.color === 'red' && !b.pocketed).length
+    });
 
-      // Spawn nouveau power-up après bille empochée
-      if (ballsPocketed.length > 0 && ballsPocketed.some(b => b.color !== 'white')) {
-        setTimeout(() => spawnPowerUp(), 500);
-      }
+    result.respot.forEach(color => respotBall(allBalls.find(b => b.color === color), allBalls));
+    if (result.whiteRespot) respotBall(allBalls.find(b => b.color === 'white'), allBalls);
+    setBalls([...allBalls]);
+
+    // Spawn nouveau power-up après une bille empochée réglementairement
+    if (result.legalPot && !result.gameOver) {
+      setTimeout(() => spawnPowerUp(), 500);
     }
 
-    // Free shot
-    if (state.freeShot) {
-      switchPlayer = false;
-    }
-
-    // Replacer la blanche si empochée
-    if (whitePocketed) {
-      const whiteBall = ballsArray.find(b => b.color === 'white');
-      if (whiteBall) {
-        whiteBall.x = TABLE_MARGIN + canvasSize.tableWidth * 0.25;
-        whiteBall.y = TABLE_MARGIN + canvasSize.tableHeight * 0.5;
-        whiteBall.pocketed = false;
-        whiteBall.pocketAnimation = 0;
-      }
-    }
-
-    return {
-      ...state,
-      scores: newScores,
-      redsRemaining: newRedsRemaining,
-      phase: newPhase,
-      currentPlayer: switchPlayer ? (currentPlayer === 1 ? 2 : 1) : currentPlayer,
-      firstBallHit: null,
-      ballsPocketed: [],
-      faultInfo: faultInfo,
-      // Reset power-up effects one-shot
+    setGameState(prev => ({
+      ...prev,
+      isShooting: false,
+      scores: result.scores,
+      phase: result.phase,
+      redsRemaining: result.redsRemaining,
+      currentPlayer: result.currentPlayer,
+      lastShot: result.summary,
+      gameOver: result.gameOver,
+      // Reset power-up effects one-shot (la Vision ramassée sert au coup suivant)
       freeShot: false,
       jokerActive: false,
       doublePoints: false,
-      visionActive: false
-    };
+      visionActive: shot.visionCollected
+    }));
   };
 
   // Gestion souris
   const handleMouseDown = (e) => {
-    if (gameState.isShooting) return;
+    if (gameState.isShooting || gameState.gameOver) return;
 
     const canvas = e.target;
     const rect = canvas.getBoundingClientRect();
@@ -450,6 +426,8 @@ export default function SnookerGame() {
 
     if (distance < BALL_RADIUS * 3) {
       mouseDownPos.current = { x, y };
+      lastMouseRef.current = { x, y };
+      aimOffsetRef.current = { x: 0, y: 0 };
       setGameState(prev => ({ ...prev, isAiming: true }));
     }
   };
@@ -462,11 +440,24 @@ export default function SnookerGame() {
     const x = (e.clientX - rect.left) * (canvasSize.width / rect.width);
     const y = (e.clientY - rect.top) * (canvasSize.height / rect.height);
 
+    const last = lastMouseRef.current;
+    lastMouseRef.current = { x, y };
+
+    // SHIFT : visée gelée, haut = coulé, bas = rétro, gauche/droite = effet latéral
+    if (e.shiftKey) {
+      aimOffsetRef.current.x += x - last.x;
+      aimOffsetRef.current.y += y - last.y;
+      const dSide = (x - last.x) / SPIN_SENSITIVITY;
+      const dSpin = -(y - last.y) / SPIN_SENSITIVITY;
+      setGameState(prev => ({ ...prev, ...clampHit(prev.side + dSide, prev.spin + dSpin) }));
+      return;
+    }
+
     const whiteBall = balls.find(b => b.color === 'white');
     if (!whiteBall) return;
 
-    const dx = x - whiteBall.x;
-    const dy = y - whiteBall.y;
+    const dx = x - aimOffsetRef.current.x - whiteBall.x;
+    const dy = y - aimOffsetRef.current.y - whiteBall.y;
     const angle = Math.atan2(dy, dx);
     const power = Math.min(Math.sqrt(dx * dx + dy * dy) / 100, 1.5);
 
@@ -480,26 +471,26 @@ export default function SnookerGame() {
   const handleMouseUp = () => {
     if (!gameState.isAiming) return;
 
-    const { aimAngle, aimPower } = gameState;
-    
-    setBalls(prevBalls => {
-      const newBalls = [...prevBalls];
-      const whiteBall = newBalls.find(b => b.color === 'white');
-      
-      if (whiteBall && aimPower > 0.1) {
-        const speed = aimPower * 10;
-        whiteBall.vx = -Math.cos(aimAngle) * speed;
-        whiteBall.vy = -Math.sin(aimAngle) * speed;
-      }
-      
-      return newBalls;
-    });
+    const { aimAngle, aimPower, spin, side } = gameState;
+    const shoot = aimPower > 0.1;
+
+    if (shoot) {
+      const whiteBall = ballsRef.current.find(b => b.color === 'white');
+      const speed = aimPower * 10;
+      whiteBall.vx = -Math.cos(aimAngle) * speed;
+      whiteBall.vy = -Math.sin(aimAngle) * speed;
+      whiteBall.spin = spin;
+      whiteBall.side = side;
+      shotRef.current = newShot();
+    }
 
     setGameState(prev => ({
       ...prev,
       isAiming: false,
-      isShooting: aimPower > 0.1,
-      aimPower: 0
+      isShooting: shoot,
+      aimPower: 0,
+      spin: shoot ? 0 : prev.spin,
+      side: shoot ? 0 : prev.side
     }));
 
     mouseDownPos.current = null;
@@ -512,31 +503,13 @@ export default function SnookerGame() {
       TABLE_MARGIN,
       BALL_RADIUS
     ));
-    setGameState({
-      currentPlayer: 1,
-      scores: [0, 0],
-      phase: 'red',
-      redsRemaining: 15,
-      isAiming: false,
-      isShooting: false,
-      aimAngle: 0,
-      aimPower: 0,
-      firstBallHit: null,
-      ballsPocketed: [],
-      faultInfo: null,
-      freeShot: false,
-      jokerActive: false,
-      doublePoints: false,
-      visionActive: false,
-      activeEffect: null
-    });
+    setGameState(INITIAL_GAME_STATE);
     spawnPowerUp();
   };
 
-  const targetType = SnookerLogic.getTargetBallType(gameState.redsRemaining, gameState.phase);
-  const targetText = targetType === 'red' ? 'Rouge' : 
-                     targetType === 'color' ? 'Couleur' : 
-                     'Couleurs (ordre)';
+  const colorsOnTable = balls.filter(b => COLOR_ORDER.includes(b.color) && !b.pocketed).map(b => b.color);
+  const target = getTarget(gameState.phase, colorsOnTable);
+  const player = PLAYERS[gameState.currentPlayer - 1];
 
   return (
     <Box sx={{ p: 2, height: '100vh', overflow: 'auto', background:'#0f6323' }}>
@@ -547,29 +520,26 @@ export default function SnookerGame() {
       <Stack direction="row" spacing={2} sx={{ height: 'calc(100% - 80px)' }}>
         {/* Panels Joueurs */}
         <Stack spacing={2} sx={{ width: 200, flexShrink: 0 }}>
-          <PlayerPanel
-            playerNumber={1}
-            score={gameState.scores[0]}
-            isActive={gameState.currentPlayer === 1}
-            emoji="😎"
-          />
-          <PlayerPanel
-            playerNumber={2}
-            score={gameState.scores[1]}
-            isActive={gameState.currentPlayer === 2}
-            emoji="🤓"
-          />
+          {PLAYERS.map((p, i) => (
+            <PlayerPanel
+              key={i}
+              playerNumber={i + 1}
+              score={gameState.scores[i]}
+              isActive={!gameState.gameOver && gameState.currentPlayer === i + 1}
+              emoji={p.emoji}
+              color={p.color}
+            />
+          ))}
            <GameInfo
-              targetText={targetText}
               redsRemaining={gameState.redsRemaining}
-              faultInfo={gameState.faultInfo}
-              activePowerUp={gameState.activeEffect ? 
+              lastShot={gameState.lastShot}
+              activePowerUp={gameState.activeEffect ?
                 POWER_UP_TYPES[gameState.activeEffect.type] : null}
             />
 
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-              <Button 
-                variant="contained" 
+              <Button
+                variant="contained"
                 onClick={handleNewGame}
                 startIcon={<SportsCricketIcon />}
                 size="small"
@@ -582,7 +552,14 @@ export default function SnookerGame() {
         {/* Zone de jeu */}
         <Box ref={containerRef} sx={{ flex: 1, overflow: 'auto' }}>
           <Stack spacing={2}>
-           
+            <TurnBanner
+              playerNumber={gameState.currentPlayer}
+              emoji={player.emoji}
+              color={player.color}
+              target={target}
+              gameOver={gameState.gameOver}
+              lastShot={gameState.lastShot}
+            />
 
             <GameCanvas
               canvasSize={canvasSize}

@@ -26,8 +26,8 @@ export class PhysicsEngine {
     const dx = ball2.x - ball1.x;
     const dy = ball2.y - ball1.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    
-    if (distance === 0) return;
+
+    if (distance === 0) return false;
 
     const nx = dx / distance;
     const ny = dy / distance;
@@ -37,7 +37,7 @@ export class PhysicsEngine {
 
     const dvn = dvx * nx + dvy * ny;
 
-    if (dvn <= 0) return;
+    if (dvn <= 0) return false;
 
     const impulse = dvn;
 
@@ -55,37 +55,61 @@ export class PhysicsEngine {
       ball2.x += separationX;
       ball2.y += separationY;
     }
+    return true;
   }
 
-  static checkWallCollision(ball, tableWidth, tableHeight, tableMargin, ballRadius) {
+  // Effet rétro (spin < 0) / coulé (spin > 0) : au premier choc, la bille repart
+  // en arrière ou continue dans sa direction d'avant le choc
+  static applySpin(ball, vxBefore, vyBefore, transfer) {
+    ball.vx += vxBefore * ball.spin * transfer;
+    ball.vy += vyBefore * ball.spin * transfer;
+    ball.spin = 0;
+  }
+
+  static checkWallCollision(ball, tableWidth, tableHeight, tableMargin, ballRadius, side = {}) {
     const minX = tableMargin + ballRadius;
     const maxX = tableMargin + tableWidth - ballRadius;
     const minY = tableMargin + ballRadius;
     const maxY = tableMargin + tableHeight - ballRadius;
-    
+
     let collided = false;
 
     if (ball.x < minX) {
       ball.x = minX;
+      this.applySideSpin(ball, -1, 0, side);
       ball.vx = -ball.vx;
       collided = true;
     } else if (ball.x > maxX) {
       ball.x = maxX;
+      this.applySideSpin(ball, 1, 0, side);
       ball.vx = -ball.vx;
       collided = true;
     }
 
     if (ball.y < minY) {
       ball.y = minY;
+      this.applySideSpin(ball, 0, -1, side);
       ball.vy = -ball.vy;
       collided = true;
     } else if (ball.y > maxY) {
       ball.y = maxY;
+      this.applySideSpin(ball, 0, 1, side);
       ball.vy = -ball.vy;
       collided = true;
     }
 
     return collided;
+  }
+
+  // Effet latéral (side > 0 = à droite) : la bille frotte sur la bande (normale nx, ny)
+  // et ressort déviée du côté de l'effet, qui s'use un peu à chaque bande.
+  // Appelé avant l'inversion de la vitesse normale.
+  static applySideSpin(ball, nx, ny, { transfer = 0, cushionLoss = 1 }) {
+    if (!ball.side) return;
+    const vn = Math.abs(ball.vx * nx + ball.vy * ny);
+    ball.vx += -ny * ball.side * transfer * vn;
+    ball.vy += nx * ball.side * transfer * vn;
+    ball.side *= cushionLoss;
   }
 
   static checkPocket(ball, pockets, pocketRadius) {
@@ -199,26 +223,5 @@ export class SnookerLogic {
       { x: tableMiddleX, y: tableBottom }, // Bottom-middle
       { x: tableRight, y: tableBottom } // Bottom-right
     ];
-  }
-
-  static getTargetBallType(redsRemaining, phase) {
-    if (redsRemaining > 0) {
-      return phase === 'red' ? 'red' : 'color';
-    }
-    return 'final-colors';
-  }
-
-  static validateShot(firstBallHit, targetType) {
-    if (!firstBallHit) return false;
-    
-    if (targetType === 'red') {
-      return firstBallHit.color === 'red';
-    } else if (targetType === 'color') {
-      return firstBallHit.color !== 'red' && firstBallHit.color !== 'white';
-    } else if (targetType === 'final-colors') {
-      return firstBallHit.color !== 'red' && firstBallHit.color !== 'white';
-    }
-    
-    return false;
   }
 }

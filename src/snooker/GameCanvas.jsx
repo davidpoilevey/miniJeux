@@ -3,7 +3,7 @@ import { Paper, Box } from '@mui/material';
 import imgFond from './fond.jpg';
 import imgBois from '../ff1/images/fondBois.jpg';
 
-const BALL_COLORS = {
+export const BALL_COLORS = {
   white: '#FFFFFF',
   red: '#DC143C',
   yellow: '#FFD700',
@@ -13,6 +13,62 @@ const BALL_COLORS = {
   pink: '#FF69B4',
   black: '#000000'
 };
+
+// Jauge du point de frappe : la blanche vue de face par le joueur,
+// haut = coulé, bas = rétro, gauche/droite = effet latéral
+const GAUGE_RADIUS = 20;
+function drawSpinGauge(ctx, whiteBall, aimAngle, spin, side, spinMode) {
+  // Posée de côté par rapport à la visée, pour ne gêner ni la queue ni la ligne de tir
+  const gaugeAngle = aimAngle + Math.PI / 2;
+  const gx = whiteBall.x + Math.cos(gaugeAngle) * 55;
+  const gy = whiteBall.y + Math.sin(gaugeAngle) * 55;
+
+  ctx.save();
+  ctx.globalAlpha = spinMode ? 1 : 0.75;
+
+  ctx.fillStyle = '#F5F5F5';
+  ctx.strokeStyle = spinMode ? '#FFD700' : '#333';
+  ctx.lineWidth = spinMode ? 3 : 1.5;
+  ctx.beginPath();
+  ctx.arc(gx, gy, GAUGE_RADIUS, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.stroke();
+
+  // Réticule
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(gx - GAUGE_RADIUS, gy);
+  ctx.lineTo(gx + GAUGE_RADIUS, gy);
+  ctx.moveTo(gx, gy - GAUGE_RADIUS);
+  ctx.lineTo(gx, gy + GAUGE_RADIUS);
+  ctx.stroke();
+
+  // Point de frappe
+  ctx.fillStyle = '#DC143C';
+  ctx.beginPath();
+  ctx.arc(gx + side * GAUGE_RADIUS * 0.75, gy - spin * GAUGE_RADIUS * 0.75, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Légende
+  const pct = (v) => `${Math.round(Math.abs(v) * 100)}%`;
+  const parts = [];
+  if (spin > 0.05) parts.push(`Coulé ${pct(spin)}`);
+  if (spin < -0.05) parts.push(`Rétro ${pct(spin)}`);
+  if (side > 0.05) parts.push(`Droite ${pct(side)}`);
+  if (side < -0.05) parts.push(`Gauche ${pct(side)}`);
+  const label = parts.length ? parts.join(' · ') : spinMode ? 'Sans effet' : '⇧ effet';
+  ctx.font = 'bold 11px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+  ctx.strokeText(label, gx, gy + GAUGE_RADIUS + 4);
+  ctx.fillStyle = '#FFF';
+  ctx.fillText(label, gx, gy + GAUGE_RADIUS + 4);
+
+  ctx.restore();
+}
 
 export default function GameCanvas({
   canvasSize,
@@ -209,6 +265,8 @@ export default function GameCanvas({
         ctx.moveTo(cueStartX, cueStartY);
         ctx.lineTo(cueEndX, cueEndY);
         ctx.stroke();
+
+        drawSpinGauge(ctx, whiteBall, aimAngle, gameState.spin, gameState.side, gameState.spinMode);
       }
     }
 
