@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Box, Button, Typography, Avatar, ToggleButton, ToggleButtonGroup } from '@mui/material';
 import { keyframes } from '@mui/material/styles';
+import { GameOver } from '../ChuckNorrisFact';
 
 import imgVous from '../poker/avatars/imgVous.png';
 import imgJohn from '../poker/avatars/imgJohn.png';
@@ -239,6 +240,7 @@ export default function Le421() {
   const [nbManches, setNbManches] = useState(5);
 
   const [players, setPlayers] = useState([]);       // {..roster, score}
+  const [gameOver, setGameOver] = useState(false);
   const [manche, setManche] = useState(1);
   const [turnIdx, setTurnIdx] = useState(0);        // index dans players
   const [results, setResults] = useState({});       // id -> {dice, hand, rolls}
@@ -367,7 +369,7 @@ export default function Le421() {
   };
 
   const nextManche = () => {
-    if (manche >= nbManches) { setPhase('gameEnd'); return; }
+    if (manche >= nbManches) { setPhase('gameEnd'); setGameOver(true); return; }
     startManche(players, manche + 1);
   };
 
@@ -424,6 +426,8 @@ export default function Le421() {
   if (phase === 'gameEnd') {
     const ranking = [...players].sort((a, b) => b.score - a.score);
     const champ = ranking[0];
+    const humanScore = players.find(p => p.isHuman)?.score ?? 0;
+    const restartGame = () => { setGameOver(false); setPhase('setup'); };
     return (
       <Comptoir>
         <Box sx={{ textAlign: 'center', color: '#fff', maxWidth: 460, mx: 'auto', mt: 5 }}>
@@ -442,11 +446,13 @@ export default function Le421() {
               </Box>
             ))}
           </Box>
-          <Button onClick={() => setPhase('setup')} variant="contained"
+          <Button onClick={restartGame} variant="contained"
             sx={{ mt: 4, px: 4, fontWeight: 800, bgcolor: '#f0c040', color: '#3a2a00', '&:hover': { bgcolor: '#f5cf5a' } }}>
             Rejouer
           </Button>
         </Box>
+        <GameOver open={gameOver} score={humanScore} gameName="Le421"
+          handleClose={() => setGameOver(false)} handleRestart={restartGame} />
       </Comptoir>
     );
   }

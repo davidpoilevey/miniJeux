@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { GameOver } from '../ChuckNorrisFact';
 
 const COLORS = ['#1565C0', '#B71C1C', '#1B5E20', '#E65100'];
 const NAMES = ['Vous', 'Rodrigo', 'El Dudo', 'Paco'];
@@ -135,6 +136,7 @@ export default function Perudo() {
   });
 
   const [G, setG] = useState(init);
+  const [gameOver, setGameOver] = useState(false);
   const [bidQty, setBidQty] = useState(1);
   const [bidFace, setBidFace] = useState(2);
   const stateRef = useRef(G);
@@ -189,6 +191,10 @@ export default function Perudo() {
         : `${actual}× ${FACE_SYM[cb.face]} ! ${p[bidderIdx].name} avait menti — il perd un dé !`,
     }));
   };
+
+  useEffect(() => {
+    if (G.phase === 'gameover') setGameOver(true);
+  }, [G.phase]);
 
   // Bid suggestion
   useEffect(() => {
@@ -446,23 +452,32 @@ export default function Perudo() {
         )}
 
         {/* GAME OVER */}
-        {G.phase==='gameover' && (
-          <div style={{
-            textAlign:'center', background:'#f0d06011',
-            border:'2px solid #f0d060', borderRadius:12, padding:24, marginTop:6,
-          }}>
-            <div style={{color:'#f0d060', fontSize:24, fontWeight:'bold', marginBottom:16}}>
-              🏆 {G.winner?.name} a gagné ! 🏆
-            </div>
-            <button onClick={()=>setG(init())} style={{
-              fontSize:16, fontWeight:'bold', padding:'10px 28px',
-              background:'#f0d060', color:'#1a1a2e',
-              border:'none', borderRadius:8, cursor:'pointer',
-            }}>
-              🔄 Rejouer
-            </button>
-          </div>
-        )}
+        {G.phase==='gameover' && (() => {
+          const humanScore = human.diceCount * 20 + (G.winner?.id === 0 ? 100 : 0);
+          const restartGame = () => { setGameOver(false); setG(init()); };
+          return (
+            <>
+              <div style={{
+                textAlign:'center', background:'#f0d06011',
+                border:'2px solid #f0d060', borderRadius:12, padding:24, marginTop:6,
+              }}>
+                <div style={{color:'#f0d060', fontSize:24, fontWeight:'bold', marginBottom:16}}>
+                  🏆 {G.winner?.name} a gagné ! 🏆
+                </div>
+                <button onClick={restartGame} style={{
+                  fontSize:16, fontWeight:'bold', padding:'10px 28px',
+                  background:'#f0d060', color:'#1a1a2e',
+                  border:'none', borderRadius:8, cursor:'pointer',
+                }}>
+                  🔄 Rejouer
+                </button>
+              </div>
+              <GameOver open={gameOver} score={humanScore} gameName="Perudo"
+                gameOverReason={G.winner?.id === 0 ? '🏆 Vous avez gagné !' : '💀 Éliminé !'}
+                handleClose={() => setGameOver(false)} handleRestart={restartGame} />
+            </>
+          );
+        })()}
       </div>
     </div>
   );
