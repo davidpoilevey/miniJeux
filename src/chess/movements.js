@@ -56,135 +56,53 @@ export const getAllLegalMoves=(color, cases, opts = {})=> {
 moves = filterLegalMoves(moves, cases, color);
   return moves;
 }
-export const applyMove=(move, board, state={})=> {
-  const { from, to, piece, captured, promotion, special } = move;
-
-  // Snapshots pour undo
-  const prevEnPassant = state.enPassantTarget;
-  const fromPieceBefore = { ...piece };
-
-  // Enlever de la case de départ
-  board[from.y][from.x] = null;
-
-  // Gestion en passant
-  let capturedPiece = null;
-  if (special === 'enPassant') {
-    const direction = piece.couleur === 'white' ? 1 : -1;
-    const capY = to.y + direction;
-    capturedPiece = board[capY][to.x];
-    board[capY][to.x] = null;
-  }
-  if (special === 'castleShort' || special === 'castleLong') {
-  const y = from.y;
-  if (special === 'castleShort') {
-    // roi e -> g, tour h -> f  (x: 4->6, 7->5)
-    const rookFromX = 7;
-    const rookToX = 5;
-    move._castleRook = board[y][rookFromX];
-    board[y][rookFromX] = null;
-    board[y][rookToX] = { ...move._castleRook, x: rookToX, y, hasMoved: true };
-  } else {
-    // roi e -> c, tour a -> d  (x: 4->2, 0->3)
-    const rookFromX = 0;
-    const rookToX = 3;
-    move._castleRook = board[y][rookFromX];
-    board[y][rookFromX] = null;
-    board[y][rookToX] = { ...move._castleRook, x: rookToX, y, hasMoved: true };
-  }
-}
-
-
-  // Capture classique
-  if (captured) {
-    capturedPiece = board[to.y][to.x];
-  }
-
-  // Promotion ?
-  let placedPiece = piece;
-  if (promotion) {
-    placedPiece = {
-      id: piece.id + '_promoted',
-      type: promotion,
-      couleur: piece.couleur,
-      x: to.x,
-      y: to.y,
-      hasMoved: true
-    };
-  } else {
-    placedPiece = {
-      ...piece,
-      x: to.x,
-      y: to.y,
-      hasMoved: true
-    };
-  }
-
-  // Place la pièce
-  board[to.y][to.x] = placedPiece;
-
-  // Mettre à jour enPassantTarget (uniquement si un pion vient de sauter 2 cases)
-  let newEnPassant = null;
-  if (piece.type === 'pion' && Math.abs(to.y - from.y) === 2) {
-    // la case "sautée"
-    newEnPassant = { y: (to.y + from.y) / 2, x: to.x };
-  }
-  state.enPassantTarget = newEnPassant;
-
-  // Retourner ce qu’il faut pour undo
-  return {
-    from,
-    to,
-    piece: placedPiece,
+export const applyMove = (move, board, state = {}) => {
+  const { from, to, piece, promotion, special } = move;
+  const capturedY = special === 'enPassant' ? from.y : to.y;
+  const capturedPiece = board[capturedY][to.x];
+  const undo = {
+    from, to, special,
+    originalPiece: board[from.y][from.x],
     captured: capturedPiece,
-    undoPromote: promotion ? piece : null,
-    special,
-    prevEnPassant
+    capturedY,
+    prevEnPassant: state.enPassantTarget
   };
-}
 
-export const undoMove=(undo, board, state={})=> {
-  const { from, to, piece, captured, undoPromote, special, prevEnPassant } = undo;
+  board[from.y][from.x] = null;
+  if (special === 'enPassant') board[capturedY][to.x] = null;
 
-  // Vider la case d'arrivée
-  board[to.y][to.x] = null;
-
-  // Restaure le pion original si promotion
-  const restoredPiece = undoPromote
-    ? { ...undoPromote } // le pion d'origine
-    : { ...piece, x: from.x, y: from.y };
-
-  // Restaure la pièce à la case de départ
-  board[from.y][from.x] = restoredPiece;
-
-  // Restaure la pièce capturée
-  if (captured) {
-    if (special === 'enPassant') {
-      const dir = restoredPiece.couleur === 'white' ? 1 : -1;
-      const capy = to.y + dir;
-      board[capy][to.x] = captured;
-    } else {
-      board[to.y][to.x] = captured;
-    }
-  }
   if (special === 'castleShort' || special === 'castleLong') {
-  const y = from.y;
-  if (special === 'castleShort') {
-    const rookFromX = 7;
-    const rookToX = 5;
-    board[y][rookFromX] = { ...board._castleRook, x: rookFromX, y };
-    board[y][rookToX] = null;
-  } else {
-    const rookFromX = 0;
-    const rookToX = 3;
-    board[y][rookFromX] = { ...board._castleRook, x: rookFromX, y };
-    board[y][rookToX] = null;
+    const rookFromX = special === 'castleShort' ? 7 : 0;
+    const rookToX = special === 'castleShort' ? 5 : 3;
+    undo.rook = board[from.y][rookFromX];
+    undo.rookFromX = rookFromX;
+    undo.rookToX = rookToX;
+    board[from.y][rookFromX] = null;
+    board[from.y][rookToX] = { ...undo.rook, x: rookToX, y: from.y, hasMoved: true };
   }
-}
 
+  board[to.y][to.x] = {
+    ...piece,
+    ...(promotion ? { type: promotion, id: piece.id + '_promoted' } : {}),
+    x: to.x, y: to.y, hasMoved: true
+  };
+  state.enPassantTarget = piece.type === 'pion' && Math.abs(to.y - from.y) === 2
+    ? { x: to.x, y: (to.y + from.y) / 2 }
+    : null;
+  return undo;
+};
 
-  // Restaure l'état enPassant
+export const undoMove = (undo, board, state = {}) => {
+  const { from, to, originalPiece, captured, capturedY, special, prevEnPassant } = undo;
+  board[to.y][to.x] = null;
+  board[from.y][from.x] = originalPiece;
+  board[capturedY][to.x] = captured;
+  if (special === 'castleShort' || special === 'castleLong') {
+    board[from.y][undo.rookFromX] = undo.rook;
+    board[from.y][undo.rookToX] = null;
+  }
   state.enPassantTarget = prevEnPassant;
-}
+};
 
 function inside(x, y) {
   return x >= 0 && x < 8 && y >= 0 && y < 8;
@@ -252,7 +170,7 @@ function generatePawnMoves(piece, cases, opts = {}) {
   if (enPassantTarget) {
     const ex = enPassantTarget.x;
     const ey = enPassantTarget.y;
-    if (ey === y + dir && Math.abs(ex - x) === 1) {
+    if (inside(ex, ey) && cases[ey][ex] == null && ey === y + dir && Math.abs(ex - x) === 1) {
       const capturedPawn = cases[y][ex]; // le pion à côté, sur la rangée actuelle
       if (capturedPawn && capturedPawn.type === 'pion' && capturedPawn.couleur !== piece.couleur) {
         moves.push({
@@ -529,7 +447,7 @@ function generateKingMoves(piece, cases) {
 
     // 2) Roques
   // conditions de base : le roi n'a jamais bougé et n'est pas en échec
-  if (!piece.hasMoved && !isSquareAttacked(cases, x, y, color === 'white' ? 'black' : 'white')) {
+  if (x === 4 && y === (color === 'white' ? 7 : 0) && !piece.hasMoved && !isSquareAttacked(cases, x, y, color === 'white' ? 'black' : 'white')) {
     // PETIT roque (côté roi)
     // blanc: roi e1 -> g1 (x=4 -> 6, y=7); noir: e8 -> g8 (x=4 -> 6, y=0) 
     // (adapte à ton orientation)

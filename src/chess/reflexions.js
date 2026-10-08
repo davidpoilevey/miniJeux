@@ -112,7 +112,7 @@ export function isKingInCheck(cases, color) {
   }
   return false; // should never happen
 }
-// export function isCheckmate(cases, color) {
+// export function isCheckmate(cases, color, state = {}) {
 //   if (!isKingInCheck(cases, color)) return false;
 
 //   // Vérifie si le roi peut se déplacer pour échapper au check
@@ -144,83 +144,38 @@ export function isKingInCheck(cases, color) {
 
 //   return true; // Pas de mouvement possible pour échapper au check
 // }
-export function isCheckmate(cases, color) {
+export function isCheckmate(cases, color, state = {}) {
   // Première vérification : le roi est-il en échec ?
   if (!isKingInCheck(cases, color)) {
     return false;
   }
 
   // Méthode complète : vérifier tous les coups légaux possibles
-  const allMoves = getAllLegalMoves(color, cases);
+  const allMoves = getAllLegalMoves(color, cases, state);
   
   // Si aucun coup légal n'est possible, c'est échec et mat
   return allMoves.length === 0;
 }
-export function isStalemate(cases, color) {
+export function isStalemate(cases, color, state = {}) {
   // Vérifie si le roi n'est pas en échec
   if (isKingInCheck(cases, color)) return false;
 
   // Vérifie si le joueur a des mouvements légaux
-  const moves = getAllLegalMoves(color, cases);
+  const moves = getAllLegalMoves(color, cases, state);
   return moves.length === 0; // Si aucun mouvement légal, c'est un pat
 }
 export function isInsufficientMaterial(cases) {
-  let whitePieces = 0;
-  let blackPieces = 0;
-
-  for (let y = 0; y < 8; y++) {
-    for (let x = 0; x < 8; x++) {
-      const piece = cases[y][x];
-      if (!piece) continue;
-
-      if (piece.couleur === 'white') {
-        whitePieces++;
-      } else {
-        blackPieces++;
-      }
-
-      // Si un joueur a plus de deux pièces, ce n'est pas insuffisant
-      if (whitePieces > 2 || blackPieces > 2) return false;
-    }
-  }
-
-  // Vérifie les types de pièces restantes
-  const whiteTypes = new Set();
-  const blackTypes = new Set();
-
-  for (let y = 0; y < 8; y++) {
-    for (let x = 0; x < 8; x++) {
-      const piece = cases[y][x];
-      if (!piece) continue;
-
-      if (piece.couleur === 'white') {
-        whiteTypes.add(piece.type);
-      } else {
-        blackTypes.add(piece.type);
-      }
-    }
-  }
-
-  // Si les deux joueurs n'ont que des pions et des rois, c'est insuffisant
-  if ((whiteTypes.size === 1 && whiteTypes.has('roi') && whitePieces <= 2) &&
-      (blackTypes.size === 1 && blackTypes.has('roi') && blackPieces <= 2)) {
-    return true;
-  }
-
-  // Si un joueur a un fou ou un cavalier et l'autre n'a que des pions et un roi, c'est insuffisant
-  if ((whiteTypes.size === 1 && whiteTypes.has('roi') && whitePieces <= 2) ||
-      (blackTypes.size === 1 && blackTypes.has('roi') && blackPieces <= 2)) {
-    return true;
-  }
-
-  return false; // Il y a suffisamment de matériel pour jouer
+  const pieces = cases.flat().filter(piece => piece && piece.type !== 'roi');
+  if (pieces.length === 0) return true;
+  if (pieces.length === 1) return ['fou', 'cavalier'].includes(pieces[0].type);
+  // Des fous seuls sur une même couleur de case ne peuvent jamais mater.
+  return pieces.every(piece => piece.type === 'fou') &&
+    pieces.every(piece => (piece.x + piece.y) % 2 === (pieces[0].x + pieces[0].y) % 2);
 }
 
-
-
 // Version améliorée avec alpha-beta pruning et meilleure évaluation
-export const searchRoot = (cases, currentColor, depth = 4) => {
-  const moves = getAllLegalMoves(currentColor, cases);
+export const searchRoot = (cases, currentColor, depth = 4, state = {}) => {
+  const moves = getAllLegalMoves(currentColor, cases, state);
   
   if (moves.length === 0) {
     return null; // Pas de coups légaux
@@ -235,7 +190,7 @@ export const searchRoot = (cases, currentColor, depth = 4) => {
   const sortedMoves = sortMovesByPriority(moves, cases, currentColor);
 
   for (let move of sortedMoves) {
-    const undo = applyMove(move, cases);
+    const undo = applyMove(move, cases, state);
 
     // On appelle minimax pour l'adversaire (isMaximizing = false)
     const score = minimax({
@@ -245,10 +200,11 @@ export const searchRoot = (cases, currentColor, depth = 4) => {
       beta,
       isMaximizing: false, // L'adversaire minimise notre score
       currentPlayer: currentColor === 'white' ? 'black' : 'white',
+      state,
       rootPlayer: currentColor // On garde trace du joueur racine
     });
 
-    undoMove(undo, cases);
+    undoMove(undo, cases, state);
 
     if (score > bestScore) {
       bestScore = score;
@@ -264,14 +220,14 @@ export const searchRoot = (cases, currentColor, depth = 4) => {
   return bestMove;
 };
 
-function minimax({ cases, depth, alpha, beta, isMaximizing, currentPlayer, rootPlayer }) {
+function minimax({ cases, depth, alpha, beta, isMaximizing, currentPlayer, rootPlayer, state }) {
   // Conditions d'arrêt
   if (depth === 0) {
     return evaluateBoard(cases, rootPlayer);
   }
 
   // Vérifier échec et mat / pat
-  const moves = getAllLegalMoves(currentPlayer, cases);
+  const moves = getAllLegalMoves(currentPlayer, cases, state);
   if (moves.length === 0) {
     if (isKingInCheck(cases,currentPlayer)) {
       // Échec et mat : très bon pour l'adversaire, très mauvais pour le joueur actuel
@@ -288,7 +244,7 @@ function minimax({ cases, depth, alpha, beta, isMaximizing, currentPlayer, rootP
   if (isMaximizing) {
     let maxEval = -Infinity;
     for (let move of sortedMoves) {
-      const undo = applyMove(move, cases);
+      const undo = applyMove(move, cases, state);
       
       const evale = minimax({
         cases,
@@ -297,10 +253,10 @@ function minimax({ cases, depth, alpha, beta, isMaximizing, currentPlayer, rootP
         beta,
         isMaximizing: false,
         currentPlayer: currentPlayer === 'white' ? 'black' : 'white',
-        rootPlayer
+        rootPlayer, state
       });
       
-      undoMove(undo, cases);
+      undoMove(undo, cases, state);
       
       maxEval = Math.max(maxEval, evale);
       alpha = Math.max(alpha, evale);
@@ -313,7 +269,7 @@ function minimax({ cases, depth, alpha, beta, isMaximizing, currentPlayer, rootP
   } else {
     let minEval = Infinity;
     for (let move of sortedMoves) {
-      const undo = applyMove(move, cases);
+      const undo = applyMove(move, cases, state);
       
       const evale = minimax({
         cases,
@@ -322,10 +278,10 @@ function minimax({ cases, depth, alpha, beta, isMaximizing, currentPlayer, rootP
         beta,
         isMaximizing: true,
         currentPlayer: currentPlayer === 'white' ? 'black' : 'white',
-        rootPlayer
+        rootPlayer, state
       });
       
-      undoMove(undo, cases);
+      undoMove(undo, cases, state);
       
       minEval = Math.min(minEval, evale);
       beta = Math.min(beta, evale);
@@ -691,14 +647,14 @@ export const DIFFICULTY_CONFIGS = {
   }
 };
 
-export const searchRootWithDifficulty = (cases, currentColor, difficulty = 3) => {
+export const searchRootWithDifficulty = (cases, currentColor, difficulty = 3, state = {}) => {
   const config = DIFFICULTY_CONFIGS[difficulty];
   
   if (!config) {
     throw new Error(`Niveau de difficulté ${difficulty} non supporté`);
   }
 
-  const moves = getAllLegalMoves(currentColor, cases);
+  const moves = getAllLegalMoves(currentColor, cases, state);
   
   if (moves.length === 0) {
     return null;
@@ -713,15 +669,15 @@ export const searchRootWithDifficulty = (cases, currentColor, difficulty = 3) =>
   // Chance de faire une erreur normale
   if (Math.random() < config.errorRate) {
     console.log(`IA niveau ${difficulty}: Erreur tactique`);
-    return getSuboptimalMove(cases, currentColor, config);
+    return getSuboptimalMove(cases, currentColor, config, state);
   }
 
   // Jouer normalement avec la configuration du niveau
-  return searchOptimalMove(cases, currentColor, config);
+  return searchOptimalMove(cases, currentColor, config, state);
 };
 
-function searchOptimalMove(cases, currentColor, config) {
-  const moves = getAllLegalMoves(currentColor, cases);
+function searchOptimalMove(cases, currentColor, config, state) {
+  const moves = getAllLegalMoves(currentColor, cases, state);
   let bestMove = null;
   let bestScore = -Infinity;
   let alpha = -Infinity;
@@ -731,7 +687,7 @@ function searchOptimalMove(cases, currentColor, config) {
   const sortedMoves = sortMovesByPriorityWithRandomness(moves, cases, currentColor, config.randomFactor);
 
   for (let move of sortedMoves) {
-    const undo = applyMove(move, cases);
+    const undo = applyMove(move, cases, state);
 
     const score = minimaxWithDifficulty({
       cases,
@@ -741,10 +697,10 @@ function searchOptimalMove(cases, currentColor, config) {
       isMaximizing: false,
       currentPlayer: currentColor === 'white' ? 'black' : 'white',
       rootPlayer: currentColor,
-      config
+      config, state
     });
 
-    undoMove(undo, cases);
+    undoMove(undo, cases, state);
 
     // Ajouter un facteur aléatoire selon le niveau
     const adjustedScore = score + (Math.random() - 0.5) * config.randomFactor * 50;
@@ -763,12 +719,12 @@ function searchOptimalMove(cases, currentColor, config) {
   return bestMove;
 }
 
-function minimaxWithDifficulty({ cases, depth, alpha, beta, isMaximizing, currentPlayer, rootPlayer, config }) {
+function minimaxWithDifficulty({ cases, depth, alpha, beta, isMaximizing, currentPlayer, rootPlayer, config, state }) {
   if (depth === 0) {
     return evaluateBoardWithDifficulty(cases, rootPlayer, config);
   }
 
-  const moves = getAllLegalMoves(currentPlayer, cases);
+  const moves = getAllLegalMoves(currentPlayer, cases, state);
   if (moves.length === 0) {
     if (isKingInCheck(cases, currentPlayer)) {
       return isMaximizing ? -999999 + (config.depth - depth) : 999999 - (config.depth - depth);
@@ -782,7 +738,7 @@ function minimaxWithDifficulty({ cases, depth, alpha, beta, isMaximizing, curren
   if (isMaximizing) {
     let maxEval = -Infinity;
     for (let move of sortedMoves) {
-      const undo = applyMove(move, cases);
+      const undo = applyMove(move, cases, state);
       
       const evale = minimaxWithDifficulty({
         cases,
@@ -792,10 +748,10 @@ function minimaxWithDifficulty({ cases, depth, alpha, beta, isMaximizing, curren
         isMaximizing: false,
         currentPlayer: currentPlayer === 'white' ? 'black' : 'white',
         rootPlayer,
-        config
+        config, state
       });
       
-      undoMove(undo, cases);
+      undoMove(undo, cases, state);
       
       maxEval = Math.max(maxEval, evale);
       alpha = Math.max(alpha, evale);
@@ -808,7 +764,7 @@ function minimaxWithDifficulty({ cases, depth, alpha, beta, isMaximizing, curren
   } else {
     let minEval = Infinity;
     for (let move of sortedMoves) {
-      const undo = applyMove(move, cases);
+      const undo = applyMove(move, cases, state);
       
       const evale = minimaxWithDifficulty({
         cases,
@@ -818,10 +774,10 @@ function minimaxWithDifficulty({ cases, depth, alpha, beta, isMaximizing, curren
         isMaximizing: true,
         currentPlayer: currentPlayer === 'white' ? 'black' : 'white',
         rootPlayer,
-        config
+        config, state
       });
       
-      undoMove(undo, cases);
+      undoMove(undo, cases, state);
       
       minEval = Math.min(minEval, evale);
       beta = Math.min(beta, evale);
@@ -896,9 +852,9 @@ function getBlunderMove(moves, cases, color) {
   return moves[Math.floor(Math.random() * moves.length)];
 }
 
-function getSuboptimalMove(cases, currentColor, config) {
+function getSuboptimalMove(cases, currentColor, config, state) {
   // Utilise une profondeur réduite pour simuler une erreur tactique
-  const moves = getAllLegalMoves(currentColor, cases);
+  const moves = getAllLegalMoves(currentColor, cases, state);
   let bestMove = null;
   let bestScore = -Infinity;
 
@@ -906,7 +862,7 @@ function getSuboptimalMove(cases, currentColor, config) {
   const shallowDepth = Math.max(1, config.depth - 2);
 
   for (let move of moves) {
-    const undo = applyMove(move, cases);
+    const undo = applyMove(move, cases, state);
 
     const score = minimaxWithDifficulty({
       cases,
@@ -916,10 +872,11 @@ function getSuboptimalMove(cases, currentColor, config) {
       isMaximizing: false,
       currentPlayer: currentColor === 'white' ? 'black' : 'white',
       rootPlayer: currentColor,
+      state,
       config: { ...config, depth: shallowDepth + 1 }
     });
 
-    undoMove(undo, cases);
+    undoMove(undo, cases, state);
 
     // Plus d'aléatoire pour les erreurs
     const adjustedScore = score + (Math.random() - 0.5) * 100;

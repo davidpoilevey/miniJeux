@@ -28,8 +28,6 @@ const ref = useSlideFrom(moveFrom, { x, y }, CASE_SIZE, [piece?.id, moveFrom?.x,
 
   const pieceURL = useMemo(() => {
   let isWhite = piece?.couleur === 'white';
-  if(!joueurEstBlanc)
-    isWhite = !isWhite; // Inverser la couleur si le joueur est noir
     switch (piece?.type) {
       case 'pion':
         return isWhite ? pionBlanc : pionNoir;

@@ -1,5 +1,5 @@
 import { GameOver } from "../ChuckNorrisFact"
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Echiquier from "./Echiquier";
 
 import { Avatar, Box, Button, Popover, Typography } from '@mui/material';
@@ -36,7 +36,9 @@ export const EchecBoard = () => {
   const [resetID, setResetID] = useState(0);
 
   const { setEchec, setCaptured, joueurEstBlanc, setMessage, resetTimer, getScore,
-    gamePhase, openingManager, puzzle, tourBlancs } = useChess();
+    gamePhase, openingManager, puzzle, tourBlancs, gameFinished, setGameFinished, positionVersion } = useChess();
+
+  useEffect(() => setGameOver(false), [positionVersion]);
 
   const phaseLabel = puzzle ? puzzle.name
     : openingManager?.isActive ? openingManager.currentOpening?.name
@@ -44,10 +46,11 @@ export const EchecBoard = () => {
     : gamePhase === 'middlegame' ? 'Milieu de jeu'
     : 'Finale';
 
-  const _setGameOver = (reason, gagnant) => {
+  const _setGameOver = (reason, gagnant, board) => {
+    setGameFinished(true);
     setGameOver(true);
     setGameOverReason(reason);
-    setScore(getScore(gagnant));
+    setScore(getScore(gagnant, board));
   };
   const reset = () => {
     setResetID(prev => prev + 1);
@@ -105,7 +108,7 @@ export const EchecBoard = () => {
           </Avatar>
           <Box>
             <Typography sx={{ fontSize: '0.58rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#5c605c' }}>
-              {tourBlancs ? 'Votre tour' : 'En attente'}
+              {gameFinished ? 'Partie terminée' : tourBlancs === joueurEstBlanc ? 'Votre tour' : 'En attente'}
             </Typography>
             <Typography sx={{ fontSize: '0.875rem', fontWeight: 700, color: '#2f3430' }}>Vous</Typography>
           </Box>

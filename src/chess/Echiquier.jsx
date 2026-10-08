@@ -1,9 +1,9 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Box } from '@mui/material';
 import { Case } from '../dames/Case';
 import Piece from './Piece';
-import { filterLegalMoves, isCheckmate, isInsufficientMaterial, isKingInCheck, isStalemate, searchRoot, searchRootWithDifficulty } from './reflexions';
-import { getAllLegalMoves } from './movements';
+import { isCheckmate, isInsufficientMaterial, isKingInCheck, isStalemate } from './reflexions';
+import { applyMove, getAllLegalMoves } from './movements';
 import { useChess } from './ChessContext';
 import { DialogPromotion, PuzzleSuccess } from './ParamDialog';
 import { soundManager } from '../rpg/sons/SoundManager';
@@ -12,7 +12,7 @@ const Echiquier = ({ reset, gameOver }) => {
     const { setEchec, setCaptured, setMessage, difficulte
         , humanReadableMove, logHistory, joueurEstBlanc, puzzle, puzzleManager, startPuzzle
         , cases, setCases, tourBlancs, setTourBlancs, openingManager
-        , setMoveCount } = useChess();
+        , setMoveCount, enPassantTarget, setEnPassantTarget, gameFinished, setGameFinished, positionVersion } = useChess();
 
     const taille = 8; // Nombre de cases par ligne et colonne
     const [highlightedCase, setHighlightedCase] = useState(null);
@@ -22,6 +22,10 @@ const Echiquier = ({ reset, gameOver }) => {
     const [pendingPromotion, setPendingPromotion] = useState(null); // null ou { x, y, pion, board }
     const [puzzleScore, setPuzzleScore] = useState(0);
     const [puzzleSolved, setPuzzleSolved] = useState(false);
+    const [puzzleReply, setPuzzleReply] = useState(null);
+    const humanColor = joueurEstBlanc ? 'white' : 'black';
+    const currentColor = tourBlancs ? 'white' : 'black';
+    const isHumanTurn = currentColor === humanColor;
 
 
 
@@ -33,8 +37,8 @@ const Echiquier = ({ reset, gameOver }) => {
             { type: 'tour', couleur: 'black', id: `tourNoirA8`, hasMoved: false, x: 0, y: 0 },
             { type: 'cavalier', couleur: 'black', id: `cavalierNoirB8`, hasMoved: false, x: 1, y: 0 },
             { type: 'fou', couleur: 'black', id: `fouNoirC8`, hasMoved: false, x: 2, y: 0 },
-            { type: joueurEstBlanc ? 'reine' : 'roi', couleur: 'black', id: `reineNoirD8`, hasMoved: false, x: 3, y: 0 },
-            { type: joueurEstBlanc ? 'roi' : 'reine', couleur: 'black', id: `roiNoirE8`, hasMoved: false, x: 4, y: 0 },
+            { type: 'reine', couleur: 'black', id: `reineNoirD8`, hasMoved: false, x: 3, y: 0 },
+            { type: 'roi', couleur: 'black', id: `roiNoirE8`, hasMoved: false, x: 4, y: 0 },
             { type: 'fou', couleur: 'black', id: `fouNoirF8`, hasMoved: false, x: 5, y: 0 },
             { type: 'cavalier', couleur: 'black', id: `cavalierNoirG8`, hasMoved: false, x: 6, y: 0 },
             { type: 'tour', couleur: 'black', id: `tourNoirH8`, hasMoved: false, x: 7, y: 0 }];
@@ -56,95 +60,63 @@ const Echiquier = ({ reset, gameOver }) => {
 
         setCases(casesInitiales);
     };
-//demarrage
+    // Initialisation d'une partie ou d'un puzzle : les coordonnées du moteur restent fixes.
     useEffect(() => {
-        initialiserCases();
+        if (puzzle) {
+            setCases(JSON.parse(JSON.stringify(puzzle.position)));
+        } else {
+            initialiserCases();
+        }
+        setTourBlancs(true);
+        setEnPassantTarget(null);
+        setGameFinished(false);
+        setCaptured({ white: [], black: [] });
+        setEchec(false);
         setMoveCount(0);
-        setCaseJouable(null);
-        setPionSelectionne(null);
-        setLastMove(null);
-
-        setMessage("Serrage de mains, on commence !");
-    }, [reset, joueurEstBlanc]);
-//demarrage puzzle
-    useEffect(() => {
-        if (puzzle == null)
-            return;
-        setCases(JSON.parse(JSON.stringify(puzzle.position)));
-        setMoveCount(0);
-        setCaseJouable(null);
-        setPionSelectionne(null);
-        setLastMove(null);
         setPuzzleScore(0);
-        setMessage("C'est parti pour le " + puzzle.name);
-    }, [puzzle]);
+        setPuzzleSolved(false);
+        setPuzzleReply(null);
+        setMessage(puzzle ? "C'est parti pour le " + puzzle.name : "Serrage de mains, on commence !");
+    }, [reset, joueurEstBlanc, puzzle]);
 
+    useEffect(() => {
+        setCaseJouable(null);
+        setPionSelectionne(null);
+        setLastMove(null);
+        setPendingPromotion(null);
+        setPuzzleReply(null);
+    }, [reset, joueurEstBlanc, puzzle, positionVersion]);
 
-
-
-
-    // Fonction pour gérer le clic sur une case
     const handleClickCase = (x, y) => {
+        if (gameFinished || !isHumanTurn || pendingPromotion || puzzleReply || puzzleSolved) return;
         const pion = cases[y][x];
-
-        if (pion !== null) {
-            if (openingManager.isActive) {
-                // montre le prochain coup attendu
-
-                const ouverture = openingManager.currentOpening.moves[openingManager.moveIndex];
-                if (ouverture) {
-                    const coup = humanReadableMove(ouverture)
-                    setMessage("Coup attendu : " + coup);
-                }
-            }
-            const couleurJoueur = tourBlancs ? "white" : "black";
-
-            // Est-ce un pion du joueur courant ?
-            if (pion.couleur === couleurJoueur) {
-                setPionSelectionne({ x, y, type: pion.type, id: pion.id });
-
-            } else {
-                // Clic sur pion adverse : désélection, s'il est dans les cases jouables, deplacer pour prendre
-                if (pionSelectionne && caseJouable
-                    && caseJouable.some(c => c.x === x && c.y === y))
-                    deplacerPion(pionSelectionne.x, pionSelectionne.y, x, y);
-                // Désélectionne et clean
-                setPionSelectionne(null);
-                setCaseJouable(null);
-            }
-        } else if (pionSelectionne !== null && caseJouable.length > 0) {
-            // Clic sur une case vide valide
-            for (let cj = 0; cj < caseJouable.length; cj++) {
-                if (caseJouable[cj].x === x && caseJouable[cj].y === y) {
-                    deplacerPion(pionSelectionne.x, pionSelectionne.y, x, y);
-                    break;
-                }
-            }
+        if (pion?.couleur === humanColor) {
+            setPionSelectionne(pion);
+        } else if (pionSelectionne && caseJouable?.some(c => c.x === x && c.y === y)) {
+            deplacerPion(pionSelectionne.x, pionSelectionne.y, x, y);
+        } else {
+            setPionSelectionne(null);
+            setCaseJouable(null);
         }
     };
-const showPuzzleSuccessMessage=sc=>{
-    setPuzzleScore(sc);
-    setPuzzleSolved(true);
-}
+
     useEffect(() => {
-        if (pionSelectionne == null || !tourBlancs) return;
-
-        const damier = JSON.parse(JSON.stringify(cases));
-        let jouables = getAllLegalMoves('white', damier, { pieceId: pionSelectionne.id });
+        if (!pionSelectionne || !isHumanTurn || gameFinished) {
+            setCaseJouable(null);
+            return;
+        }
+        const jouables = getAllLegalMoves(humanColor, cases, { pieceId: pionSelectionne.id, enPassantTarget });
         setCaseJouable(jouables.map(move => move.to));
-    }, [pionSelectionne, tourBlancs]);
+    }, [pionSelectionne, cases, isHumanTurn, humanColor, enPassantTarget, gameFinished]);
 
-    function checkCaptureAndCheck(damier, caseArrivee) {
-        const joueur = tourBlancs ? 'white' : 'black';
-        const adversaire = tourBlancs ? 'black' : 'white';
+    function checkCaptureAndCheck(damier, caseArrivee, joueur, state) {
+        const adversaire = joueur === 'white' ? 'black' : 'white';
 
         // === 1. Capture ? ===
         if (caseArrivee && caseArrivee.couleur === adversaire) {
             // Mise à jour des pièces capturées
             setCaptured(prev => {
-                const updated = { ...prev };
-                updated[joueur].push(caseArrivee.type);
-                return updated;
+                return { ...prev, [joueur]: [...prev[joueur], caseArrivee.type] };
             });
             let bonSon = null;
             if (caseArrivee.type === 'fou' || caseArrivee.type === 'cavalier') {
@@ -172,180 +144,142 @@ const showPuzzleSuccessMessage=sc=>{
             return;// l'echec et mat est gere par le puzzle
 
         // === 3. Roi adverse est-il échec et mat ? ===    
-        if (isCheckmate(board, adversaire)) {
+        if (isCheckmate(board, adversaire, state)) {
             setMessage(`Échec et mat ! Victoire des ${joueur} !`);
             soundManager.play('etMat');
-            gameOver("Echec et mat !", joueur);
+            gameOver("Echec et mat !", joueur, damier);
             return;
         }
         // === 4. Roi adverse est-il pat ? ===
-        if (isStalemate(board, adversaire)) {
+        if (isStalemate(board, adversaire, state)) {
             setMessage(`Pat ! Match nul !`);
-            gameOver("Pat !", joueur);
+            gameOver("Pat !", null, damier);
             return;
         }
         // === 5. Insuffisance de matériel ? ===
         if (isInsufficientMaterial(board)) {
             setMessage(`Partie nulle par insuffisance de matériel !`);
-            gameOver("Partie nulle !", joueur);
+            gameOver("Partie nulle !", null, damier);
             return;
         }
     }
 
 
-    const deplacerPion = (xDepart, yDepart, xArrivee, yArrivee, takeThisBoard) => {
-        const oldBoard = takeThisBoard||cases; // depuis ton state React
-        const movingPawn = oldBoard[yDepart][xDepart];
-        if (!movingPawn) return;
+    const commitMove = (move, result) => {
+        const newBoard = cases.map(row => [...row]);
+        const state = { enPassantTarget };
+        const undo = applyMove(move, newBoard, state);
         soundManager.play('glisse');
-        movingPawn.x = xArrivee;
-        movingPawn.y = yArrivee;
-        movingPawn.hasMoved = true; // Marque le pion comme ayant été déplacé
-        setLastMove({ id: movingPawn.id, from: { x: xDepart, y: yDepart }, to: { x: xArrivee, y: yArrivee } });
-        // Copie
-        const newBoard = JSON.parse(JSON.stringify(oldBoard));
-
-        // Déplacement
-        const caseArrivee = { ...newBoard[yArrivee][xArrivee] };
-
-        newBoard[yDepart][xDepart] = null;
-        // piece deplacee
-        newBoard[yArrivee][xArrivee] = movingPawn;
-
-        // ----- Promotion (seulement si ce n'est pas une dame déjà et que le tour est terminé) -----
-        if (movingPawn.type === 'pion') {
-            const lastRow = newBoard.length - 1;
-            const promotionRow = movingPawn.couleur === 'white' ? 0 : lastRow;
-            if (yArrivee === promotionRow) {
-                if (movingPawn.couleur === 'black') {
-                    soundManager.play('muhaha2');
-                    // IA ou joueur noir : promote direct
-                    newBoard[yArrivee][xArrivee] = { ...movingPawn, type: 'reine' };
-                } else {
-                    // Blanc : demander via Dialog
-                    setPendingPromotion({
-                        x: xArrivee,
-                        y: yArrivee,
-                        pion: movingPawn,
-                        board: newBoard,
-                        caseArrivee
-                    });
-                    return; // Attente choix user
-                }
-            }
-        }
-            // Roque (court ou long)
-        if (movingPawn.type === 'roi' && Math.abs(xArrivee - xDepart) === 2) {
-            const isShortCastle = xArrivee - xDepart === 2; // Court
-            // deplacer la tour
-            const rookX = isShortCastle ? 7 : 0; // Tour à droite
-            const rookNewX = isShortCastle ? 5 : 3; // Tour à gauche
-            const rookY = yArrivee; // même rang que le roi
-            const rook = newBoard[rookY][rookX];
-            if (rook) {
-                rook.x = rookNewX;
-                rook.y = yArrivee;
-                rook.hasMoved = true; // Marque la tour comme ayant été déplacée
-                newBoard[rookY][rookNewX] = rook; // Met à jour la tour
-                newBoard[rookY][rookX] = null; // Vide l'ancienne case de la tour
-            }
-        }
-
-        checkCaptureAndCheck(newBoard, caseArrivee);
-        if (movingPawn.couleur === 'white') {
-            const move4Manager = {
-                from: { row: yDepart, col: xDepart }
-                , to: { row: yArrivee, col: xArrivee }
-            }
-            if (puzzle) {
-                const result = puzzleManager.validateMove(move4Manager);
-                if(result.message&&result.message!='')
-                    setMessage(result.message);
-                if (result.valid) {
-                    // Jouer le coup du joueur
-                    setCases(newBoard);
-                    const makeMove = (otomove)=>{
-                         const { from, to } = otomove;
-                          deplacerPion(from.col ?? from.x, from.row ?? from.y, to.col ?? to.x, to.row ?? to.y, newBoard);
-                    }
-                    if (result.autoMoves) {
-                        result.autoMoves.forEach(autoMove => {
-                            setTimeout(() => makeMove(autoMove), 500); // Petit délai pour l'effet visuel
-                        });
-                    }
-
-                    if (result.solved) {
-                        // Puzzle terminé !
-                        soundManager.play('etMat');
-                        setTimeout(()=>{
-                            showPuzzleSuccessMessage(result.score);
-                        },1500)
-                    }
-                }
-                else{ //invalid
-                    setPionSelectionne(null);
-                    setCaseJouable(null);
-                    
-                    movingPawn.x = xDepart;
-                    movingPawn.y = yDepart;
-                }
-                return;//le puzzle gere tout
-            }
-            const validation = openingManager.validatePlayerMove(move4Manager, movingPawn.couleur);
-            if (validation.message) {
-                setMessage(validation.message);
-            }
-        }
-        // ----- Fin du coup -----
         setCases(newBoard);
-        if(!puzzle)
-        setTourBlancs(!tourBlancs);
+        setEnPassantTarget(state.enPassantTarget);
+        setLastMove({ id: newBoard[move.to.y][move.to.x].id, from: move.from, to: move.to });
+        setTourBlancs(move.piece.couleur !== 'white');
         setPionSelectionne(null);
         setCaseJouable(null);
         setMoveCount(prev => prev + 1);
-    };
-    const handlePromotionChoice = (type) => {
-        if (!pendingPromotion) return;
-        const { x, y, pion, board, caseArrivee } = pendingPromotion;
-
-        const promoted = { ...pion, type };
-        board[y][x] = promoted;
-
-        checkCaptureAndCheck(board, caseArrivee);
-
-        setCases(board);
-        setTourBlancs(!tourBlancs);
-        setPionSelectionne(null);
-        setCaseJouable(null);
-        setMoveCount(prev => prev + 1);
-        setPendingPromotion(null); // reset
-    };
-
-    // au changement de tour
-    useEffect(() => {
-        // Vérifie si le jeu est terminé
-        if (!tourBlancs && !puzzle) {
-            logHistory();
-            setTourBlancs(true);
-            setTimeout(() => {
-
-                const damier = JSON.parse(JSON.stringify(cases));
-                const bestMove = openingManager.getAIMove(damier, 'black', difficulte); // Appel de la fonction de recherche
-                if (bestMove == null)
-                    return;//bizarre, devrait pas arriver
-                const { from, to } = bestMove;
-                deplacerPion(from.col ?? from.x, from.row ?? from.y, to.col ?? to.x, to.row ?? to.y);
-
-            }, 60);
+        checkCaptureAndCheck(newBoard, undo.captured, move.piece.couleur, state);
+        if (result) {
+            setMessage(result.message);
+            // L'effet applique les réponses successivement sur le plateau courant.
+            setPuzzleReply({ moves: result.autoMoves || [], solved: result.solved, score: result.score });
         }
-    }, [cases])
+    };
 
-    const lettres = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+    const playHumanMove = move => {
+        const managerMove = {
+            from: { row: move.from.y, col: move.from.x },
+            to: { row: move.to.y, col: move.to.x }
+        };
+        if (puzzle) {
+            const result = puzzleManager.validateMove(managerMove);
+            if (!result.valid) {
+                setMessage(result.message);
+                setPionSelectionne(null);
+                setCaseJouable(null);
+                return;
+            }
+            commitMove(move, result);
+            return;
+        }
+        // Enregistrer aussi l'état du gestionnaire avant la validation de l'ouverture.
+        const openingState = { openingIndex: openingManager.moveIndex, openingActive: openingManager.isActive };
+        const validation = openingManager.validatePlayerMove(managerMove, humanColor);
+        if (!validation.valid) {
+            setMessage(validation.message);
+            return;
+        }
+        logHistory(openingState);
+        commitMove(move);
+        if (validation.message) setMessage(validation.message);
+    };
+
+    const deplacerPion = (xDepart, yDepart, xArrivee, yArrivee) => {
+        if (gameFinished || !isHumanTurn || pendingPromotion || puzzleReply) return;
+        const movingPiece = cases[yDepart][xDepart];
+        const candidates = getAllLegalMoves(humanColor, cases, { pieceId: movingPiece?.id, enPassantTarget });
+        const move = candidates.find(candidate => candidate.from.x === xDepart && candidate.from.y === yDepart &&
+            candidate.to.x === xArrivee && candidate.to.y === yArrivee);
+        if (!move) return;
+        if (move.promotion) {
+            setPendingPromotion(move);
+            return;
+        }
+        playHumanMove(move);
+    };
+
+    const handlePromotionChoice = type => {
+        if (!pendingPromotion || gameFinished) return;
+        const move = { ...pendingPromotion, promotion: type };
+        setPendingPromotion(null);
+        playHumanMove(move);
+    };
+
+    useEffect(() => {
+        if (gameFinished || puzzle || isHumanTurn || cases.length !== 8 || pendingPromotion) return;
+        const timeout = setTimeout(() => {
+            const damier = cases.map(row => [...row]);
+            const bestMove = openingManager.getAIMove(damier, currentColor, difficulte, { enPassantTarget });
+            if (!bestMove) return;
+            const from = { x: bestMove.from.col ?? bestMove.from.x, y: bestMove.from.row ?? bestMove.from.y };
+            const to = { x: bestMove.to.col ?? bestMove.to.x, y: bestMove.to.row ?? bestMove.to.y };
+            // Les coups du livre passent eux aussi par la validation du moteur.
+            const move = getAllLegalMoves(currentColor, cases, { enPassantTarget }).find(candidate =>
+                candidate.from.x === from.x && candidate.from.y === from.y && candidate.to.x === to.x &&
+                candidate.to.y === to.y && (!bestMove.promotion || candidate.promotion === bestMove.promotion));
+            if (move) commitMove(move);
+        }, 60);
+        return () => clearTimeout(timeout);
+    }, [cases, tourBlancs, joueurEstBlanc, puzzle, gameFinished, pendingPromotion, enPassantTarget, reset, positionVersion, difficulte]);
+
+    useEffect(() => {
+        if (!puzzleReply || gameFinished) return;
+        const timeout = setTimeout(() => {
+            if (puzzleReply.moves.length === 0) {
+                if (puzzleReply.solved) {
+                    soundManager.play('etMat');
+                    setPuzzleScore(puzzleReply.score);
+                    setPuzzleSolved(true);
+                }
+                setPuzzleReply(null);
+                return;
+            }
+            const [reply, ...remaining] = puzzleReply.moves;
+            const move = getAllLegalMoves(currentColor, cases, { enPassantTarget }).find(candidate =>
+                candidate.from.x === reply.from.col && candidate.from.y === reply.from.row &&
+                candidate.to.x === reply.to.col && candidate.to.y === reply.to.row);
+            if (move) commitMove(move);
+            setPuzzleReply({ ...puzzleReply, moves: remaining });
+        }, puzzleReply.moves.length ? 500 : 1500);
+        return () => clearTimeout(timeout);
+    }, [puzzleReply, cases, currentColor, enPassantTarget, gameFinished, puzzle, positionVersion, reset]);
+
+    const indices = joueurEstBlanc ? [0, 1, 2, 3, 4, 5, 6, 7] : [7, 6, 5, 4, 3, 2, 1, 0];
+    const lettres = indices.map(x => 'ABCDEFGH'[x]);
     return (<>
         <DialogPromotion
             open={!!pendingPromotion}
             onChoose={handlePromotionChoice}
-            color={pendingPromotion?.pion?.couleur}
+            color={pendingPromotion?.piece?.couleur}
         />
         {puzzle&&<PuzzleSuccess open={puzzleSolved} handleClose={()=>{
             setPuzzleSolved(false);
@@ -381,7 +315,8 @@ const showPuzzleSuccessMessage=sc=>{
             ))}
 
             {/* Lignes avec numéros + cases */}
-            {cases.map((row, y) => {
+            {cases.length === 8 && indices.map(y => {
+                const row = cases[y];
                 return (
                     <React.Fragment key={`row-${y}`}>
                         {/* Numéro de ligne (inversé pour avoir 8 → 1 en haut → bas) */}
@@ -394,11 +329,12 @@ const showPuzzleSuccessMessage=sc=>{
                                 color: joueurEstBlanc ? '#444' : '#f9f9f9',
                             }}
                         >
-                            {joueurEstBlanc ? (8 - y) : (y + 1)}
+                            {8 - y}
                         </Box>
 
                         {/* Cases de l’échiquier */}
-                        {row.map((pion, x) => {
+                        {indices.map(x => {
+                            const pion = row[x];
                             const moveFrom = pion && lastMove?.id === pion.id ? lastMove?.from : null;
                             const pionSelected = pionSelectionne != null && pionSelectionne.x == x && pionSelectionne.y === y;
                             const pionJouable = pionSelected && caseJouable != null && caseJouable.length > 0;
@@ -417,9 +353,9 @@ const showPuzzleSuccessMessage=sc=>{
                                 >
                                     <Piece
                                         piece={pion}
-                                        x={x}
-                                        y={y} joueurEstBlanc={joueurEstBlanc}
-                                        moveFrom={moveFrom}
+                                        x={joueurEstBlanc ? x : 7 - x}
+                                        y={joueurEstBlanc ? y : 7 - y} joueurEstBlanc={joueurEstBlanc}
+                                        moveFrom={moveFrom && (joueurEstBlanc ? moveFrom : { x: 7 - moveFrom.x, y: 7 - moveFrom.y })}
                                         selected={pionSelectionne?.x === x && pionSelectionne?.y === y}
                                         jouable={pionJouable}
                                     />

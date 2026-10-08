@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import { loadGame, saveGame } from '../civ/utils/saveGame';
-import { DIFFICULTY_CONFIGS } from "./reflexions";
+import { DIFFICULTY_CONFIGS, isKingInCheck } from "./reflexions";
 import { OpeningManager } from "./Ouvertures";
 import { soundManager } from "../rpg/sons/SoundManager";
 import echecSound from './images/echec.m4a';
@@ -28,12 +28,16 @@ export const ChessProvider = ({ children, ...props }) => {
   const [tourBlancs, setTourBlancs] = useState(true); // Variable pour suivre le tour des blancs
 
   const [cases, setCases] = useState([]);
+  const [enPassantTarget, setEnPassantTarget] = useState(null);
+  const [gameFinished, setGameFinished] = useState(false);
+  const [positionVersion, setPositionVersion] = useState(0);
+  const [timerVersion, setTimerVersion] = useState(0);
   const [moveCount, setMoveCount] = useState(0);
   const [dureeJeu, setDureeJeu] = useState(10);
   const [joueurEstBlanc, setJoueurEstBlanc] = useState(true); // true = humain joue blanc
 
   useEffect(() => {
-    setTourBlancs(joueurEstBlanc);
+    setTourBlancs(true);
     soundManager.loadSounds({
       echec: echecSound,
       glisse: glisseSound,
@@ -70,21 +74,28 @@ const puzzleManager =useMemo(() => {
       setGamePhase('endgame');
     }
   }, [moveCount]);
-  const logHistory = useCallback(() => {
+  // Un instantané avant chaque coup humain permet d'annuler aussi la réponse de l'IA.
+  const logHistory = (openingState) => {
     setHistory(prev => [...prev, {
       board: JSON.parse(JSON.stringify(cases)),
-      captured: captured,
-      tourBlancs: tourBlancs,
-      moveCount: moveCount
+      captured: { white: [...captured.white], black: [...captured.black] },
+      tourBlancs, moveCount, enPassantTarget,
+      openingIndex: openingManager.moveIndex,
+      openingActive: openingManager.isActive,
+      ...openingState
     }]);
-  }, [cases]);
+  };
   const resetTimer = useCallback(() => {
-    setTimer(dureeJeu * 60); // Réinitialiser le timer à 10 minutes
-    setGamePhase('debut'); // Réinitialiser la phase du jeu
+    setTimer(dureeJeu * 60);
+    setTimerVersion(prev => prev + 1);
+    setPositionVersion(prev => prev + 1);
+    setGameFinished(false);
+    setEnPassantTarget(null);
+    setGamePhase('debut');
     setMoveCount(0);
-    setTourBlancs(joueurEstBlanc); // Réinitialiser le tour des blancs
-    setHistory([]); // Réinitialiser l'historique des coups
-  }, [dureeJeu,joueurEstBlanc]);
+    setTourBlancs(true);
+    setHistory([]);
+  }, [dureeJeu]);
 
   const changeCouleurJoueur = useCallback((couleur) => {
     if(couleur=== 'white'&& joueurEstBlanc) return; // Si déjà blanc, ne rien faire
@@ -107,17 +118,19 @@ const puzzleManager =useMemo(() => {
     }
     return total;
   }
-  const getScore = (winner) => {
+  const getScore = (winner, board = cases) => {
     // Calculer le score basé sur la somme des valeurs des pieces restantes moins la valeur des pièces adverses restantes
     const values = PIECE_VALUES;
-    let score = winner === 'white' ? 10 : -10;
+    if (!winner) return 0;
+    const playerColor = joueurEstBlanc ? 'white' : 'black';
+    let score = winner === playerColor ? 10 : -10;
     try{
 
     for (let y = 0; y < 8; y++) {
       for (let x = 0; x < 8; x++) {
-        const piece = cases[y][x];
+        const piece = board[y][x];
         if (piece) {
-          score += piece.couleur === 'white' ? values[piece.type] || 0 : -values[piece.type] || 0;
+          score += piece.couleur === playerColor ? values[piece.type] || 0 : -values[piece.type] || 0;
         }
       }
     }
@@ -131,6 +144,13 @@ const puzzleManager =useMemo(() => {
     const data = loadGame('chess_savegame');
     if (data) {
       setCases(data.cases);
+      setEnPassantTarget(data.enPassantTarget || null);
+      setGameFinished(false);
+      setPositionVersion(prev => prev + 1);
+      setTimerVersion(prev => prev + 1);
+      setHistory([]);
+      openingManager.isActive = false;
+
       setTourBlancs(data.tourBlancs);
       setMoveCount(data.moveCount);
       setCaptured(data.captured);
@@ -153,6 +173,7 @@ const puzzleManager =useMemo(() => {
       tourBlancs,
       moveCount,
       captured,
+      enPassantTarget,
       customDifficulty: DIFFICULTY_CONFIGS[0],
     };
     saveGame(partieData, 'chess_savegame');
@@ -162,8 +183,15 @@ const puzzleManager =useMemo(() => {
   const handleUndo = () => {
     if (history.length === 0) return;
 
-    const last = history[history.length - 2];
+    const last = history[history.length - 1];
     setCases(last.board);
+    setEnPassantTarget(last.enPassantTarget);
+    setGameFinished(false);
+    setEchec(isKingInCheck(last.board, last.tourBlancs ? 'white' : 'black'));
+    setMessage("Coup annulé");
+    setPositionVersion(prev => prev + 1);
+    openingManager.moveIndex = last.openingIndex;
+    openingManager.isActive = last.openingActive;
     setCaptured(last.captured);
     setTourBlancs(last.tourBlancs);
     setMoveCount(last.moveCount);
@@ -178,7 +206,7 @@ const puzzleManager =useMemo(() => {
     const fromStr = columnToLetter(from.col ?? from.x) + rowToNumber(from.row ?? from.y , joueurEstBlanc);
     const toStr = columnToLetter(to.col ?? to.x) + rowToNumber(to.row ?? to.y , joueurEstBlanc);
 
-    const target = cases?.[joueurEstBlanc?(to.row ?? to.y):(8-(to.row??to.y))]?.[to.col ?? to.x];
+    const target = cases?.[to.row ?? to.y]?.[to.col ?? to.x];
 
     // S’il y a une pièce capturée sur la case d’arrivée
     if (target && typeof target === 'object' && target.type) {
@@ -195,11 +223,15 @@ const puzzleManager =useMemo(() => {
     if(puzzleID==null)
       return  setPuzzle(null);
     const pz = puzzleManager.loadPuzzle(puzzleID);
+    resetTimer();
+    setCaptured({ white: [], black: [] });
+    setEchec(false);
     setPuzzle(pz);
     setJoueurEstBlanc(true);
   }
 
   const value = {
+    enPassantTarget, setEnPassantTarget, gameFinished, setGameFinished, positionVersion, timerVersion,
     openingManager, logHistory, handleUndo,startPuzzle,puzzle,puzzleManager,
     echec, setEchec, captured, setCaptured, message, setMessage, timer, resetTimer,
     cases, setCases, tourBlancs, setTourBlancs, gamePhase, setGamePhase, dureeJeu, setDureeJeu

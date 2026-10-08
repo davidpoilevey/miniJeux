@@ -35,11 +35,12 @@ export default function InfoPanel({
 }) {
     const { echec, captured, message, savePartie, loadPartie
         ,puzzle, puzzleManager,openingManager,humanReadableMove,cases,setMessage,
-        timer, tourBlancs, gamePhase, moveCount, getTotalValue, handleUndo } = useChess();
+        timer, tourBlancs, joueurEstBlanc, gameFinished, enPassantTarget, timerVersion, gamePhase, moveCount, getTotalValue, handleUndo } = useChess();
     const currentPlayer = tourBlancs ? 'white' : 'black';
     const [gameTimer, setGameTimer] = useState(0);
     const [pickMessage, setPickMessage] = useState();
     const [isTimerRunning, setIsTimerRunning] = useState(true);
+    const timerGeneration = useRef({ timer, timerVersion });
     const [moveHistory, setMoveHistory] = useState([]);
     const [anchorEl, setAnchorEl] = useState(null);
     const [indice, setHint] = useState();
@@ -52,39 +53,35 @@ export default function InfoPanel({
     },[puzzleManager]);
 
     const giveHint = ()=>{
-       const bestMove = searchRoot(cases,currentPlayer,4);
+       const bestMove = searchRoot(cases,currentPlayer,4, { enPassantTarget });
+       if (!bestMove) return;
        setMessage(`Tu devrais jouer le ${bestMove.piece.type} - ${openingManager.formatMove(bestMove,true)}`)
     }
 const [openConfig, setOpenConfig] = useState(gamePhase=='debut');
     const handleMenuOpen = (e) => setAnchorEl(e.currentTarget);
     const handleMenuClose = () => setAnchorEl(null);
-    // Chronomètre permanent
+    // Les mises à jour du compteur restent pures, la fin de partie est un effet séparé.
     useEffect(() => {
-        let interval;
-        if (isTimerRunning) {
-            interval = setInterval(() => {
-                setGameTimer(prev => {
-                    if (prev >= timer) {
-                        clearInterval(interval);
-                        gameOver('Temps ecoulé', 'black');
-                        setIsTimerRunning(false);
-                        return timer; // Arrêter le timer si on atteint la limite
-                    }
-                    return prev + 1
-                }
-                );
-            }, 1000);
-        }
+        if (!isTimerRunning || gameFinished) return;
+        const interval = setInterval(() => setGameTimer(prev => prev + 1), 1000);
         return () => clearInterval(interval);
-    }, [isTimerRunning]);
-
+    }, [isTimerRunning, gameFinished]);
 
     useEffect(() => {
+        if (timerGeneration.current.timerVersion === timerVersion && timerGeneration.current.timer === timer &&
+            !gameFinished && isTimerRunning && timer != null && gameTimer >= timer) {
+            gameOver('Temps écoulé', joueurEstBlanc ? 'black' : 'white');
+        }
+    }, [gameTimer, timer, gameFinished, isTimerRunning, joueurEstBlanc, gameOver, timerVersion]);
+
+    useEffect(() => {
+        timerGeneration.current = { timer, timerVersion };
         setGameTimer(0);
-    }, [timer]);
+        setIsTimerRunning(true);
+    }, [timer, timerVersion]);
     const captureCount = useRef({ white: 0, black: 0 });
     useEffect(() => {
-        if (!tourBlancs) return; // Ne pas exécuter si ce n'est pas le tour des blancs
+        if (tourBlancs !== joueurEstBlanc) return;
         if(Math.random() < 0.5) return; // 50% de chance de ne pas afficher de message
         let hasCaptured = false, hasTaken = false;
         if (captured.white.length > captureCount.current.white) {
@@ -97,10 +94,10 @@ const [openConfig, setOpenConfig] = useState(gamePhase=='debut');
         }
 
         const line = pickAIDialogue({
-            aiCount: getTotalValue('black') - 100,
-            playerCount: getTotalValue('white') - 100,// 100 pour le roi
-            captured: hasCaptured,
-            taken: hasTaken,
+            aiCount: getTotalValue(joueurEstBlanc ? 'black' : 'white') - 100,
+            playerCount: getTotalValue(joueurEstBlanc ? 'white' : 'black') - 100,// 100 pour le roi
+            captured: joueurEstBlanc ? hasCaptured : hasTaken,
+            taken: joueurEstBlanc ? hasTaken : hasCaptured,
             echec
         });
         if (line) {
@@ -188,7 +185,7 @@ const [openConfig, setOpenConfig] = useState(gamePhase=='debut');
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <HourglassEmpty sx={{ color: '#835425' }} />
                         <Typography sx={{ fontSize: '1.15rem', fontWeight: 800, color: '#2f3430', letterSpacing: '-0.01em' }}>
-                            {tourBlancs ? "C'est a vous" : "L'IA reflechit..."}
+                            {gameFinished ? "Partie terminée" : tourBlancs === joueurEstBlanc ? "C'est a vous" : "L'IA reflechit..."}
                         </Typography>
                     </Box>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.25 }}>
@@ -268,7 +265,7 @@ const [openConfig, setOpenConfig] = useState(gamePhase=='debut');
                 )}
 
                 <Box sx={{ display: 'flex', gap: 1.5 }}>
-                    <Button onClick={giveHint} startIcon={<Info />}
+                    <Button disabled={gameFinished} onClick={giveHint} startIcon={<Info />}
                         sx={{ flex: 1, py: 1.5, borderRadius: 2, background: '#835425', color: '#fff6f1',
                             fontWeight: 700, fontSize: '0.8rem', textTransform: 'none',
                             '&:hover': { background: '#75481a' } }}>
@@ -289,7 +286,7 @@ const [openConfig, setOpenConfig] = useState(gamePhase=='debut');
                 <Typography sx={PANEL_LABEL}>Pieces capturees</Typography>
                 <Box sx={{ mb: 1.5 }}>
                     <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: '#5c605c', mb: 0.5 }}>
-                        Blancs ({whiteScore})
+                        Blancs ({blackScore})
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', fontSize: '1.4rem', lineHeight: 1 }}>
                         {captured.black.length > 0
@@ -299,7 +296,7 @@ const [openConfig, setOpenConfig] = useState(gamePhase=='debut');
                 </Box>
                 <Box>
                     <Typography sx={{ fontSize: '0.72rem', fontWeight: 600, color: '#5c605c', mb: 0.5 }}>
-                        Noirs ({blackScore})
+                        Noirs ({whiteScore})
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', fontSize: '1.4rem', lineHeight: 1 }}>
                         {captured.white.length > 0
@@ -328,7 +325,7 @@ const [openConfig, setOpenConfig] = useState(gamePhase=='debut');
 
             {/* Section 5 : Actions */}
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-                <Button onClick={handleUndo} fullWidth startIcon={<Undo />}
+                <Button disabled={!!puzzle} onClick={handleUndo} fullWidth startIcon={<Undo />}
                     sx={{ py: 1.75, borderRadius: 2.5, background: '#e6e9e4', color: '#2f3430',
                         fontWeight: 700, fontSize: '0.875rem', textTransform: 'none',
                         '&:hover': { background: '#d6dbd5' } }}>
@@ -340,7 +337,7 @@ const [openConfig, setOpenConfig] = useState(gamePhase=='debut');
                         '&:hover': { background: '#f4f4f0' } }}>
                     Recommencer
                 </Button>
-                <Button fullWidth onClick={() => gameOver('Abandon', tourBlancs ? 'black' : 'white')}
+                <Button fullWidth onClick={() => gameOver('Abandon', joueurEstBlanc ? 'black' : 'white')}
                     sx={{ py: 1.75, color: '#9e422c', fontWeight: 700, fontSize: '0.875rem',
                         textTransform: 'none', opacity: 0.6, '&:hover': { opacity: 1 } }}>
                     Abandonner

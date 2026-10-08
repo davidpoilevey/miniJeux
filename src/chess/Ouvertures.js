@@ -354,13 +354,13 @@ class OpeningManager {
     const originalMove = moves[this.moveIndex];
     
     // Vérifier si c'est le tour de la couleur demandée
-    const moveColor = this.playerIsWhite ? originalMove.color : this.invertColor(originalMove.color);
+    const moveColor = originalMove.color;
     
     if (moveColor === currentColor) {
       this.moveIndex++;
       
-      // Transformer le coup si le joueur est noir
-      return this.playerIsWhite ? originalMove : this.transformMoveForBlackPlayer(originalMove);
+      // Les coordonnées restent celles du moteur, quelle que soit la vue.
+      return originalMove;
     }
 
     return null;
@@ -390,13 +390,11 @@ transformMoveForBlackPlayer(move) {
       return { valid: true, message: "" };
     }
 
-    // Transformer le coup attendu si nécessaire
-    const expectedMove = this.playerIsWhite ? 
-      expectedOriginalMove : 
-      this.transformMoveForBlackPlayer(expectedOriginalMove);
+    // Le coup du livre utilise toujours les coordonnées du moteur.
+    const expectedMove = expectedOriginalMove;
 
     // Vérifier si c'est le bon joueur
-    const expectedColor = this.playerIsWhite ? expectedOriginalMove.color : this.invertColor(expectedOriginalMove.color);
+    const expectedColor = expectedOriginalMove.color;
     
     if (expectedColor !== currentColor) {
       return { valid: true, message: "" };
@@ -430,28 +428,23 @@ transformMoveForBlackPlayer(move) {
   }
 
   // Intégrer avec l'IA existante
-  getAIMove(cases, currentColor, difficulty) {
+  getAIMove(cases, currentColor, difficulty, state = {}) {
     const openingMove = this.getNextOpeningMove(currentColor);
     
     if (openingMove) {
-      const displayColor = this.playerIsWhite ? 
-        (openingMove.color === 'white' ? 'Blancs' : 'Noirs') :
-        (openingMove.color === 'white' ? 'Noirs' : 'Blancs');
-        
+      const displayColor = openingMove.color === 'white' ? 'Blancs' : 'Noirs';
       console.log(`🤖 IA (${displayColor}) joue: ${this.formatMove(openingMove)} (${this.currentOpening.name})`);
       return this.convertToMoveFormat(openingMove, cases);
     }
 
     // Utiliser l'IA normale
-    return searchRootWithDifficulty(cases, currentColor, difficulty);
+    return searchRootWithDifficulty(cases, currentColor, difficulty, state);
   }
 
   // Utilitaires
   formatMove(move, isWhite) {
     const files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-    const ranks = (this.playerIsWhite||isWhite) ? 
-      ['8', '7', '6', '5', '4', '3', '2', '1'] :  // Vue normale
-      ['1', '2', '3', '4', '5', '6', '7', '8'];   // Vue inversée
+    const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
     
     
     const from = files[move.from.col??move.from.x] + ranks[move.from.row??move.from.y];
