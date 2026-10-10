@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Box, Grid, Typography, Chip, Badge, InputBase } from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
 import SearchIcon from '@mui/icons-material/Search';
@@ -6,11 +6,25 @@ import { useFilteredGames, useTagsWithCounts, useIsMobile } from '../../hookGame
 import GameCard from './GameCard';
 
 const LABEL_FONT = { fontFamily: '"Space Grotesk", sans-serif' };
+const TAGS_STORAGE_KEY = 'selectedTags';
+const SEARCH_STORAGE_KEY = 'mobileSearch';
+
+// La vue bibliothèque est démontée quand un jeu s'ouvre : on relit les filtres au remontage
+const loadSelectedTags = () => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(TAGS_STORAGE_KEY));
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
+};
+
+const loadMobileSearch = () => localStorage.getItem(SEARCH_STORAGE_KEY) || '';
 
 const GamesGrid = ({ gamesData, searchQuery, onSelectGame }) => {
-  const [selectedTags, setSelectedTags] = useState([]);
+  const [selectedTags, setSelectedTags] = useState(loadSelectedTags);
   // Mobile search — mirrors TopNavBar search for xs screens
-  const [mobileSearch, setMobileSearch] = useState('');
+  const [mobileSearch, setMobileSearch] = useState(loadMobileSearch);
   const isMobile = useIsMobile();
 
   // On mobile use local search, on desktop use the lifted prop from TopNavBar
@@ -22,6 +36,14 @@ const GamesGrid = ({ gamesData, searchQuery, onSelectGame }) => {
 
   const tagsWithCounts = useTagsWithCounts(gamesData, effectiveQuery, effectiveTags);
   const filteredGames  = useFilteredGames(gamesData, effectiveQuery, effectiveTags);
+
+  useEffect(() => {
+    localStorage.setItem(TAGS_STORAGE_KEY, JSON.stringify(selectedTags));
+  }, [selectedTags]);
+
+  useEffect(() => {
+    localStorage.setItem(SEARCH_STORAGE_KEY, mobileSearch);
+  }, [mobileSearch]);
 
   const handleToggleTag = (tag) => {
     setSelectedTags(prev =>
