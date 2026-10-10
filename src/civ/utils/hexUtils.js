@@ -233,9 +233,8 @@ export const findPath=(start, goal, map, options = {})=> {
       const key = `${neighbor.q},${neighbor.r}`;
       if (!isTarget && (neighbor.unit || neighbor.hasCity)) continue; // case occupée
 
-      const terrainCost = getTileCost(neighbor);
-      const moveCost = ((neighbor.type === 'water' && !canCrossWater)
-                      ||(neighbor.type !== 'water' && armee==='naval')) ? 999 : terrainCost;
+      const moveCost = getTileCost(neighbor, { canCrossWater, armee });
+      if (!Number.isFinite(moveCost)) continue;
 
       const newCost = costMap.get(currentKey) + moveCost;
       if (!costMap.has(key) || newCost < costMap.get(key)) {
@@ -330,19 +329,13 @@ export function getMovementResult(unit, start, goal, map) {
 
   if (!path || path.length === 0) return null;
 
-  let movement = unit.remainingMovement ?? unitDef.movement;
-  let costSoFar = path[0].hasRoad?0.5:1;
-  const pathUsed = [path[0]];
+  const movement = unit.remainingMovement ?? unitDef.movement;
+  let costSoFar = 0;
+  const pathUsed = [];
 
-  for (let i = 1; i < path.length; i++) {
-    const tile = path[i];
-    const terrainCost = getTileCost(tile)
-
-    const moveCost = ((tile.type === 'water' && !unitDef.canCrossWater)
-      || (tile.type !== 'water' && unitDef.armee === 'naval')) ? 999 : terrainCost;
-
+  for (const tile of path) {
+    const moveCost = getTileCost(tile, unitDef);
     if (costSoFar + moveCost > movement) break;
-
     costSoFar += moveCost;
     pathUsed.push(tile);
   }

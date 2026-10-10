@@ -14,6 +14,7 @@ import {
   Close as CloseIcon
 } from '@mui/icons-material';
 import { ButtonCiv, DialogCiv, PaperCiv, paperPropsCiv, TypoCiv } from './civUI';
+import { queueProduction, shieldCost } from '../data/economy';
 import { isWonderBuilt } from './utils';
 const Transition = React.forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -71,22 +72,16 @@ const AddToProductionDialog = ({ city, techsUnlocked, setCities }) => {
     setCities(prev =>
       prev.map(c => {
         if (c.id !== city.id) return c;
-        const updated = { ...c, productionQueue: [...(c.productionQueue || []), id], resources: { ...c.resources } };
-        if (!updated.currentProduction) {
-          updated.currentProduction = id;
-          updated.productionProgress = 0;
-        }
-        for (const [res, amount] of Object.entries(cost || {})) {
-          updated.resources[res] = (updated.resources[res] || 0) - amount;
-        }
-        return updated;
+        const option = getProductionOptionsForCity(c, techsUnlocked, builtWonders).find(item => item.id === id);
+        if (!option?.isAvailable) return c;
+        return queueProduction(c, id);
       })
     );
     handleClose();
   };
 
   const renderItem = (item) => {
-    const cost = item.cost || {};
+    const cost = { shields: shieldCost(item) };
     const available = item.isAvailable;
     const missingSet = new Set(item.missingResources || []);
     // les blocages non-ressources (technologie, bâtiment...) s'affichent en toutes lettres
@@ -132,7 +127,7 @@ const AddToProductionDialog = ({ city, techsUnlocked, setCities }) => {
               {Object.entries(cost).map(([res, amt]) => (
                 <Chip
                   key={res}
-                  label={`${res}: ${amt}`}
+                  label={`🛡️ ${amt} boucliers`}
                   size="small"
                   sx={missingSet.has(res)
                     ? { bgcolor: '#c62828', color: 'white', fontWeight: 'bold',
@@ -163,7 +158,7 @@ const AddToProductionDialog = ({ city, techsUnlocked, setCities }) => {
         onClose={handleClose}
         TransitionComponent={Transition}
         icon="🎯"
-        title={<TypoCiv variant="h5" fontWeight="bold">Choisir une production pour {city.name}</TypoCiv>
+        title={<TypoCiv component="span" variant="h5" fontWeight="bold">Choisir une production pour {city.name}</TypoCiv>
          }
       >
       
@@ -213,8 +208,12 @@ export function getProductionOptionsForCity(city, techsUnlocked, builtWonders = 
 
   const analyzeItem = (item, type) => {
     const reqs = item.requirements || {};
-    const cost = item.cost || {};
+    const cost = { shields: shieldCost(item) };
     const missing = [];
+
+    if (type === 'building' && (hasBuilding(item.id) || (city.productionQueue || []).includes(item.id))) {
+      missing.push('Déjà construit ou en production');
+    }
 
     if (type === 'merveille' && isWonderBuilt(builtWonders, item.id)) {
       missing.push("Déjà construite par une autre civilisation");
@@ -229,18 +228,13 @@ export function getProductionOptionsForCity(city, techsUnlocked, builtWonders = 
     }
 
     const missingResources = [];
-    for (const [res, amt] of Object.entries(cost)) {
-      if ((city.resources[res] || 0) < amt) {
-        missing.push(`Ressource insuffisante : ${res} (${amt})`);
-        missingResources.push(res);
-      }
-    }
 
     return {
       ...item,
+      cost,
       id: item.id || item.type,
       type,
-      isAffordable: canAfford(cost),
+      isAffordable: true,
       isAvailable: missing.length === 0,
       missing,
       missingResources,

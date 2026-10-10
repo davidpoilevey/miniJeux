@@ -309,7 +309,7 @@ export const BUILDING_TYPES = {
     ,wallStreet: {
       id: 'wallStreet',
       name: 'Wall street',
-      description: "Les villes gagnent plus d'argent (20% de plus)",
+      description: "Placement financier : entre 1 et 3% d’intérêt par tour (2% en moyenne)",
       icon: '🪙',
       type:'merveille',
       effectInauguration:civilization=>{
@@ -317,7 +317,8 @@ export const BUILDING_TYPES = {
       },
       effectParTurn:cities=>{
         cities.forEach(city=>{
-          city.resources.gold=Math.round(city.resources.gold*1.2);
+          const rate = 0.01 + Math.random() * 0.02;
+          city.resources.gold = Math.round((city.resources.gold || 0) * (1 + rate));
         })
       },
       cost: { wood: 10,  gold: 200, charbon:50 },

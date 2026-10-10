@@ -111,33 +111,18 @@ const MarcheRoyalPanel = () => {
 
     setIsExchanging(true);
     
-    // Animation délai pour l'effet
-    setTimeout(() => {
-      setCities(prev => prev.map(city => {
-        if (city.id === fromCity) {
-          return {
-            ...city,
-            resources: {
-              ...city.resources,
-              [resource]: city.resources[resource] - amount
-            }
-          };
-        }
-        if (city.id === toCity) {
-          return {
-            ...city,
-            resources: {
-              ...city.resources,
-              [resource]: (city.resources[resource] || 0) + totalReceived
-            }
-          };
-        }
+    setCities(prev => {
+      const source = prev.find(c => c.id === fromCity && c.owner?.id === playerNation.id);
+      const target = prev.find(c => c.id === toCity && c.owner?.id === playerNation.id);
+      if (!source || !target || !Number.isFinite(amount) || (source.resources[resource] || 0) < amount) return prev;
+      return prev.map(city => {
+        if (city.id === fromCity) return { ...city, resources: { ...city.resources, [resource]: source.resources[resource] - amount } };
+        if (city.id === toCity) return { ...city, resources: { ...city.resources, [resource]: (city.resources[resource] || 0) + totalReceived } };
         return city;
-      }));
-
-      setAmount(0);
-      setIsExchanging(false);
-    }, 1000);
+      });
+    });
+    setAmount(0);
+    setIsExchanging(false);
   };
 
   const canExchange = fromCityData && toCityData && resource && amount > 0 && 
@@ -568,16 +553,15 @@ const MarchePanel = ({ city }) => {
 
   const handleExchange = () => {
     if (!tauxActuel || amount <= 0) return;
-    if (resources[from] < amount) return;
+    if (!Number.isFinite(amount) || (resources[from] || 0) < amount) return;
 
-    const newResources = { ...resources };
-    newResources[from] -= amount;
-    newResources[to] = (newResources[to] || 0) + total;
-
-    const nouveauTaux = { ...taux };
+    const nouveauTaux = { ...taux, [from]: { ...taux[from] } };
     const variation = Math.random()*0.1
     nouveauTaux[from][to] = +(tauxActuel * (0.95+variation)).toFixed(2); // déflation locale légère
-    setCities(prev => prev.map(c => (c.id === city.id ? { ...c, resources: newResources } : c)));
+    setCities(prev => prev.map(c => {
+      if (c.id !== city.id || (c.resources[from] || 0) < amount) return c;
+      return { ...c, resources: { ...c.resources, [from]: c.resources[from] - amount, [to]: (c.resources[to] || 0) + total } };
+    }));
     setTaux(nouveauTaux);
     setAmount(0);
   };

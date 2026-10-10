@@ -227,7 +227,7 @@ export const UNIT_TYPES = {
       { id: 'fortify', label: 'Fortifier' },
       { id: 'disband', label: 'Dissoudre' },
     ],
-  requirements: {building:"chateau", science:"Feodalisme"}                               
+  requirements: {building:"chateau", science:"feodalisme"}
   }
   , templier: {
     type: 'templier', name: 'Templier', icon: '⛨', imageSrc: null,
@@ -284,7 +284,7 @@ export const UNIT_TYPES = {
       { id: 'fortify', label: 'Fortifier' },
       { id: 'disband', label: 'Dissoudre' },
     ],
-    requirements: { building: 'arsenal', science: 'Poudre à canon' },
+    requirements: { building: 'arsenal', science: 'poudre' },
   },
    canon: {
     type: 'canon', name: 'Canon', icon: '💥', imageSrc: null,
@@ -296,7 +296,7 @@ export const UNIT_TYPES = {
       { id: 'fortify', label: 'Fortifier' },
       { id: 'disband', label: 'Dissoudre' },
     ],
-    requirements: { building: 'fonderie', science: 'Metallurgie' },
+    requirements: { building: 'fonderie', science: 'metallurgie' },
   }
  ,tank: {
     type: 'tank', name: 'Char d’assaut', icon: '🛻', imageSrc: null,
@@ -308,7 +308,7 @@ export const UNIT_TYPES = {
       { id: 'fortify', label: 'Fortifier' },
       { id: 'disband', label: 'Dissoudre' },
     ],
-    requirements: { building: 'usine', science: 'Moteur à explosion' },
+    requirements: { building: 'usine', science: 'moteurExplosion' },
   },
   avionChasse: {
     type: 'avionChasse', name: 'Avion de chasse', icon: '✈️', imageSrc: null,
@@ -319,7 +319,7 @@ export const UNIT_TYPES = {
     actions: [
       { id: 'disband', label: 'Dissoudre' },
     ],
-    requirements: { building: 'aeroport', science: 'Aviation' },
+    requirements: { building: 'aeroport', science: 'aviation' },
   }
   ,soldatModerne: {
     type: 'soldatModerne', name: 'Meuh-rines', icon: '🪖', imageSrc: null,
@@ -331,7 +331,7 @@ export const UNIT_TYPES = {
       { id: 'fortify', label: 'Fortifier' },
       { id: 'disband', label: 'Dissoudre' },
     ],
-    requirements: { building: 'arsenal', science: 'Infanterie moderne' },
+    requirements: { building: 'arsenal', science: 'infanterieModerne' },
   },
   bombeNucleaire: {
     type: 'bombeNucleaire', name: 'Bombe nucléaire', icon: '☢️', imageSrc: null,
@@ -343,7 +343,7 @@ export const UNIT_TYPES = {
       { id: 'nuke', label: 'Lancer Bombe Nuke' },
       { id: 'disband', label: 'Dissoudre' },
     ],
-    requirements: { building: 'complexe nucléaire', science: 'Fission' },
+    requirements: { building: 'nucleaire', science: 'fission' },
   },
 };
 

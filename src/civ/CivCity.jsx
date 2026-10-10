@@ -1,13 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useCivContext } from './CivContext';
-import { BUILDING_TYPES } from './data/buildingTypes';
+import { BUILDING_TYPES, MERVEILLES_DU_MONDE } from './data/buildingTypes';
 import imgFond from './images/mur.jpg';
 import imgMarche from './images/marcheAmbulant.png';
 import imgMarcheRoyal from './images/marcheRoyal.png';
 import imgFondPanel from './images/fondPanel.png';
 import {
   Box, Typography, Grid, Paper, Divider, Stack, Chip, MenuItem, Button, Menu,
-  ListSubheader, Tooltip,
+  ListSubheader, Tooltip, Switch, FormControlLabel, Collapse, LinearProgress,
 } from '@mui/material';
 import { UNIT_TYPES } from './data/unitTypes';
 import { ZoneInfluenceCanvas } from './utils/ZoneInfluenceCanvas';
@@ -16,6 +16,9 @@ import { AllImageSources } from './utils/imagesImports';
 import { AttachMoney, Checkroom, Forest, Gavel, Landscape, LocalGasStation, RadioSharp, Restaurant, Science, SentimentSatisfiedAlt, Whatshot } from '@mui/icons-material';
 import AddToProductionPopover from './utils/AddToProductionPopover';
 import MarcheDialog, { MarcheRoyalDialog } from './utils/MarchePanel';
+import { computeCityEconomy } from './data/cityTypes';
+import { productionPreview, queueProduction, shieldCost } from './data/economy';
+import { getProductionOptionsForCity } from './utils/AddToProductionPopover';
 import { getYearForTurn } from './utils/utils';
 
 
@@ -23,18 +26,19 @@ const CivCity = () => {
   const { selectedCity, cities, tiles, setCities, techsUnlocked } = useCivContext();
   const [openMarche, setOpenMarche] = useState(false);
   const [openMarcheRoyal, setOpenMarcheRoyal] = useState(false);
+  const [showStocks, setShowStocks] = useState(false);
   const city = cities.find(c => c.id === selectedCity?.id);
 
   const images = usePreloadedImages(AllImageSources);
-  const removeFromQueue = prod => {
+  const removeFromQueue = index => {
     setCities(prev =>
       prev.map(c => {
         if (c.id === city.id) {
           const newQueue = [...c.productionQueue];
-          const index = newQueue.indexOf(prod);
           if (index >= 0)
             newQueue.splice(index, 1);
-          return { ...c, productionQueue: newQueue };
+          return { ...c, productionQueue: newQueue,
+            ...(index === 0 ? { currentProduction: newQueue[0] || null, productionProgress: 0 } : {}) };
         }
         else return c
       }
@@ -56,7 +60,9 @@ const CivCity = () => {
           <Typography variant="caption">{city.owner.description}</Typography>
         </Box>
         <Box sx={{ mt: 2 }}>
-          <CityRessource selectedCity={city} />
+          <CityEconomy city={city} tiles={tiles} />
+          <Button onClick={() => setShowStocks(open => !open)}>{showStocks ? 'Masquer les stocks' : 'Stocks et ressources'}</Button>
+          <Collapse in={showStocks}><CityRessource selectedCity={city} /></Collapse>
         </Box>
         <Box sx={{ height: 87,m:1, width: 263, borderRadius: 1, backgroundImage: `url(${imgMarche})`, backgroundSize: 'contain', backgroundRepeat: 'no-repeat' }}
           onClick={(achtung) => {
@@ -95,7 +101,7 @@ const CivCity = () => {
             />
           </Paper>
 
-          <ProductionEnCours removeFromQueue={removeFromQueue} selectedCity={city} />
+          <ProductionEnCours removeFromQueue={removeFromQueue} selectedCity={city} tiles={tiles} setCities={setCities} />
 
         </Box>
 
@@ -119,6 +125,19 @@ const CivCity = () => {
 
 export default CivCity;
 
+
+const CityEconomy = ({ city, tiles }) => {
+  const { gains, foodProduced, foodFromWool, consumption, foodNet } = computeCityEconomy(city, tiles);
+  const production = productionPreview(city, gains);
+  return <Stack spacing={0.5}>
+    <Typography color={foodNet < 0 ? 'error' : 'inherit'}>
+      🌾 {foodProduced} nourriture{foodFromWool > 0 ? ` (dont ${foodFromWool} de laine)` : ''} − {consumption} consommés = {foodNet > 0 ? '+' : ''}{foodNet}/tour
+    </Typography>
+    <Typography variant="caption">Grenier : {city.resources.food || 0} blés · {foodNet < 0 ? 'Les réserves nourrissent la population.' : 'Le surplus permet la croissance.'}</Typography>
+    <Typography>🛡️ {production.base} boucliers/tour{production.bonus > 0 ? ` + ${production.bonus} issus des matériaux` : ''}</Typography>
+    <Typography>💡 {gains.science || 0} science/tour · 💰 +{gains.gold || 0} or/tour</Typography>
+  </Stack>;
+};
 
 export const Garnison = ({ city }) => {
   const { tiles, setTiles, setCities, deployUnit } = useCivContext();
@@ -182,8 +201,10 @@ export const Garnison = ({ city }) => {
 };
 
 
-const ProductionEnCours = ({ removeFromQueue, selectedCity }) => {
-  const production_TYPES = Object.assign({}, BUILDING_TYPES, UNIT_TYPES);
+const ProductionEnCours = ({ removeFromQueue, selectedCity, tiles, setCities }) => {
+  const gains = computeCityEconomy(selectedCity, tiles).gains;
+  const preview = productionPreview(selectedCity, gains);
+  const production_TYPES = Object.assign({}, BUILDING_TYPES, UNIT_TYPES, MERVEILLES_DU_MONDE);
 
   return <Box sx={{ flex: 1, p: 1, borderRadius: 10, backgroundSize: 'cover', backgroundImage: `url(${imgFondPanel})` }}>
 
@@ -195,7 +216,11 @@ const ProductionEnCours = ({ removeFromQueue, selectedCity }) => {
           En cours : {production_TYPES[selectedCity.currentProduction].icon} {production_TYPES[selectedCity.currentProduction].name}
         </Typography>
         <Typography variant="caption">
-          Avancement : {selectedCity.productionProgress} / {production_TYPES[selectedCity.currentProduction].turns} tours
+          🛡️ {selectedCity.productionProgress || 0} / {preview.cost} boucliers · environ {preview.turns} tour(s) au rythme actuel
+        </Typography>
+        <LinearProgress variant="determinate" value={Math.min(100, (selectedCity.productionProgress || 0) / preview.cost * 100)} />
+        <Typography variant="caption" component="div">
+          {preview.base} boucliers/tour + {preview.bonus} grâce aux ressources
         </Typography>
       </Paper>
     ) : (
@@ -204,10 +229,27 @@ const ProductionEnCours = ({ removeFromQueue, selectedCity }) => {
       </Typography>
     )}
 
+    <FormControlLabel
+      control={<Switch checked={selectedCity.autoConvertEnergy !== false}
+        onChange={(_, checked) => setCities(prev => prev.map(c => c.id === selectedCity.id ? { ...c, autoConvertEnergy: checked } : c))} />}
+      label="Matériaux → boucliers automatiquement"
+    />
+    <Typography variant="caption" component="div">
+      Bois/pierre : 1 🛡️ · fer/charbon/pétrole : 2 🛡️ · uranium : 4 🛡️ · maximum 8 🛡️ supplémentaires par tour.
+      {selectedCity.autoConvertEnergy === false ? ' Vos stocks sont réservés au marché.' : ' Seul le nécessaire pour le chantier est consommé.'}
+    </Typography>
+
+    <FormControlLabel
+      control={<Switch checked={selectedCity.autoConvertWool !== false}
+        onChange={(_, checked) => setCities(prev => prev.map(c => c.id === selectedCity.id ? { ...c, autoConvertWool: checked } : c))} />}
+      label="Laine → nourriture automatiquement"
+    />
+    <Typography variant="caption" component="div">1 laine = 2 nourritures · maximum 8 par tour, jusqu’au prochain seuil de croissance.</Typography>
+
     <Typography variant="subtitle1" sx={{ mt: 2 }}>File de production</Typography>
     <Box sx={{ display: 'flex', flexWrap: 'wrap', maxWidth:200 }}>
       {selectedCity.productionQueue.map((bid, idx) => (
-        <Chip key={idx} onDelete={() => { removeFromQueue(bid) }} label={production_TYPES[bid].icon + ' ' + production_TYPES[bid].name} variant="filled" />
+        <Chip key={idx} onDelete={() => { removeFromQueue(idx) }} label={production_TYPES[bid].icon + ' ' + production_TYPES[bid].name} variant="filled" />
       ))}
     </Box>
 
@@ -235,59 +277,14 @@ const BatimentsConstruits = ({ city }) => {
 }
 
 const BatimentCard = ({ city, building }) => {
-  const [selectedUnitId, setSelectedUnitId] = useState('');
-  const { setCities, techsUnlocked } = useCivContext();
-  const [lastCost, setLastCost] = useState({});
-
-  // Liste des unités produites par ce bâtiment, filtrées par techno
-  const availableUnits = useMemo(() => {
-    return (building.producesUnits || []).map(uid => UNIT_TYPES[uid]).map(unit => {
-      const reqTech = unit.requirements?.science;
-      const ismissingTechno = (reqTech && !techsUnlocked.includes(reqTech));
-      return { ...unit, missingTechno: ismissingTechno ? reqTech : null };
-    });
-  }, [building, techsUnlocked]);
-
-  const handleProduction = (unitId) => {
-    const unit = UNIT_TYPES[unitId];
-    const cost = unit.cost || {};
-    setLastCost(cost);
-    setSelectedUnitId(unitId);
-  };
-
-  useEffect(() => {
-    if (!selectedUnitId) return;
-
-    setCities(prev =>
-      prev.map(cite => {
-        if (cite.id !== city.id) return cite;
-        const updated = {
-          ...cite,
-          resources: { ...cite.resources },
-          productionQueue: [...(cite.productionQueue || []), selectedUnitId],
-        };
-
-        // Déduction des ressources
-        for (const [res, amount] of Object.entries(lastCost)) {
-          updated.resources[res] = (updated.resources[res] || 0) - amount;
-        }
-
-        if (!updated.currentProduction) {
-          updated.currentProduction = selectedUnitId;
-          updated.productionProgress = 0;
-        }
-
-        return updated;
-      })
-    );
-
-    setSelectedUnitId('');
-    setLastCost({});
-  }, [selectedUnitId]);
-
-  const hasEnoughResources = (cost) => {
-    return Object.entries(cost).every(([res, amount]) => (city.resources[res] || 0) >= amount);
-  };
+  const { setCities, techsUnlocked, builtWonders } = useCivContext();
+  const options = getProductionOptionsForCity(city, techsUnlocked, builtWonders);
+  const availableUnits = (building.producesUnits || []).map(uid => options.find(item => item.id === uid)).filter(Boolean);
+  const handleProduction = unitId => setCities(prev => prev.map(c => {
+    if (c.id !== city.id) return c;
+    const option = getProductionOptionsForCity(c, techsUnlocked, builtWonders).find(item => item.id === unitId);
+    return option?.isAvailable ? queueProduction(c, unitId) : c;
+  }));
 
   return (
     <Paper sx={{ p: 2 }}>
@@ -300,15 +297,15 @@ const BatimentCard = ({ city, building }) => {
       <Box sx={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between' }}>
         {availableUnits.map(unit => {
           const cost = unit.cost || {};
-          const canProduce = hasEnoughResources(cost);
+          const canProduce = unit.isAvailable;
 
           return (
             <Button
-              key={unit.type}
+              key={unit.id}
               variant="outlined"
               fullWidth
-              onClick={() => handleProduction(unit.type)}
-              disabled={!canProduce || unit.missingTechno}
+              onClick={() => handleProduction(unit.id)}
+              disabled={!canProduce}
               sx={{
                 justifyContent: 'space-between',
                 textTransform: 'none',
@@ -324,10 +321,10 @@ const BatimentCard = ({ city, building }) => {
                 </Typography>
               </Box>
               <Typography variant="caption" sx={{ alignSelf: 'center' }}>
-                {Object.entries(cost).map(([res, amt]) => `${amt} ${res}`).join(', ')}
+                {shieldCost(UNIT_TYPES[unit.id])} 🛡️
               </Typography>
-              {unit.missingTechno && <Typography variant="caption">
-                Technologie manquante : {unit.missingTechno}
+              {!unit.isAvailable && <Typography variant="caption">
+                {unit.missing.join(', ')}
               </Typography>}
             </Button>
           );
@@ -386,6 +383,7 @@ export const CityRessource = ({ selectedCity }) => {
 
 
 const ZoneInfluence = ({ city, tiles, images, setCities }) => {
+  const { toggleCityTile } = useCivContext();
 
   return <Box sx={{
     flex: 2, borderRadius: 10
@@ -396,21 +394,7 @@ const ZoneInfluence = ({ city, tiles, images, setCities }) => {
       city={city}
       tiles={tiles}
       images={images}
-      onToggleAssign={(tile) => {
-        setCities(prev =>
-          prev.map(c => {
-            if (c.id !== city.id) return c;
-            const assigned = c.assignedTiles || [];
-            const exists = assigned.find(t => t.q === tile.q && t.r === tile.r);
-            const updated = exists
-              ? assigned.filter(t => !(t.q === tile.q && t.r === tile.r))
-              : assigned.length < c.population
-                ? [...assigned, { q: tile.q, r: tile.r }]
-                : assigned;
-            return { ...c, assignedTiles: updated };
-          })
-        );
-      }}
+      onToggleAssign={tile => toggleCityTile(city.id, tile)}
     />
 
     <Garnison city={city} />

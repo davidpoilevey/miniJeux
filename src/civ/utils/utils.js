@@ -1,3 +1,4 @@
+import { queueProduction } from "../data/economy";
 import { BUILDING_TYPES, MERVEILLES_DU_MONDE } from "../data/buildingTypes";
 
 import {  UNIT_TYPES } from "../data/unitTypes";
@@ -13,6 +14,14 @@ export const getYearForTurn=(turn)=> {
   return 1840 + (turn - 121); // 1 an par tour
 }
 
+
+// Les anciennes sauvegardes stockent le bonus de fortification dans defense.
+// Le retirer à chaque déplacement évite aussi de l'accumuler en refortifiant.
+export const clearFortification = unit => ({
+  ...unit,
+  fortified: false,
+  defense: unit.defense - (unit.fortified ? 5 : 0),
+});
 
 export const isSameTile = (a, b) => a && b && a.q === b.q && a.r === b.r;
 
@@ -58,12 +67,12 @@ export function isValidCitySpot(spot, tiles) {
   const tile = tiles.find(t => t.q === spot.q && t.r === spot.r);
   if (!tile) return false; // hors carte, ou corrompu
 
-  return !tile.unit && !tile.hasCity;
+  return tile.type !== 'water' && !tile.unit && !tile.hasCity;
 }
 
 export function findCitySpot(unitTile, tiles, cities) {
   const validSpots = tiles.filter(tile => {
-    if (tile.unit || tile.hasCity) return false;
+    if (tile.type === 'water' || tile.unit || tile.hasCity) return false;
     if (getDistanceHex(tile, unitTile) > 5) return false;
 
     const surrounding = getSurroundingTiles(tile, tiles, 4);
@@ -144,7 +153,7 @@ export function moveUnitToward(unit, goalTile, tiles, options = {}) {
     // case occupée : on s'arrête juste avant, jamais dessus (sinon on écrase l'unité qui y est)
     if (tile.unit || tile.hasCity) break;
 
-    const cost = getTileCost(tile);
+    const cost = getTileCost(tile, unit);
     if (cost > movementLeft) break;
 
     const isGoal = isSameTile(tile, goalTile);
@@ -157,7 +166,7 @@ export function moveUnitToward(unit, goalTile, tiles, options = {}) {
 
   if (!isSameTile(lastReachableTile, start)) {
     start.unit = null;
-    lastReachableTile.unit = { ...unit, remainingMovement: movementLeft };
+    lastReachableTile.unit = { ...clearFortification(unit), remainingMovement: movementLeft };
     return { moved: true , lastReachedPosition:lastReachableTile};
   }
 
@@ -211,13 +220,13 @@ const units=getAllUnits(tiles);
   // Trouver les unités ennemies valides
   const enemyUnits = units.filter(u =>
     u.owner.id !== civilization.id &&
-    !['peace','allied'].includes(getDiplomaticRelation(civilization, u.owner))
+    getDiplomaticRelation(civilization, u.owner) === 'war'
   );
 
   // Trouver les villes ennemies valides
   const enemyCities = cities.filter(c =>
     c.owner.id !== civilization.id &&
-    !['peace','allied'].includes(getDiplomaticRelation(civilization, c.owner))
+    getDiplomaticRelation(civilization, c.owner) === 'war'
   );
 
   let closest = null;
@@ -274,7 +283,7 @@ export function findClosestForeignCity(unit, cities, getDiplomacyRelation, tiles
 
   return foreignCities[0] || null;
 }
-export function assignCityTiles(city, allTiles) {
+export function assignCityTiles(city, allTiles, { fill = true } = {}) {
   const MAX_TILES = Math.min(city.population, 10); // 1 par pop, max 10
   const cityTile = allTiles.find(t => t.q === city.position.q && t.r === city.position.r);
   if (!cityTile) return;
@@ -282,7 +291,9 @@ export function assignCityTiles(city, allTiles) {
 
   // On conserve les tuiles déjà assignées (choix manuel du joueur inclus)
   const kept = (city.assignedTiles || [])
-    .filter(pos => surroundingTiles.some(t => t.q === pos.q && t.r === pos.r))
+    .filter(pos => surroundingTiles.some(t => t.q === pos.q && t.r === pos.r
+      && !t.hasCity && (!t.assignedTo || t.assignedTo === city.id)))
+    .filter((pos, i, list) => list.findIndex(p => isSameTile(p, pos)) === i)
     .slice(0, MAX_TILES);
   const keptKeys = new Set(kept.map(p => `${p.q},${p.r}`));
 
@@ -299,7 +310,7 @@ export function assignCityTiles(city, allTiles) {
 
   const assigned = [...kept.map(p => ({ q: p.q, r: p.r }))];
   for (const t of candidates) {
-    if (assigned.length >= MAX_TILES) break;
+    if (!fill || assigned.length >= MAX_TILES) break;
     assigned.push({ q: t.q, r: t.r });
   }
 
@@ -341,11 +352,12 @@ export function getAvailableProductionsForCity(city, civilization, builtWonders 
     ...item,
     id: item.id || item.type,
     type,
-    isAffordable: canAfford(item.cost),
+    isAffordable: true,
     ...extra,
   });
 
   const buildings = Object.values(BUILDING_TYPES)
+    .filter(b => !hasBuilding(b.id) && !(city.productionQueue || []).includes(b.id))
     .filter(isItemAvailable)
     .map(b => enrich(b, 'building'));
 
@@ -367,7 +379,7 @@ export function chooseCityProduction(city, civilization, builtWonders) {
   city.garnison.forEach(unit => {
     // Par exemple : pionnier ou unité militaire (hors minimum défensif)
      if (isMilitaryUnit(unit)) {
-        const garrisonCount = getGarnisonCount(city);
+        const garrisonCount = city.garnison.filter(isMilitaryUnit).length - unitToDeploy.filter(isMilitaryUnit).length;
         const minRequired = getRequiredGarnison(civilization.diplomacyProfile);
         if (garrisonCount > minRequired) {
          unitToDeploy.push(unit);
@@ -389,13 +401,7 @@ const affordable = buildable.filter(p => p.isAffordable);
   if (!buildable.length) return unitToDeploy;
 
   const setCityProd=(cit,prod)=>{
-    cit.currentProduction = prod.id;
-    cit.productionQueue.push(prod.id);
-    cit.productionProgress = 0;
-
-        for (const [res, amount] of Object.entries(prod.cost || {})) {
-          cit.resources[res] = (cit.resources[res] || 0) - amount;
-        }
+    Object.assign(cit, queueProduction(cit, prod.id));
   }
   // Pionnier ?
   if (Math.random() < (profile.expansionniste || 0.3)) {
@@ -545,7 +551,11 @@ export const TERRAIN_COST = {
   desert: 1,
 };
 
-export const getTileCost = (tile) => {
+export const getTileCost = (tile, unit) => {
+  if (unit) {
+    if (tile.type === 'water') return unit.canCrossWater ? 1 : Infinity;
+    if (unit.armee === 'naval') return Infinity;
+  }
   if (tile.hasRoad) return TERRAIN_COST[tile.type]/2 || 0.5;
   return TERRAIN_COST[tile.type] || 1;
 };

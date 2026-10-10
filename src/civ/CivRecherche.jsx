@@ -1,4 +1,5 @@
 import React from 'react';
+import { researchCost } from './data/research';
 import {
   Box, Typography, Paper, Button, LinearProgress, Grid, Divider, Tooltip, Stack, Chip, Card, CardContent, CardActions
 } from '@mui/material';
@@ -11,7 +12,7 @@ const CivRecherche = () => {
     techsUnlocked,
     currentResearch,
     setCurrentResearch,
-    researchProgress,
+    researchProgress, researchPerTurn,
   } = useCivContext();
 
   const availableTechs = Object.values(TECHNOLOGIES)
@@ -34,12 +35,12 @@ const CivRecherche = () => {
           <TypoCiv variant="body2">{researching.description}</TypoCiv>
           <LinearProgress
             variant="determinate"
-            value={(researchProgress / researching.cost) * 100}
+            value={(researchProgress / researchCost(researching)) * 100}
             sx={{ mt: 2, height: 10 }}
             color="secondary"
           />
           <TypoCiv variant="caption">
-            {researchProgress} / {researching.cost} points
+            {researchProgress} / {researchCost(researching)} points · +{researchPerTurn}/tour · environ {Math.max(0, Math.ceil((researchCost(researching) - researchProgress) / researchPerTurn))} tours restants
           </TypoCiv>
         </>
       ) : (
@@ -57,7 +58,7 @@ const CivRecherche = () => {
               <Typography variant="subtitle1">{tech.name}</Typography>
               <Typography variant="body2" color="text.secondary">{tech.description}</Typography>
               <Divider sx={{ my: 1 }} />
-              <Typography variant="caption">⏳ Coût : {tech.cost}</Typography>
+              <Typography variant="caption">⏳ {researchCost(tech)} points · environ {Math.ceil(researchCost(tech) / researchPerTurn)} tours</Typography>
 
               {/* Effets débloqués */}
               {tech.unlocks && (

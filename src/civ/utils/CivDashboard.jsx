@@ -28,7 +28,7 @@ const CivDashboard = ({ selected, setSelected }) => {
   const {
     turn, nextTurn, cities, playerNation, setRunning, isRunning,
     selectedCity, setSelectedCity, saveCiv, loadCiv, cheatGiveResources,
-    eventLog, currentResearch,
+    eventLog, currentResearch, pendingAudience, pendingDiplomaticAction, gameResult,
   } = useCivContext();
 
   const [isMuted, setIsMuted] = useState(false);
@@ -40,7 +40,7 @@ const CivDashboard = ({ selected, setSelected }) => {
     !c.currentProduction && (c.productionQueue?.length || 0) === 0);
 
   const endTurn = () => {
-    if (isRunning) return;
+    if (isRunning || pendingAudience || pendingDiplomaticAction || gameResult) return;
     setRunning(true);
     setTimeout(nextTurn, 1);
   };

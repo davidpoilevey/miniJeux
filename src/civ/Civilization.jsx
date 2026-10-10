@@ -6,7 +6,7 @@ import CivRecherche from './CivRecherche';
 import { CivContextProvider, useCivContext } from './CivContext';
 import CivCity from './CivCity';
 import CivPalmares from './CivPalmares';
-import { AudienceDialog, GameOverDialog, NationDialog } from './utils/Dialogs';
+import { AudienceDialog, DiplomaticActionDialog, GameOverDialog, NationDialog } from './utils/Dialogs';
 import CivDashboard from './utils/CivDashboard';
 import { MiniMap } from './CivMiniMap';
 import { HEX_SIZE, hexToPixel } from './utils/hexUtils';
@@ -84,7 +84,7 @@ const CivilizationMain = ({ selected, setSelectedNation, setSelected, setGameCon
 const PlayingCiv = ({ setSelected, selected, restartGame }) => {
   const [currentViewport, setCurrentViewport] = useState({ x: 0, y: 0, width: 100, height: 100 });
   const mapContainerRef = React.useRef(null);
-  const { isRunning, gameResult, pendingAudience, resolveAudience } = useCivContext();
+  const { isRunning, gameResult, pendingAudience, audienceCanAccept, resolveAudience } = useCivContext();
   const [savedScrollPosition, setSavedScrollPosition] = useState({ x: 0, y: 0 });
   // Un état pour stocker la position et la taille de la vue
 
@@ -152,7 +152,8 @@ const PlayingCiv = ({ setSelected, selected, restartGame }) => {
       sx={{ flex: 1, height: '100%', overflow: 'auto', position: 'relative' }}>
       {renderView()}
       <GameOverDialog result={gameResult} onRestart={restartGame} />
-      <AudienceDialog audience={pendingAudience} onResolve={resolveAudience} />
+      <DiplomaticActionDialog />
+      <AudienceDialog audience={pendingAudience} canAccept={audienceCanAccept} onResolve={resolveAudience} />
       {selected === 'map' && (
         <MiniMap mainHexSize={HEX_SIZE}
           onNavigate={handleNavigate}

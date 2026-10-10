@@ -21,25 +21,30 @@
 };
  */
 
+import { woolConversion } from "./economy";
+import { calculateTileYield } from "../utils/mapGenerator";
 import { BUILDING_TYPES } from "./buildingTypes";
 
 export const computeCityResources = (city, tiles) => {
   const result = {};
 
   // 1. Tuiles assignées
-  const relevantTiles = (city.assignedTiles || [])
+  const positions = [...(city.position ? [city.position] : []), ...(city.assignedTiles || [])]
+    .filter((p, i, list) => list.findIndex(t => t.q === p.q && t.r === p.r) === i);
+  const relevantTiles = positions
     .map(({ q, r }) => tiles.find(t => t.q === q && t.r === r))
     .filter(Boolean);
 
   const civ = city.owner;
 
   for (const tile of relevantTiles) {
-    const yieldData = tile.yield || {};
+    const yieldData = { ...calculateTileYield(tile), ...tile.yield };
 
     // Bonus de civilisation basé sur le type de terrain (c'est tile.type, pas tile.terrain !)
     // et surtout sans muter civ.bonuses, sinon le bonus gonfle de tour en tour
     const civTileBonus = civ?.bonuses?.[tile.type] || {};
-    for (const [res, val] of Object.entries(yieldData)) {
+    for (const res of new Set([...Object.keys(yieldData), ...Object.keys(civTileBonus)])) {
+      const val = yieldData[res] || 0;
       const bonus = civTileBonus[res] || 0;
       result[res] = (result[res] || 0) + val + bonus;
     }
@@ -75,3 +80,13 @@ export const computeCityGainsPreview = (city, tiles) => {
   return result;
 };
 
+
+// Les citoyens consomment deux blés chacun ; le centre est exploité gratuitement.
+export const computeCityEconomy = (city, tiles) => {
+  const gains = computeCityGainsPreview(city, tiles);
+  const consumption = city.population * 2;
+  const wool = woolConversion({ ...city, resources: { ...city.resources,
+    food: (city.resources.food || 0) + (gains.food || 0), laine: (city.resources.laine || 0) + (gains.laine || 0) } });
+  const foodProduced = (gains.food || 0) + wool.food;
+  return { gains, foodProduced, foodFromWool: wool.food, consumption, foodNet: foodProduced - consumption };
+};

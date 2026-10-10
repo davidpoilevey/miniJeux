@@ -127,7 +127,7 @@ export const CIVILIZATIONS = [
     startingTechs: ['ageDuBronze'],},
   { id: 'indien', name: 'Indien', flag: '🇮🇳' ,color: '#8e841d',
     bonuses: {
-      moutain: { charbon: 2,gold:1 }, forest:{wood:1,food:1}
+      mountain: { charbon: 2,gold:1 }, forest:{wood:1,food:1}
        ,happiness:0,science:3
     },
     militaryBonus: 0,

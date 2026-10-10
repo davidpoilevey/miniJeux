@@ -9,7 +9,7 @@ import { AllImageSources } from './utils/imagesImports';
 import { usePreloadedImages } from './utils/hooks';
 import { CityNameDialog, CivilDialog } from './utils/Dialogs';
 import { BARBARE_CIV, CIVILIZATIONS } from './data/civilzationTypes';
-import { getTileCost } from './utils/utils';
+import { clearFortification, getTileCost } from './utils/utils';
 import { addFeatureInTile, calculateTileYield, FEATURE_YIELD } from './utils/mapGenerator';
 
 
@@ -35,7 +35,7 @@ const CivMap = ({ setSelected, handleNavigate }) => {
         , diplomaticInteraction, setDiplomaticInteraction,
         moveUnit, fortifyUnit, removeUnit, selectCity,
         healAround, detonateNuke, isRunning, setRunning, mapConfig,
-        techsUnlocked
+        techsUnlocked, pendingAudience, pendingDiplomaticAction, gameResult
     } = useCivContext();
 
     // 🗺️ Cartographie : le brouillard inexploré laisse deviner le terrain.
@@ -106,6 +106,7 @@ const CivMap = ({ setSelected, handleNavigate }) => {
     const isSameTile = (a, b) => a && b && a.q === b.q && a.r === b.r;
 
     const handleClick = (tile) => {
+        if (pendingAudience || pendingDiplomaticAction || gameResult || showCityNameDialog || diplomaticInteraction) return;
 
         if (selectedUnitPos && !isSameTile(tile, selectedUnitPos)) {
             // avec unit selectionn  click case voisine uniquement
@@ -130,7 +131,7 @@ const CivMap = ({ setSelected, handleNavigate }) => {
                             prev.map(tile => {
                                 if (tile.q === endTile.q && tile.r === endTile.r) {
                                     // destTile
-                                    return { ...tile, unit:  { ...unit, remainingMovement: unit.remainingMovement - movementUsed }};
+                                    return { ...tile, unit:  { ...clearFortification(unit), remainingMovement: unit.remainingMovement - movementUsed }};
                                 }
                                 else if(tile.q === startTile.q && tile.r === startTile.r) {
                                       return { ...tile, unit:null};
@@ -149,6 +150,10 @@ const CivMap = ({ setSelected, handleNavigate }) => {
         if (tile.hasCity) {
             const clickedCity = getCityByTile(tile);
             if (selectedUnitPos) {
+                if (getDistanceHex(selectedUnitPos, tile) > 1 || selectedUnitPos.unit.remainingMovement <= 0) {
+                    addEvent('Approchez-vous de la ville avec une unité disponible', 'warning');
+                    return;
+                }
                 const CIVIL_UNITS = ['diplomate', 'caravane', 'pionnier', 'moine'];
                 if ((clickedCity.owner.id === selectedUnitPos.unit.owner.id) || CIVIL_UNITS.includes(selectedUnitPos.unit.type)) {
                     setDiplomaticInteraction({
@@ -185,7 +190,7 @@ const CivMap = ({ setSelected, handleNavigate }) => {
             }
             if (!tile.unit && !tile.hasCity) {
 
-                const tileCost = getTileCost(tile);
+                const tileCost = getTileCost(tile, selectedUnitPos.unit);
                 // uniquement les cases voisines ici : sans ce check, un clic lointain
                 // sans chemin praticable téléportait l'unité à travers la carte
                 const distance = getDistanceHex(selectedUnitPos, tile);
@@ -294,6 +299,8 @@ const CivMap = ({ setSelected, handleNavigate }) => {
     };
     useEffect(() => {
         const handleKeyDown = (e) => {
+            if (pendingAudience || pendingDiplomaticAction || gameResult || showCityNameDialog || diplomaticInteraction
+                || /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
             if (e.key === 'Enter') {
                 e.preventDefault();
                 if (isRunning) return; // pas de double tour si on martèle Entrée
@@ -317,7 +324,7 @@ const CivMap = ({ setSelected, handleNavigate }) => {
 
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [selectedUnitPos, tiles, playerNation, setSelectedUnitPos, isRunning, nextTurn]);
+    }, [selectedUnitPos, tiles, playerNation, setSelectedUnitPos, isRunning, nextTurn, showCityNameDialog, diplomaticInteraction, pendingAudience, pendingDiplomaticAction, gameResult]);
    
      useEffect(() => {
         

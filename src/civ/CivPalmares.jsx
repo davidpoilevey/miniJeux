@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   Box, Card, CardContent, CardHeader, Avatar, LinearProgress,
-  Table, TableBody, TableCell, TableHead, TableRow, Tooltip,
+  Button, Stack, Table, TableBody, TableCell, TableHead, TableRow, Tooltip,
 } from '@mui/material';
 import { EmojiEvents } from '@mui/icons-material';
 import { useCivContext } from './CivContext';
@@ -11,7 +11,7 @@ import { paperPropsCiv, TypoCiv } from './utils/civUI';
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 const CivPalmares = () => {
-  const { civsInGame, cities, tiles, techsUnlocked, builtWonders, turn, playerNation } = useCivContext();
+  const { civsInGame, cities, tiles, techsUnlocked, builtWonders, turn, playerNation, getDiplomaticRelation, requestWar, requestTribute } = useCivContext();
 
   const classement = civsInGame
     .map(civ => computeCivStats(
@@ -37,6 +37,7 @@ const CivPalmares = () => {
               <TableRow>
                 <TableCell><TypoCiv>Rang</TypoCiv></TableCell>
                 <TableCell><TypoCiv>Civilisation</TypoCiv></TableCell>
+                <TableCell><TypoCiv>Diplomatie</TypoCiv></TableCell>
                 <TableCell sx={{ minWidth: 180 }}><TypoCiv>Score</TypoCiv></TableCell>
                 <TableCell align="right"><TypoCiv>🏛️ Villes</TypoCiv></TableCell>
                 <TableCell align="right"><TypoCiv>👥 Population</TypoCiv></TableCell>
@@ -58,6 +59,13 @@ const CivPalmares = () => {
                       <TypoCiv fontWeight={isPlayer ? 'bold' : 'normal'}>
                         {entry.civ.flag} {entry.civ.name}{isPlayer ? ' (vous)' : ''}
                       </TypoCiv>
+                    </TableCell>
+                    <TableCell>
+                      {!isPlayer && <Stack spacing={0.5}>
+                        <TypoCiv>{{ war: 'Guerre', tendu: 'Relations tendues', neutral: 'Neutre', peace: 'Paix', allied: 'Alliance' }[getDiplomaticRelation(playerNation, entry.civ)]}</TypoCiv>
+                        {getDiplomaticRelation(playerNation, entry.civ) !== 'war' && <Button size="small" onClick={() => requestWar(entry.civ)}>Déclarer la guerre</Button>}
+                        <Button size="small" onClick={() => requestTribute(entry.civ)}>Exiger un tribut</Button>
+                      </Stack>}
                     </TableCell>
                     <TableCell>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>

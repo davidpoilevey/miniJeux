@@ -7,9 +7,9 @@ import { Box } from '@mui/material';
 import { computeCityGainsPreview } from '../data/cityTypes';
 
 const RESOURCE_EMOJI = {
-  food: '🍞', gold: '💰', wood: '🌲', stone: '🪨', iron: '⛏️',
+  shields: '🛡️', food: '🌾', gold: '💰', wood: '🌲', stone: '🪨', iron: '⛏️',
   charbon: '🔥', petrole: '🛢️', laine: '🧶', uranium: '☢️',
-  happiness: '😊', science: '🧪',
+  happiness: '😊', science: '💡',
 };
 
 const TILE_SIZE = 35;
@@ -52,7 +52,7 @@ export const ZoneInfluenceCanvas = ({
 
   // 📈 ce que rapportera ce placement des citoyens au prochain tour
   const projectedGains = useMemo(
-    () => computeCityGainsPreview(city, tiles),
+    () => { const gains = computeCityGainsPreview(city, tiles); return { ...gains, food: (gains.food || 0) - city.population * 2 }; },
     [city, tiles]
   );
   const gainEntries = Object.entries(projectedGains)

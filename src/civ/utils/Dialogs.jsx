@@ -19,7 +19,7 @@ import {  useCivContext, MAP_SIZES } from '../CivContext';
 import { BUILDING_TYPES, MERVEILLES_DU_MONDE } from '../data/buildingTypes';
 import { UNIT_TYPES } from '../data/unitTypes';
 import { CIVILIZATIONS } from '../data/civilzationTypes';
-import { generateCityName } from './utils';
+import { clearFortification, generateCityName } from './utils';
 import { ButtonCiv, DialogCiv, TextFieldCiv, TypoCiv } from './civUI';
 import { QuestionAnswer } from '@mui/icons-material';
 
@@ -45,18 +45,18 @@ const CivilianDialog = ({ unitPos, city, onClose }) => {
     // déclaré ici et pas dans un case du switch : sinon le case 'moine' plantait
     // en accédant à une const déclarée dans le case 'caravane' (zone morte temporelle)
     const profile = city.owner?.diplomacyProfile || {};
-    const actions = [{
+    const actions = city.owner.id === movingUnit.owner.id ? [{
                 name: "Garnison", text: "se stocker dans la garnison", icon: "🏰"
                 , onClick: () => {
                     setCities(prev =>
                         prev.map(c => c.id === city.id ? {
-                            ...c, garnison: [...(c.garnison || []), { ...movingUnit, id: `${movingUnit.type}-${Date.now()}` }],
+                            ...c, garnison: [...(c.garnison || []), { ...clearFortification(movingUnit), remainingMovement: 0, targetDestination: null }],
                         } : c
                         )
                     );
                     delFromCarte();
                 }
-            }];
+            }] : [];
     const delFromCarte = ()=>{
           // Supprimer de la carte
                     setTiles(prev =>
@@ -159,7 +159,7 @@ const CivilianDialog = ({ unitPos, city, onClose }) => {
 export const DiplomacyDialog = ({ unit, city, onClose }) => {
     const { setCities, cities, setTiles, selectedUnitPos, setSelectedUnitPos
         , getDiplomaticRelation, playerNation, setDiplomaticRelation, shiftDiplomaticRelation
-        , diplomaticInteraction, setDiplomaticInteraction, addEvent } = useCivContext();
+        , diplomaticInteraction, setDiplomaticInteraction, addEvent, requestWar, requestTribute } = useCivContext();
     const [showParlementer, setShowParlementer] = useState(false);
     const diplomaticRelation = getDiplomaticRelation(playerNation, city.owner)
     const handleEspionnage = () => {
@@ -258,33 +258,8 @@ export const DiplomacyDialog = ({ unit, city, onClose }) => {
         setDiplomaticInteraction(null);
     };
     const handleThreatenTribute = () => {
-        const targetCiv = city.owner;
-        const profile = targetCiv?.diplomacyProfile || {};
-        const accepted = willAccept(profile.aggressif, 0.7); // très agressifs refusent + souvent
-
-        if (accepted) {
-            // 💰 gain : or ou tech ?
-            setCities(prev =>
-                prev.map(c =>
-                    c.owner.id === playerNation.id
-                        ? {
-                            ...c,
-                            resources: {
-                                ...c.resources,
-                                gold: (c.resources.gold || 0) + 100,
-                            },
-                        }
-                        : c
-                )
-            );
-            shiftDiplomaticRelation(playerNation, targetCiv, true);
-            addEvent(`${targetCiv.name} vous a payé un tribut pour éviter la guerre.`, 'info', true);
-        } else {
-            setDiplomaticRelation(playerNation, targetCiv, 'war');
-            addEvent(`${targetCiv.name} a refusé votre ultimatum ! Guerre déclarée !`, 'error', true);
-        }
-
-        setDiplomaticInteraction(null);
+        requestTribute(city.owner);
+        onClose();
     };
     const handleOfferPeace = () => {
         const targetCiv = city.owner;
@@ -415,6 +390,10 @@ export const DiplomacyDialog = ({ unit, city, onClose }) => {
                             Relations actuelles : {diplomaticRelation}
                         </TypoCiv>
 
+                        {diplomaticRelation !== 'war' && <>
+                            <ButtonCiv onClick={() => { requestWar(city.owner); onClose(); }}>⚔️ Déclarer la guerre</ButtonCiv>
+                            <ButtonCiv onClick={handleThreatenTribute}>Exiger un tribut pour maintenir la paix</ButtonCiv>
+                        </>}
                         {/* Relations possibles */}
                         {getDiplomaticRelation(playerNation, city.owner) === 'war' && (
                             <>
@@ -477,7 +456,7 @@ export const CityNameDialog = ({ showCityNameDialog, setShowCityNameDialog, newC
 }
 
 
-export const AudienceDialog = ({ audience, onResolve }) => {
+export const AudienceDialog = ({ audience, onResolve, canAccept = true }) => {
   if (!audience) return null;
   const { fromNation, demand } = audience;
 
@@ -492,9 +471,15 @@ export const AudienceDialog = ({ audience, onResolve }) => {
         <Typography align="center" sx={{ fontStyle: 'italic', mt: 1 }}>
           « Les {fromNation.name} {demand.text}. »
         </Typography>
+        {!canAccept && <Typography color="warning.main" align="center" sx={{ mt: 2 }}>
+          Vos stocks actuels ne permettent pas de payer ce tribut.
+        </Typography>}
+        {demand.warOnRefusal && <Typography color="error" align="center" sx={{ mt: 2 }}>
+          Un refus entraînera une déclaration de guerre.
+        </Typography>}
       </DialogContent>
       <DialogActions sx={{ justifyContent: 'center', pb: 2, gap: 2 }}>
-        <Button variant="contained" color="success" onClick={() => onResolve(true)}>
+        <Button variant="contained" color="success" disabled={!canAccept} onClick={() => onResolve(true)}>
           Accepter
         </Button>
         <Button variant="contained" color="error" onClick={() => onResolve(false)}>
@@ -644,4 +629,23 @@ export const NationDialog = ({ open, handleNationSelect, onClose }) => {
         </Box>
     </DialogCiv>
   );
+};
+
+export const DiplomaticActionDialog = () => {
+    const { pendingDiplomaticAction: action, resolveDiplomaticAction } = useCivContext();
+    if (!action) return null;
+    const tribute = action.type === 'tribute';
+    const treaty = ['peace', 'allied'].includes(action.relation);
+    return <Dialog open onClose={() => resolveDiplomaticAction(false)}>
+        <DialogTitle>{tribute ? 'Exiger un tribut' : treaty ? 'Rompre le traité de paix' : 'Déclarer la guerre'}</DialogTitle>
+        <DialogContent>
+            <Typography>{tribute
+                ? `${action.nation.name} ${action.demand.text.replace('exigent', 'devra verser').replace('pour signer', 'pour maintenir')}. Un refus entraînera la guerre.`
+                : `${treaty ? 'Rompre le traité avec' : 'Déclarer la guerre à'} ${action.nation.name}${action.attack ? ' et lancer cette attaque' : ''} ?`}</Typography>
+        </DialogContent>
+        <DialogActions>
+            <Button onClick={() => resolveDiplomaticAction(false)}>Annuler</Button>
+            <Button color="error" onClick={() => resolveDiplomaticAction(true)}>{tribute ? 'Envoyer l’ultimatum' : 'Déclarer la guerre'}</Button>
+        </DialogActions>
+    </Dialog>;
 };

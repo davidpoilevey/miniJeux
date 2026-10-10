@@ -22,11 +22,11 @@ import { generateFullHexGrid, getHexNeighbors } from './hexUtils';
   | 'happiness'
  */
 const BASE_TILE_YIELD = {
-  plain: { food: 3, laine:1, wood:1,gold:2 },
-  forest: { food: 1, wood: 2,stone:1 ,gold:1},
-  mountain: { stone: 2,iron:1 ,charbon:1,gold:2},
-  water: { food: 2 },
-  desert: {petrole:1,stone:1,gold:2},
+  plain: { shields: 1, food: 3, laine:1, wood:1,gold:2 },
+  forest: { shields: 2, food: 1, wood: 2,stone:1 ,gold:1},
+  mountain: { shields: 2, stone: 2,iron:1 ,charbon:1,gold:2},
+  water: { shields: 0, food: 2 },
+  desert: {shields: 1, petrole:1,stone:1,gold:2},
 };
 export const FEATURE_YIELD = {
   mineOr: { gold: 5 },
