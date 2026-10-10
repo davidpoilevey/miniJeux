@@ -59,6 +59,42 @@ dépasse 2,5 m au-dessus du sol (« catapulte ») ou si un nombre devient NaN.
 - Génération 40–60 : 20–30 m, puis plateau. 10 à 20 espèces coexistent.
 - Coût : ~200 ms par génération en Node (100 créatures × 15 s).
 
+## Catalogue et course des champions
+
+Une partie converge vers une seule famille (exclusion compétitive : une piste, un critère,
+100 individus). Mais deux parties ne convergent pas vers la même : chaque partie est une île.
+Le **catalogue** (localStorage `bacterie16-catalogue`, export/import JSON) garde les champions
+d'une partie à l'autre ; la **course des champions** les remet tous en contact.
+
+- Génération 1 = un exemplaire de chaque fiche, chacun fondateur de son espèce (clé
+  `fondateur{i}>plan`, nom et teinte de la fiche). Les espèces filles gardent la teinte de
+  leur lignée, décalée.
+- La population grandit de ×`croissance` par génération jusqu'à `population`.
+- **Brassage (essaim hybride)**, tant que les fondateurs vivent (`vieFondateurs`, 5) et au moins
+  jusqu'à ce que la population soit pleine : pas de sélection. Tous ceux qui avancent ≥ 1 m ont
+  le même nombre d'enfants, tous hybrides (partenaire au hasard, introgression `brassage` 0.2).
+  Les fondateurs traversent ces générations tels quels, puis meurent (⚰️) : seuls leurs gènes
+  restent. Ensuite, sélection normale, croisements libres entre espèces (`introgression` 0.1).
+  Le meilleur hybride du brassage n'est pas protégé : on le retrouve dans la galerie.
+- **Pourquoi** : avec une sélection classique dès le départ, le meilleur fondateur fait 85–96 %
+  du sang à G100 (1 ou 2 fondateurs survivants). Mesuré sur 8 champions (23–34 m), 3 runs
+  par variante : brassage sans tri à 30 % → 7–8 fondateurs présents à G100 mais creux à
+  8–13 m et remontée lente ; brassage des actifs à 20 % (retenu) → creux à 20–30 m, records
+  36–49 m, 3–6 fondateurs encore ≥ 5 %, vraies mosaïques (« Doplo 57 % · Zimuki 24 % · Torplo 10 % »).
+  Environ un run sur trois ne repasse pas le record des fondateurs en 100 générations.
+- **Introgression** plutôt que `recombinaisonGenetique` pour croiser deux champions : l'enfant
+  garde le corps du premier parent et reçoit une part des gènes du second, entiers. Avec le
+  croisement de la bible (moitié-moitié, nucléotides mêlés), aucun hybride F1 n'atteint 90 %
+  de son parent (médiane 0 m) et aucun hybride ne prend jamais la tête. La greffe d'un membre
+  entier (nœud + ses arêtes) a été essayée : quasi neutre. En partie normale, le croisement
+  reste celui de la bible (intra-espèce).
+- Le record des fondateurs (mesuré à G1 sur cette piste) est tracé en pointillé sur la courbe
+  de progrès ; 🌟 dans la chronique quand un descendant le bat.
+- `heritage` : par individu, la part de sang de chaque fondateur (moyenne pondérée au
+  croisement). Courbe « Sang des fondateurs », chronique 🪦 quand un sang disparaît, ascendance
+  notée dans la fiche d'un champion gardé.
+- Une fiche note les réglages physiques de sa partie (⚠ dans le catalogue s'ils diffèrent).
+
 ## Architecture
 
 ```
@@ -73,8 +109,13 @@ b16/
   ui/Piste.jsx         boucle rAF (direct, turbo ou replay)
   ui/Galerie.jsx       portraits des champions (clic = replay)
   ui/Courbes.jsx       progrès (meilleur / médiane) + lignées (Muller simplifié)
+  ui/fiches.js         catalogue des champions (localStorage, noms « Bupa II »)
+  ui/CatalogueChampions.jsx  la fenêtre du catalogue (replay, suppression, course)
   ui/Panneau.jsx, ui/Reglages.jsx
 ```
+
+⚠ macOS ne distingue pas la casse : `Catalogue.jsx` + `catalogue.js` dans le même dossier
+cassent la résolution webpack (et le cache du serveur de dev s'en souvient).
 
 **Tester sans navigateur** : copier `engine/` et `genetic/ADNPlante.js`, ajouter `.js` aux
 imports, `{"type":"module"}`, puis `new Evolution()` et `while (ev.generation <= 40) ev.pas()`.

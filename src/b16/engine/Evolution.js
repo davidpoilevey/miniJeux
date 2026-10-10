@@ -1,5 +1,5 @@
 import { mutationADN, randomGenome, recombinaisonGenetique } from '../../genetic/ADNPlante';
-import { adnVersTexte, decrireMorphotype, lireCorps, texteVersAdn } from './corps';
+import { EMPLACEMENTS, adnVersTexte, decrireMorphotype, lireCorps, texteVersAdn } from './corps';
 import { Creature, DT } from './Creature';
 import { DEFAULT_PARAMS } from './params';
 import { Terrain, ZONES } from './terrain';
@@ -16,10 +16,32 @@ const nomEspece = (id) => {
   return nom[0].toUpperCase() + nom.slice(1);
 };
 
+// Croisement de champions : l'enfant garde le corps du premier parent et reçoit `part` des gènes
+// du second, entiers. Le croisement de la bible (moitié-moitié, nucléotides mêlés) fait d'un ver
+// et d'un quadrupède un corps quasi aléatoire : mesuré, aucun hybride n'atteint 90 % de son parent.
+// Renvoie [adn, part réellement reçue].
+const GENES = Object.values(EMPLACEMENTS);
+const introgression = (a, b, part) => {
+  const enfant = a.slice(); // les chromosomes ne sont jamais modifiés en place (mutationADN copie)
+  let n = 0;
+  GENES.forEach((k) => { if (Math.random() < part) { enfant[k] = b[k]; n++; } });
+  return [enfant, n / GENES.length];
+};
+
 export const couleurEspece = (e, l = 60, a = 1) => `hsla(${e.teinte}, 70%, ${l}%, ${a})`;
 
+// « Bupa 62 % · Kiru 31 % » : la part de sang des fondateurs (course des champions)
+export const decrireHeritage = (heritage, fondateurs, n = 2) => {
+  if (!heritage || !fondateurs.length) return '';
+  const parts = heritage.map((h, i) => ({ h, nom: fondateurs[i].nom })).filter((p) => p.h >= 0.005).sort((a, b) => b.h - a.h);
+  if (!parts.length) return 'sauvage';
+  if (parts[0].h > 0.97) return `pur ${parts[0].nom}`;
+  return parts.slice(0, n).map((p) => `${p.nom} ${Math.round(p.h * 100)} %`).join(' · ');
+};
+
 export class Evolution {
-  constructor(params = { ...DEFAULT_PARAMS }, sauvegarde = null) {
+  // fondateurs : des fiches du catalogue → course des champions (un exemplaire de chacun au départ)
+  constructor(params = { ...DEFAULT_PARAMS }, sauvegarde = null, fondateurs = null) {
     this.params = params;
     this.especes = new Map();  // « mère>plan » → espèce
     this.especesParId = [];
@@ -31,8 +53,12 @@ export class Evolution {
     this.generation = 1;
     this.prochainId = 1;
     this.especeEnTete = null;
+    this.fondateurs = [];      // course des champions : { nom, teinte, distance }
+    this.recordFondateurs = null; // le meilleur fondateur, mesuré sur cette piste à la génération 1
+    this.eteints = new Set();  // fondateurs dont plus personne ne porte le sang
 
     if (sauvegarde) this.restaurer(sauvegarde);
+    else if (fondateurs) this.semer(fondateurs);
     else {
       this.population = Array.from({ length: params.population }, () => this.naitre(randomGenome(), null));
       this.raconter('🥚 Première génération : des corps tirés au hasard. La plupart ne savent même pas ramper.');
@@ -40,10 +66,25 @@ export class Evolution {
     this.lancerCourse();
   }
 
-  naitre(adn, especeParent) {
+  naitre(adn, especeParent, heritage = null) {
     const corps = lireCorps(adn);
     const espece = this.especeDe(corps.plan, especeParent);
-    return { id: this.prochainId++, adn, corps, espece: espece.id, elite: false };
+    return { id: this.prochainId++, adn, corps, espece: espece.id, elite: false, heritage };
+  }
+
+  // Course des champions : chacun fonde son espèce, sous son nom, avec tout son sang
+  semer(fiches) {
+    const k = fiches.length;
+    this.fondateurs = fiches.map((f) => ({ nom: f.nom, teinte: f.teinte, distance: f.distance }));
+    this.population = fiches.map((f, i) => {
+      const adn = texteVersAdn(f.adn);
+      const corps = lireCorps(adn);
+      const e = this.fonderEspece(`fondateur${i}>${corps.plan}`, corps.plan, null, { nom: f.nom, teinte: f.teinte, fondateur: i });
+      const heritage = new Array(k).fill(0);
+      heritage[i] = 1;
+      return { id: this.prochainId++, adn, corps, espece: e.id, elite: false, heritage, fondateur: true };
+    });
+    this.raconter(`🏁 Course des champions : ${k} champions sur la ligne, un seul exemplaire de chacun. Pendant ${this.params.vieFondateurs} générations, tout le monde se croise avec tout le monde.`);
   }
 
   // Espèce généalogique : l'enfant reste dans l'espèce de son parent tant que son plan
@@ -53,13 +94,22 @@ export class Evolution {
     const mere = parent == null ? null : this.especesParId[parent];
     if (mere && mere.plan === plan) return mere;
     const cle = `${mere ? mere.id : 'racine'}>${plan}`;
-    let e = this.especes.get(cle);
-    if (!e) {
-      const id = this.especesParId.length;
-      e = { id, plan, nom: nomEspece(id), teinte: (id * 137.508 + 200) % 360, parent: mere ? mere.id : null, nee: this.generation, record: 0 };
-      this.especes.set(cle, e);
-      this.especesParId.push(e);
+    return this.especes.get(cle) || this.fonderEspece(cle, plan, mere);
+  }
+
+  // En course des champions, une espèce fille garde la teinte de sa lignée (légèrement décalée) :
+  // les familles de chaque fondateur se lisent d'un coup d'œil.
+  fonderEspece(cle, plan, mere, { nom, teinte, fondateur } = {}) {
+    const id = this.especesParId.length;
+    if (teinte == null) {
+      teinte = mere && this.fondateurs.length
+        ? (mere.teinte + (hasard(id) - 0.5) * 50 + 360) % 360
+        : (id * 137.508 + 200) % 360;
     }
+    const e = { id, plan, nom: nom || nomEspece(id), teinte, parent: mere ? mere.id : null, nee: this.generation, record: 0 };
+    if (fondateur != null) e.fondateur = fondateur;
+    this.especes.set(cle, e);
+    this.especesParId.push(e);
     return e;
   }
 
@@ -107,9 +157,18 @@ export class Evolution {
     const espece = this.especesParId[premier.ind.espece];
 
     // ── Chronique ──
+    if (this.fondateurs.length && this.recordFondateurs == null) {
+      this.recordFondateurs = Math.max(0, ...res.filter((r) => r.ind.fondateur).map((r) => r.c.distance));
+    }
+    if (this.recordFondateurs != null && !premier.ind.fondateur && this.record.distance <= this.recordFondateurs + 0.05
+      && premier.c.distance > this.recordFondateurs + 0.05) {
+      const sang = decrireHeritage(premier.ind.heritage, this.fondateurs, 3);
+      this.raconter(`🌟 ${sang.startsWith('pur') ? 'Un descendant' : 'Un hybride'} bat le record des fondateurs : ${premier.c.distance.toFixed(1)} m [${sang}]`);
+    }
     if (premier.c.distance > this.record.distance + 0.05) {
       const gain = premier.c.distance - this.record.distance;
-      this.raconter(`🏆 Record : un ${espece.nom} parcourt ${premier.c.distance.toFixed(1)} m (+${gain.toFixed(1)})`);
+      const sang = this.fondateurs.length ? ` [${decrireHeritage(premier.ind.heritage, this.fondateurs)}]` : '';
+      this.raconter(`🏆 Record : un ${espece.nom} parcourt ${premier.c.distance.toFixed(1)} m (+${gain.toFixed(1)})${sang}`);
       this.record = { distance: premier.c.distance, generation: this.generation };
     }
     const zone = this.terrain.zoneEn(Math.max(...res.map((r) => r.c.maxX)));
@@ -136,16 +195,27 @@ export class Evolution {
       distance: premier.c.distance,
       fitness: premier.f,
       espece: espece.id,
+      heritage: premier.ind.heritage,
     });
     const distances = res.map((r) => r.c.distance).sort((a, b) => a - b);
     const effectifs = {};
     res.forEach((r) => { effectifs[r.ind.espece] = (effectifs[r.ind.espece] || 0) + 1; });
-    this.historique.push({
+    const h = {
       generation: this.generation,
       meilleur: premier.c.distance,
       mediane: distances[distances.length >> 1],
       effectifs,
-    });
+    };
+    if (this.fondateurs.length) {
+      // Part moyenne de chaque fondateur dans la population ; un sang qui disparaît est raconté
+      h.heritage = this.fondateurs.map((f, i) => res.reduce((s, r) => s + r.ind.heritage[i], 0) / res.length);
+      h.heritage.forEach((p, i) => {
+        if (p > 0 || this.eteints.has(i)) return;
+        this.eteints.add(i);
+        this.raconter(`🪦 Plus une goutte de sang ${this.fondateurs[i].nom} dans la population`);
+      });
+    }
+    this.historique.push(h);
 
     this.population = this.selection(res, effectifs);
     this.generation++;
@@ -154,6 +224,8 @@ export class Evolution {
 
   selection(res, effectifs) {
     const P = this.params;
+    const champions = this.fondateurs.length > 0;
+    if (champions && this.enBrassage(res.length)) return this.brassage(res);
     const N = Math.round(P.population);
     const suivante = [];
 
@@ -183,18 +255,64 @@ export class Evolution {
     tous.forEach((k) => { (parEspece[res[k].ind.espece] ||= []).push(k); });
 
     while (suivante.length < N) {
-      if (Math.random() < P.immigrants) {
+      if (!champions && Math.random() < P.immigrants) {
         suivante.push(this.naitre(randomGenome(), null));
         continue;
       }
       const p1 = res[tournoi(tous)].ind;
-      let adn = p1.adn;
-      const memes = parEspece[p1.espece];
-      if (Math.random() < P.croisement && memes.length > 1) {
-        const p2 = res[tournoi(memes)].ind;
-        if (p2 !== p1) adn = recombinaisonGenetique(p1.adn, p2.adn)[Math.random() < 0.5 ? 0 : 1];
+      let adn = p1.adn, heritage = p1.heritage;
+      // Croisement dans l'espèce ; en course des champions, avec n'importe qui
+      const partenaires = champions ? tous : parEspece[p1.espece];
+      if (Math.random() < P.croisement && partenaires.length > 1) {
+        const p2 = res[tournoi(partenaires)].ind;
+        if (p2 !== p1) {
+          if (champions) {
+            const [enfant, q] = introgression(p1.adn, p2.adn, P.introgression);
+            adn = enfant;
+            heritage = p1.heritage.map((h, i) => h * (1 - q) + p2.heritage[i] * q);
+          } else adn = recombinaisonGenetique(p1.adn, p2.adn)[Math.random() < 0.5 ? 0 : 1];
+        }
       }
-      suivante.push(this.naitre(mutationADN(adn, P.tauxMutation), p1.espece));
+      suivante.push(this.naitre(mutationADN(adn, P.tauxMutation), p1.espece, heritage));
+    }
+    return suivante;
+  }
+
+  // Course des champions, phase de brassage : tant que les fondateurs vivent (et au moins
+  // jusqu'à ce que la population soit pleine), pas de sélection.
+  enBrassage(taille) {
+    return this.generation < this.params.vieFondateurs || taille < Math.round(this.params.population);
+  }
+
+  // L'essaim hybride : tous ceux qui avancent d'au moins 1 m ont le même nombre d'enfants,
+  // tous hybrides (introgression forte), avec un partenaire tiré au hasard. Les fondateurs
+  // traversent les générations tels quels, puis meurent : seuls leurs gènes restent.
+  // Mesuré : la diversité tient (5 à 8 fondateurs encore présents à G100, contre 1 ou 2 avec
+  // une sélection classique), au prix d'un creux après leur mort, puis d'une remontée.
+  brassage(res) {
+    const P = this.params;
+    const N = Math.min(Math.round(P.population), Math.ceil(res.length * P.croissance));
+    const suivante = [];
+    const fondateursEnVie = res.filter((r) => r.ind.fondateur);
+    if (this.generation < P.vieFondateurs) {
+      fondateursEnVie.forEach((r) => suivante.push({ ...r.ind, id: this.prochainId++, elite: true }));
+    } else if (fondateursEnVie.length) {
+      this.raconter(`⚰️ Les ${fondateursEnVie.length} champions d'origine meurent. Il ne reste que leurs gènes, mêlés dans leurs descendants.`);
+    }
+
+    let parents = res.filter((r) => !r.c.disqualifiee && r.c.distance >= 1).map((r) => r.ind);
+    if (parents.length < 2) parents = res.map((r) => r.ind);
+    for (let i = parents.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [parents[i], parents[j]] = [parents[j], parents[i]];
+    }
+    for (let k = 0; suivante.length < N; k++) {
+      const p1 = parents[k % parents.length];
+      let p2 = p1;
+      while (p2 === p1 && parents.length > 1) p2 = parents[Math.floor(Math.random() * parents.length)];
+      const [enfant, q] = introgression(p1.adn, p2.adn, P.brassage);
+      const heritage = p1.heritage.map((h, i) => h * (1 - q) + p2.heritage[i] * q);
+      suivante.push(this.naitre(mutationADN(enfant, P.tauxMutation), p1.espece, heritage));
     }
     return suivante;
   }
@@ -203,7 +321,7 @@ export class Evolution {
   exporter() {
     return {
       jeu: 'bacterie16',
-      version: 1,
+      version: 2,
       date: new Date().toISOString(),
       params: this.params,
       generation: this.generation,
@@ -212,8 +330,10 @@ export class Evolution {
       especes: this.especesParId,
       historique: this.historique,
       chronique: this.chronique,
+      fondateurs: this.fondateurs,
+      recordFondateurs: this.recordFondateurs,
       champions: this.champions.map(({ corps, adn, ...c }) => ({ ...c, adn: adnVersTexte(adn) })),
-      population: this.population.map((ind) => ({ adn: adnVersTexte(ind.adn), espece: ind.espece })),
+      population: this.population.map((ind) => ({ adn: adnVersTexte(ind.adn), espece: ind.espece, heritage: ind.heritage, fondateur: ind.fondateur })),
     };
   }
 
@@ -223,8 +343,12 @@ export class Evolution {
     this.zoneAtteinte = s.zoneAtteinte || 0;
     this.historique = s.historique || [];
     this.chronique = s.chronique || [];
+    this.fondateurs = s.fondateurs || [];
+    this.recordFondateurs = s.recordFondateurs ?? null;
+    const dernier = this.historique[this.historique.length - 1];
+    if (dernier && dernier.heritage) dernier.heritage.forEach((p, i) => { if (p === 0) this.eteints.add(i); });
     (s.especes || []).forEach((e) => {
-      this.especes.set(`${e.parent ?? 'racine'}>${e.plan}`, e);
+      this.especes.set(`${e.fondateur != null ? `fondateur${e.fondateur}` : e.parent ?? 'racine'}>${e.plan}`, e);
       this.especesParId.push(e);
     });
     this.champions = (s.champions || []).map((c) => {
@@ -232,7 +356,11 @@ export class Evolution {
       return { ...c, adn, corps: lireCorps(adn) };
     });
     // Chacun retrouve son espèce (ou en fonde une si la lecture du corps a changé entre deux versions)
-    this.population = s.population.map((p) => this.naitre(texteVersAdn(p.adn), p.espece));
+    this.population = s.population.map((p) => {
+      const ind = this.naitre(texteVersAdn(p.adn), p.espece, p.heritage || null);
+      if (p.fondateur) ind.fondateur = true;
+      return ind;
+    });
     this.raconter(`💾 Sauvegarde du ${new Date(s.date).toLocaleString()} rechargée`);
   }
 }

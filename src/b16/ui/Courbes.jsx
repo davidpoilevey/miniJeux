@@ -13,14 +13,15 @@ const preparer = (canvas, hauteur) => {
 };
 const style = (h) => ({ width: '100%', height: h, display: 'block', borderRadius: 8, background: 'rgba(255,255,255,0.03)' });
 
-// Progrès : le meilleur (or) et la médiane (gris) de chaque génération, avec les paliers de la piste
-export function CourbeDistance({ historique, version, hauteur = 120 }) {
+// Progrès : le meilleur (or) et la médiane (gris) de chaque génération, avec les paliers de la piste.
+// reference : en course des champions, le record des fondateurs (pointillé or), la barre à franchir.
+export function CourbeDistance({ historique, version, reference = null, hauteur = 120 }) {
   const ref = useRef(null);
   useEffect(() => {
     const [ctx, W, H] = preparer(ref.current, hauteur);
     if (historique.length < 2) return;
     const n = historique.length;
-    const max = Math.max(5, ...historique.map((h) => h.meilleur)) * 1.1;
+    const max = Math.max(5, reference || 0, ...historique.map((h) => h.meilleur)) * 1.1;
     const x = (k) => (k / (n - 1)) * (W - 4) + 2;
     const y = (v) => H - 4 - (Math.max(0, v) / max) * (H - 10);
 
@@ -34,6 +35,16 @@ export function CourbeDistance({ historique, version, hauteur = 120 }) {
       ctx.fillStyle = z.couleur;
       ctx.fillText(z.nom, 4, Math.max(10, y(z.x) - 3));
     });
+    if (reference) {
+      ctx.strokeStyle = 'rgba(255,179,0,0.75)';
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath(); ctx.moveTo(0, y(reference)); ctx.lineTo(W, y(reference)); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#ffb300';
+      ctx.textAlign = 'right';
+      ctx.fillText(`fondateurs ${reference.toFixed(1)} m`, W - 4, Math.max(10, y(reference) - 3));
+      ctx.textAlign = 'left';
+    }
     const ligne = (cle, couleur, largeur) => {
       ctx.beginPath();
       historique.forEach((h, k) => ctx.lineTo(x(k), y(h[cle])));
@@ -43,7 +54,7 @@ export function CourbeDistance({ historique, version, hauteur = 120 }) {
     };
     ligne('mediane', 'rgba(200,210,220,0.6)', 1.2);
     ligne('meilleur', '#ffb300', 2);
-  }, [historique, version, hauteur]);
+  }, [historique, version, reference, hauteur]);
   return <canvas ref={ref} style={style(hauteur)} />;
 }
 
@@ -105,6 +116,32 @@ export function CourbeEspeces({ historique, especesParId, version, hauteur = 130
     ctx.fillStyle = 'rgba(255,255,255,0.07)';
     ctx.fill();
   }, [historique, especesParId, version, hauteur]);
+  return <canvas ref={ref} style={style(hauteur)} />;
+}
+
+// Course des champions : la part de sang de chaque fondateur dans la population, empilée.
+// Un fondateur battu peut survivre en filet dans les gagnants : c'est tout l'intérêt.
+// Tout l'historique (pas une fenêtre) : le mélange des débuts est le moment à voir.
+export function CourbeHeritage({ historique, fondateurs, version, hauteur = 110 }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const [ctx, W, H] = preparer(ref.current, hauteur);
+    const fenetre = historique.filter((h) => h.heritage);
+    const n = fenetre.length;
+    if (n < 2) return;
+    const x = (k) => (k / (n - 1)) * W;
+    const cumul = new Array(n).fill(0);
+    fondateurs.forEach((f, i) => {
+      const haut = fenetre.map((h, k) => cumul[k] + h.heritage[i]);
+      ctx.beginPath();
+      for (let k = 0; k < n; k++) ctx.lineTo(x(k), H - haut[k] * H);
+      for (let k = n - 1; k >= 0; k--) ctx.lineTo(x(k), H - cumul[k] * H);
+      ctx.closePath();
+      ctx.fillStyle = `hsla(${f.teinte}, 60%, 55%, 0.9)`;
+      ctx.fill();
+      for (let k = 0; k < n; k++) cumul[k] = haut[k];
+    });
+  }, [historique, fondateurs, version, hauteur]);
   return <canvas ref={ref} style={style(hauteur)} />;
 }
 

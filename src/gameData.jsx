@@ -136,55 +136,7 @@ export const GAMES_DATA = [
         description: 'Claude Magnus le bot tueur',
         status: 'success',
         tags: ['iaInside', 'board', 'strategie',  'premium']
-      },
-      {
-        name: 'Mémégram',
-        component: Anagram ,
-        image:'https://www.sportcerebral.com/media/catalog/product/A/N/ANG-183-26_1200_1.png',
-        icon: 'LocalFlorist',
-        description: 'Pour mémé, ce jeu est pour toi',
-        status: 'info',
-        tags: [ 'remake', 'mobileFriendly','basique', 'pourVieux']
-      },
-      {
-        name: 'Mémé-mots-cachés-gram',
-        component: MotsCaches ,
-        image:'https://www.pour-enfants.fr/mots-caches/mots-caches-a-imprimer-1.png',
-        icon: 'LocalFlorist',
-        description: 'Dans la serie des jeux pour vieux',
-        status: 'info',
-        tags: [ 'remake', 'mobileFriendly','basique', 'pourVieux']
-      },
-      {
-        name: 'Mémémory',
-        component: Memory ,
-        image:'https://www.potiondevie.fr/wp-content/uploads/2011/12/jeu-paires.jpg',
-        icon: 'LocalFlorist',
-        description: 'Dans la serie des jeux pour vieux',
-        status: 'info',
-        tags: [ 'remake', 'mobileFriendly','basique', 'pourVieux']
-      },
-      {
-        name:"Bacterie 9.2", 
-        id:'bacterie9',
-        component: Bactery9 ,
-        image:'https://inserm.b-cdn.net/wp-content/uploads/2017-11/agriculturalresearchservice-ericerbe-ecolibacterie-1024x744.jpg',
-        icon: 'Biotech',
-        description: "Allez, c'est reparti, cette fois avec une nouvelle technique ECS",
-        status: 'warning',
-        tags: [ 'bacterie',  'physique', 'evolution', 'zeroJoueur']
-      },
-      {
-        name:"Shuffle Puck café", 
-        id:'shufflepuck',
-        component: ShufflePuck ,
-        image:'https://upload.wikimedia.org/wikipedia/en/3/31/Shufflepuck_Caf%C3%A9_Coverart.png',
-        icon: 'SportsHockey',
-        description: "Shuffle puck comme sur Amstrad, mais en mieux",
-        status: 'warning',
-        tags: [ 'physique',  'humour', 'retro', 'iaInside']
-      },
-      {
+      },{
         name: 'Dames',
         component: Dame,
         favori:1.1,
@@ -213,7 +165,39 @@ export const GAMES_DATA = [
         description: "Jeu de belot classique",
         status: 'warning',
         tags: [ 'iaInside', 'cartes', 'hasard',  'mobileFriendly',  'strategie', 'multijoueur', 'remake', 'premium']
-      }, {
+      },
+      {
+        name:"Flipper", 
+        id:'flipper',
+        component: Flipper ,
+        image:'https://www.arcadeflipper.com/wp-content/uploads/2025/03/WhatsApp-Image-2023-04-25-at-15.12.11.jpeg',
+        icon: 'SportsBaseball',
+        description: "Un flipper assisté",
+        status: 'warning',
+        tags: [ 'hasard',  'physique', 'action', 'premium', 'clavier']
+      },
+      {
+        name:"Moto Rash",
+        id:'motoRash',
+        component: MotoRace ,
+        image:'https://www.abandonware-france.org/images_abandonware/jeux/10203Image002.png',
+        icon: 'TwoWheeler',
+        description: "Course de motos sur routes de campagne, façon Road Rash",
+        status: 'warning',
+        tags: [ 'action', 'retro', 'remake', 'premium', 'clavier']
+      },
+     
+      {
+        name:"Shuffle Puck café", 
+        id:'shufflepuck',
+        component: ShufflePuck ,
+        image:'https://upload.wikimedia.org/wikipedia/en/3/31/Shufflepuck_Caf%C3%A9_Coverart.png',
+        icon: 'SportsHockey',
+        description: "Shuffle puck comme sur Amstrad, mais en mieux",
+        status: 'warning',
+        tags: [ 'physique',  'humour', 'retro', 'iaInside']
+      },
+       {
         name:"Bomberman", 
         id:'bomberman',
         component: Bomberman ,
@@ -249,9 +233,9 @@ export const GAMES_DATA = [
         component: Evo12 ,
         image:'https://sciencespourtous.univ-lyon1.fr/files/2019/11/en-tete.jpg',
         icon: 'Biotech',
-        description: "La version finale de mon delire evolutif . Plus interactif",
+        description: "Toujours dans le delire evolutif. Definis tes caracteristiques et survit a differents milieu",
         status: 'warning',
-        tags: [ 'bacterie',  'simulation', 'evolution']
+        tags: [ 'bacterie',  'simulation', 'evolution','gestion']
       }, 
       {
         name:"Geologie 13.0",
@@ -259,7 +243,7 @@ export const GAMES_DATA = [
         component: Geo13 ,
         image:'https://odysseedelaterre.fr/wp-content/uploads/2022/03/geologie-grand-canyon.jpg',
         icon: 'Biotech',
-        description: "La version finale de mon delire evolutif . Plus interactif",
+        description: "Une version centrée sur les interactions environnementales .",
         status: 'warning',
         tags: [ 'bacterie',  'simulation', 'evolution']
       },
@@ -307,7 +291,43 @@ export const GAMES_DATA = [
         status: 'success',
         tags: [ 'multijoueur', 'simulation', 'rpg', 'workInProgress', 'remake', 'premium']
       },
-      
+       {
+        name: 'Mémégram',
+        component: Anagram ,
+        image:'https://www.sportcerebral.com/media/catalog/product/A/N/ANG-183-26_1200_1.png',
+        icon: 'LocalFlorist',
+        description: 'Pour mémé, ce jeu est pour toi',
+        status: 'info',
+        tags: [ 'remake', 'mobileFriendly','basique', 'pourVieux']
+      },
+      {
+        name: 'Mémé-mots-cachés-gram',
+        component: MotsCaches ,
+        image:'https://www.pour-enfants.fr/mots-caches/mots-caches-a-imprimer-1.png',
+        icon: 'LocalFlorist',
+        description: 'Dans la serie des jeux pour vieux',
+        status: 'info',
+        tags: [ 'remake', 'mobileFriendly','basique', 'pourVieux']
+      },
+      {
+        name: 'Mémémory',
+        component: Memory ,
+        image:'https://www.potiondevie.fr/wp-content/uploads/2011/12/jeu-paires.jpg',
+        icon: 'LocalFlorist',
+        description: 'Dans la serie des jeux pour vieux',
+        status: 'info',
+        tags: [ 'remake', 'mobileFriendly','basique', 'pourVieux']
+      },
+      {
+        name:"Bacterie 9.2", 
+        id:'bacterie9',
+        component: Bactery9 ,
+        image:'https://inserm.b-cdn.net/wp-content/uploads/2017-11/agriculturalresearchservice-ericerbe-ecolibacterie-1024x744.jpg',
+        icon: 'Biotech',
+        description: "Allez, c'est reparti, cette fois avec une nouvelle technique ECS",
+        status: 'warning',
+        tags: [ 'bacterie',  'physique', 'evolution', 'zeroJoueur']
+      },
      {
         name:"Joyeux anniversaire", 
         id:'anniv',
@@ -1027,26 +1047,6 @@ export const GAMES_DATA = [
         status: 'warning',
         tags: [ 'board', 'physique',  'action', 'retro']
       }, 
-      {
-        name:"Flipper", 
-        id:'flipper',
-        component: Flipper ,
-        image:'https://www.arcadeflipper.com/wp-content/uploads/2025/03/WhatsApp-Image-2023-04-25-at-15.12.11.jpeg',
-        icon: 'SportsBaseball',
-        description: "Un flipper assisté",
-        status: 'warning',
-        tags: [ 'hasard',  'physique', 'action', 'premium', 'clavier']
-      },
-      {
-        name:"Moto Rash",
-        id:'motoRash',
-        component: MotoRace ,
-        image:'https://www.abandonware-france.org/images_abandonware/jeux/10203Image002.png',
-        icon: 'TwoWheeler',
-        description: "Course de motos sur routes de campagne, façon Road Rash",
-        status: 'warning',
-        tags: [ 'action', 'retro', 'remake', 'premium', 'clavier']
-      },
       {
         name:"Perudo", 
         id:'perudo',

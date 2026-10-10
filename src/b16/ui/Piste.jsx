@@ -1,13 +1,13 @@
 import React, { useEffect, useRef } from 'react';
 import { Box, Button } from '@mui/material';
-import { ArrowBack } from '@mui/icons-material';
+import { ArrowBack, PushPin } from '@mui/icons-material';
 import { Replay } from '../engine/Evolution';
 import { decrireMorphotype } from '../engine/corps';
 import { camera, dessinerCreature, dessinerDecor, dessinerEtiquette, dessinerFantome, dessinerHUD, dessinerPose } from './dessin';
 
 // Le canvas : boucle rAF qui fait avancer la course (ou le replay d'un champion) et la dessine.
 // Aucune créature ne transite par le state React ; seules les stats remontent (4 Hz).
-export default function Piste({ evoRef, enMarche, vitesse, turbo, champion, onQuitterReplay, onStats }) {
+export default function Piste({ evoRef, enMarche, vitesse, turbo, champion, onQuitterReplay, onGarder, onStats }) {
   const boiteRef = useRef(null);
   const canvasRef = useRef(null);
   const etat = useRef({});
@@ -41,14 +41,15 @@ export default function Piste({ evoRef, enMarche, vitesse, turbo, champion, onQu
         if (replay.t < tAvant) cam.x = c.comX(); // le replay boucle : la caméra revient au départ d'un coup
         suivre(cam, c.comX() + 0.5, ev.terrain, dt, 8);
         Object.assign(vue, { x: cam.x, y: cam.y });
-        const espece = ev.especesParId[e.champion.espece];
+        // Un champion du catalogue porte son nom et sa teinte ; ceux de la galerie, leur espèce
+        const espece = e.champion.catalogue ? e.champion : ev.especesParId[e.champion.espece];
         dessinerDecor(ctx, vue, ev.terrain, ev.record);
         replay.poses.forEach((p, k) => dessinerPose(ctx, vue, e.champion.corps, p.px, p.py, espece.teinte, 0.12 + 0.35 * (k / replay.poses.length)));
         dessinerCreature(ctx, vue, c, espece.teinte, replay.t);
         dessinerEtiquette(ctx, vue, c, `${espece.nom} · ${c.distance.toFixed(1)} m`, `hsl(${espece.teinte}, 70%, 28%)`, true);
         dessinerHUD(ctx, W, H, {
-          titre: `Champion de la génération ${e.champion.generation}`,
-          sousTitre: `${espece.nom} : ${decrireMorphotype(e.champion.corps.morphotype)} · ${e.champion.distance.toFixed(1)} m · une silhouette tous les 70 cm`,
+          titre: e.champion.catalogue ? `Au catalogue : ${espece.nom}` : `Champion de la génération ${e.champion.generation}`,
+          sousTitre: `${e.champion.catalogue ? `génération ${e.champion.generation} de sa partie · ` : `${espece.nom} : `}${decrireMorphotype(e.champion.corps.morphotype)} · ${e.champion.distance.toFixed(1)} m · une silhouette tous les 70 cm`,
           t: Math.min(replay.t, replay.duree), duree: replay.duree,
         });
       } else {
@@ -84,9 +85,17 @@ export default function Piste({ evoRef, enMarche, vitesse, turbo, champion, onQu
           const tenant = ev.population[k].elite ? '★ ' : '';
           dessinerEtiquette(ctx, vue, meneur, `${tenant}${espece.nom} · ${Math.max(0, meneur.distance).toFixed(1)} m`, `hsl(${espece.teinte}, 70%, 28%)`, true);
         }
+        const nf = ev.fondateurs.length;
+        const reste = ev.params.vieFondateurs - ev.generation + 1;
+        let sousTitre = `Qui ira le plus loin vers la droite en ${ev.duree} s ? Les meilleurs se reproduisent.`;
+        if (nf && ev.enBrassage(ev.population.length)) {
+          sousTitre = reste > 0
+            ? `Brassage : tous ceux qui avancent se reproduisent, sans sélection. Les ${nf} champions d'origine meurent dans ${reste} génération${reste > 1 ? 's' : ''}.`
+            : 'Brassage : les champions d\'origine sont morts, leurs hybrides se croisent encore sans sélection.';
+        } else if (nf) sousTitre = `Les hybrides des ${nf} champions. Qui ira le plus loin en ${ev.duree} s ? Les meilleurs se reproduisent.`;
         dessinerHUD(ctx, W, H, {
-          titre: `Génération ${ev.generation}`,
-          sousTitre: `Qui ira le plus loin vers la droite en ${ev.duree} s ? Les meilleurs se reproduisent.`,
+          titre: nf ? `Course des champions · génération ${ev.generation}` : `Génération ${ev.generation}`,
+          sousTitre,
           t: ev.t, duree: ev.duree, record: ev.record.distance,
           positions: ev.creatures.map((c, k) => ({
             x: c.comX(),
@@ -128,10 +137,17 @@ export default function Piste({ evoRef, enMarche, vitesse, turbo, champion, onQu
     <Box ref={boiteRef} sx={{ position: 'relative', flex: 1, minHeight: 0, minWidth: 0, borderRadius: 3, overflow: 'hidden', boxShadow: '0 0 0 1px rgba(255,255,255,0.08)' }}>
       <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }} />
       {champion && (
-        <Button size="small" variant="contained" startIcon={<ArrowBack />} onClick={onQuitterReplay}
-          sx={{ position: 'absolute', top: 12, right: 12, textTransform: 'none' }}>
-          Retour à la course
-        </Button>
+        <Box sx={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 1 }}>
+          {!champion.catalogue && (
+            <Button size="small" variant="outlined" startIcon={<PushPin />} onClick={() => onGarder(champion)}
+              sx={{ textTransform: 'none', bgcolor: 'rgba(11,15,20,0.6)' }}>
+              Garder ce champion
+            </Button>
+          )}
+          <Button size="small" variant="contained" startIcon={<ArrowBack />} onClick={onQuitterReplay} sx={{ textTransform: 'none' }}>
+            Retour à la course
+          </Button>
+        </Box>
       )}
     </Box>
   );

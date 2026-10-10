@@ -27,12 +27,14 @@ for (let i = 0; i < MAX_NOEUDS; i++)
   for (let j = i + 1; j < MAX_NOEUDS; j++) GENES_ARETE.forEach((g) => NOMS.push(`e${i}${j}.${g}`));
 
 export const CLES = {};
+export const EMPLACEMENTS = {}; // nom du gène → indice de son chromosome
 const pris = new Set();
 NOMS.forEach((nom) => {
   let cle = nom;
   for (let k = 1; pris.has(emplacement(cle)); k++) cle = `${nom}~${k}`;
   pris.add(emplacement(cle));
   CLES[nom] = cle;
+  EMPLACEMENTS[nom] = emplacement(cle);
 });
 
 // ── Lecture ──

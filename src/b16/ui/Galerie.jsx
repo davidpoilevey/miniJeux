@@ -2,15 +2,16 @@ import React, { memo, useEffect, useRef } from 'react';
 import { Box, Tooltip, Typography } from '@mui/material';
 import { Creature } from '../engine/Creature';
 import { decrireMorphotype } from '../engine/corps';
+import { decrireHeritage } from '../engine/Evolution';
 import { Terrain } from '../engine/terrain';
 import { dessinerCreature } from './dessin';
 
 // La galerie des champions : un portrait par génération, au repos.
 // On y lit l'évolution de la forme ; un clic lance le replay.
 const PLAT = new Terrain(0);
-const LARG = 92, HAUT = 64;
 
-const Portrait = memo(function Portrait({ champion, espece }) {
+// Portrait au repos sur sol plat (aussi utilisé par le catalogue) ; espece = { teinte }
+export const Portrait = memo(function Portrait({ champion, espece, larg: LARG = 92, haut: HAUT = 64 }) {
   const ref = useRef(null);
   useEffect(() => {
     const canvas = ref.current;
@@ -33,11 +34,11 @@ const Portrait = memo(function Portrait({ champion, espece }) {
     ctx.fillStyle = '#8a6a4a';
     ctx.fillRect(0, HAUT - 6, LARG, 6);
     dessinerCreature(ctx, cam, c, espece.teinte, 1);
-  }, [champion, espece]);
+  }, [champion, espece, LARG, HAUT]);
   return <canvas ref={ref} style={{ width: LARG, height: HAUT, display: 'block', borderRadius: 6 }} />;
 });
 
-export default function Galerie({ champions, especesParId, choisi, onChoisir, version }) {
+export default function Galerie({ champions, especesParId, fondateurs, choisi, onChoisir, version }) {
   const defil = useRef(null);
   useEffect(() => {
     const d = defil.current;
@@ -54,9 +55,10 @@ export default function Galerie({ champions, especesParId, choisi, onChoisir, ve
       {champions.map((ch, k) => {
         const e = especesParId[ch.espece];
         const nouvelle = k > 0 && champions[k - 1].corps.morphotype !== ch.corps.morphotype;
-        const actif = choisi && choisi.generation === ch.generation;
+        const actif = choisi === ch;
+        const sang = decrireHeritage(ch.heritage, fondateurs);
         return (
-          <Tooltip key={ch.generation} title={`${e.nom} : ${decrireMorphotype(ch.corps.morphotype)}`}>
+          <Tooltip key={ch.generation} title={`${e.nom} : ${decrireMorphotype(ch.corps.morphotype)}${sang ? ` · ${sang}` : ''}`}>
             <Box onClick={() => onChoisir(ch)} sx={{
               flexShrink: 0, cursor: 'pointer', borderRadius: 2, p: 0.5, position: 'relative',
               border: `2px solid ${actif ? '#ffb300' : `hsla(${e.teinte}, 60%, 55%, 0.7)`}`,
