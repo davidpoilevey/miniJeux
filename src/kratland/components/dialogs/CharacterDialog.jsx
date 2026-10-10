@@ -22,7 +22,7 @@ import TextField          from '@mui/material/TextField'
 import Divider            from '@mui/material/Divider'
 import MaterialIcon       from '../MaterialIcon'
 import { useKrat }        from '../../context/KratContext'
-import { HIRE_COST_BY_ROLE, HIRE_COST_DEFAULT, ITEM_TYPES } from '../../data/catalog'
+import { HIRE_COST_BY_ROLE, HIRE_COST_DEFAULT, ITEM_TYPES, getInventoryRoom } from '../../data/catalog'
 import { pb }             from '../../services/pb'
 
 // ─── Config des actions ───────────────────────────────────────────────────────
@@ -84,6 +84,7 @@ function CharMenu({ target, groupe, onSelect, onClose }) {
   const alreadyHired = groupe?.some(m => m.id === target.id)
 
   const visibleActions = ACTIONS.filter(act => {
+    if (act.type === 'combat' && target._type === 'player') return false
     if (act.pnjActionRequired && act.pnjActionRequired !== target.action) return false
     return true
   })
@@ -323,12 +324,12 @@ function CommercePanel({ target, player, onBuy, onTrade, onBack }) {
   }
 
   function doBuy(item) {
-    onBuy(item.typeId, item.price)
+    if (!onBuy(item.typeId, item.price)) return
     setAcquired(prev => ({ ...prev, [item.typeId]: true }))
   }
 
   function doTrade(item) {
-    onTrade(item.typeId, item.tradeFor, item.price ?? 0)
+    if (!onTrade(item.typeId, item.tradeFor, item.price ?? 0)) return
     setAcquired(prev => ({ ...prev, [item.typeId]: true }))
   }
 
@@ -357,8 +358,9 @@ function CommercePanel({ target, player, onBuy, onTrade, onBack }) {
               const isTradeOnly  = item.tradeFor && item.price == null
               const isBoth       = item.tradeFor && item.price != null
               const isGoldOnly   = !item.tradeFor && item.price != null
-              const canBuy   = isGoldOnly && player.gold >= item.price
-              const canTrade = (isTradeOnly || isBoth) && hasTradeItem && (item.price == null || player.gold >= item.price)
+              const hasRoom = getInventoryRoom(inventaire, item.typeId) > 0 || item.tradeFor === item.typeId
+              const canBuy   = isGoldOnly && hasRoom && player.gold >= item.price
+              const canTrade = (isTradeOnly || isBoth) && hasRoom && hasTradeItem && (item.price == null || player.gold >= item.price)
               const done = acquired[item.typeId] ?? false
               return (
                 <Box key={i} sx={{
@@ -547,11 +549,11 @@ export default function CharacterDialog({ target, open, onClose }) {
   }
 
   function handleBuy(itemKey, price) {
-    actions.buyItem(itemKey, price)
+    return actions.buyItem(itemKey, price)
   }
 
   function handleTrade(typeIdToGet, tradeForTypeId, goldCost) {
-    actions.tradeItem(typeIdToGet, tradeForTypeId, goldCost)
+    return actions.tradeItem(typeIdToGet, tradeForTypeId, goldCost)
   }
 
   function handleRoll(effectChance) {

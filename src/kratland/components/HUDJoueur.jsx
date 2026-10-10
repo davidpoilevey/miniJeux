@@ -302,6 +302,11 @@ export default function HUDJoueur() {
           <Typography variant="h6" sx={{ lineHeight: 1.2, fontSize: '1rem' }} noWrap>
             {player.name}
           </Typography>
+          {stats.fugitive && (
+            <Tooltip title="Vous êtes recherché. Les déplacements en ville peuvent vous faire repérer.">
+              <Chip label="Évadé · recherché" size="small" color="warning" sx={{ height: 20, fontSize: '0.6rem', my: 0.5 }} />
+            </Tooltip>
+          )}
           {groupe.length > 0 && (
             <Chip
               label={`${groupe.length} compagnon${groupe.length > 1 ? 's' : ''}`}

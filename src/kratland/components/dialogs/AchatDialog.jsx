@@ -11,7 +11,7 @@ import Chip           from '@mui/material/Chip'
 import Divider        from '@mui/material/Divider'
 import MaterialIcon   from '../MaterialIcon'
 import { useKrat }    from '../../context/KratContext'
-import { COMPETENCES } from '../../data/catalog'
+import { COMPETENCES, getInventoryRoom } from '../../data/catalog'
 
 // ─── Constantes ───────────────────────────────────────────────────────────────
 
@@ -114,9 +114,8 @@ export default function AchatDialog({ item, open, onClose }) {
   if (!item) return null
 
   const rarity       = RARITY_META[item.rarete ?? 'common']
-  const currentOwned = (player.inventaire ?? []).find(i => i.typeId === item.key)?.qty ?? 0
-  const maxStack     = item.maxStack ?? 99
-  const maxQty       = Math.max(1, maxStack - currentOwned)
+  const maxQty       = getInventoryRoom(player.inventaire ?? [], item.key)
+  const hasRoom      = maxQty >= (item.stackable ? qty : 1)
   const totalPrice   = currentPrice * (item.stackable ? qty : 1)
   const canAfford    = player.gold >= totalPrice
 
@@ -136,8 +135,7 @@ export default function AchatDialog({ item, open, onClose }) {
   const alreadyOwned = !item.stackable && (player.inventaire ?? []).some(i => i.typeId === item.key)
 
   function handleBuy() {
-    actions.buyItem(item.key, currentPrice, qty)
-    onClose()
+    if (actions.buyItem(item.key, currentPrice, qty)) onClose()
   }
 
   return (
@@ -278,11 +276,11 @@ export default function AchatDialog({ item, open, onClose }) {
         <Button
           variant="contained"
           onClick={handleBuy}
-          disabled={!canAfford || alreadyOwned}
+          disabled={!canAfford || alreadyOwned || !hasRoom}
           startIcon={<MaterialIcon icon={alreadyOwned ? 'block' : 'payments'} sx={{ fontSize: '1rem !important' }} />}
           sx={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 700 }}
         >
-          {alreadyOwned ? 'Déjà possédé' : `Acheter ${totalPrice}g`}
+          {alreadyOwned ? 'Déjà possédé' : !hasRoom ? 'Pile pleine' : `Acheter ${totalPrice}g`}
         </Button>
       </DialogActions>
 

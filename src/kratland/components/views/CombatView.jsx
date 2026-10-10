@@ -17,9 +17,8 @@ import Divider        from '@mui/material/Divider'
 import Chip           from '@mui/material/Chip'
 import Tooltip        from '@mui/material/Tooltip'
 import MaterialIcon   from '../MaterialIcon'
-import { useKrat }    from '../../context/KratContext'
+import { useKrat, isAliveNpc }    from '../../context/KratContext'
 import { ITEM_TYPES, COMPETENCES, ROLES, ROLE_ATTACKS, ROLE_DEFENSES } from '../../data/catalog'
-import { pb }         from '../../services/pb'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -307,7 +306,7 @@ export default function CombatView() {
     const list = state.activeEnemies?.length > 0
       ? state.activeEnemies
       : (state.activePnj ? [state.activePnj] : [])
-    return list
+    return list.filter(isAliveNpc)
   }, [])
 
   const [enemies]       = useState(initEnemies)
@@ -327,6 +326,8 @@ export default function CombatView() {
   const [isOver,        setIsOver]   = useState(false)
   const [outcome,       setOutcome]  = useState(null)
   const logEndRef = useRef(null)
+  const roundPendingRef = useRef(false)
+  const [processing, setProcessing] = useState(false)
 
   useEffect(() => { logEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [logs])
 
@@ -340,7 +341,7 @@ export default function CombatView() {
     for (const [dc, dr] of [[-1,0],[1,0],[0,-1],[0,1]]) {
       const nc = pc + dc, nr = pr + dr
       if (nc >= 0 && nc < mapW && nr >= 0 && nr < mapH) {
-        actions.movePlayer(`${nc},${nr}`, 0)
+        actions.movePlayer(`${nc},${nr}`, 0, { retreat: true })
         return
       }
     }
@@ -362,136 +363,131 @@ export default function CombatView() {
     return (
       <Box sx={{ textAlign: 'center', mt: 8 }}>
         <Typography variant="h4" color="text.secondary">Aucun combat en cours.</Typography>
+        <Button onClick={actions.exitBattle}>Retour</Button>
       </Box>
     )
   }
 
-  function playRound(action) {
-    if (isOver) return
-    const roundLogs = []
-    const log = (text, type = 'narrative') => roundLogs.push({ time: `R${currentRound}`, text, [type]: true })
+  async function playRound(action) {
+    if (isOver || roundPendingRef.current) return
+    roundPendingRef.current = true
+    setProcessing(true)
+    try {
+      const roundLogs = []
+      const log = (text, type = 'narrative') => roundLogs.push({ time: `R${currentRound}`, text, [type]: true })
 
-    let newEnemyHps = [...enemyHps]
-    let newAllyHps  = [...allyHps]
-    let npcDmgMult  = 1.0
+      let newEnemyHps = [...enemyHps]
+      let newAllyHps  = [...allyHps]
+      let npcDmgMult  = 1.0
 
-    const target = enemies[targetIdx]
+      const target = enemies[targetIdx]
 
-    // ── Joueur attaque ────────────────────────────────────────────────────────
-    if (action.isBlock) {
-      npcDmgMult = 0.5
-      log('Tu prends position défensive.', 'playerAction')
-    } else {
-      const rawDmg  = rollDmg(action)
-      const defMult = getDefMult(target.role)
-      const defLbl  = defLabel => defLabel ? ` (${defLabel})` : ''
-      const dmg     = defMult < 1 ? Math.max(1, Math.floor(rawDmg * defMult)) : rawDmg
-      newEnemyHps[targetIdx] = Math.max(0, newEnemyHps[targetIdx] - dmg)
-      log(`${action.label} → ${target.name} : −${dmg} HP${defLbl(getDefLabel(target.role))}`, 'playerAction')
-
-      if (action.special === 'blind')  { npcDmgMult = 0.35; log(`${target.name} est aveuglé !`, 'narrative') }
-      if (action.special === 'freeze') { npcDmgMult = 0.50; log(`${target.name} est ralenti !`, 'narrative') }
-    }
-
-    // ── Membres du groupe attaquent ──────────────────────────────────────────
-    groupe.forEach((member, mi) => {
-      if ((newAllyHps[mi] ?? 0) <= 0) return
-      const firstAlive = newEnemyHps.findIndex(h => h > 0)
-      if (firstAlive === -1) return
-      const atk    = pickRoleAttack(member.role)
-      const rawDmg = rollDmg(atk)
-      const def    = getDefMult(enemies[firstAlive].role)
-      const dmg    = def < 1 ? Math.max(1, Math.floor(rawDmg * def)) : rawDmg
-      newEnemyHps[firstAlive] = Math.max(0, newEnemyHps[firstAlive] - dmg)
-      log(`${member.name} (${atk.label}) → ${enemies[firstAlive].name} : −${dmg} HP`, 'playerAction')
-    })
-
-    // ── Victoire si tous les ennemis tombent ──────────────────────────────────
-    if (newEnemyHps.every(h => h <= 0)) {
-      // Collecter le loot de tous les ennemis
-      const itemLoot = {}
-      let lootGold = 0
-      enemies.forEach(enemy => {
-        const hpData = typeof enemy.hp === 'string' ? JSON.parse(enemy.hp) : (enemy.hp ?? {})
-        const loot = hpData.loot ?? {}
-        Object.entries(loot).forEach(([key, qty]) => {
-          if (key === 'gold') lootGold += qty
-          else itemLoot[key] = (itemLoot[key] ?? 0) + qty
-        })
-      })
-
-      const goldGain = Math.floor(Math.random() * 5) + enemies.length + lootGold
-      actions.applyEffects({ reputation: 1, gold: goldGain })
-      if (Object.keys(itemLoot).length > 0) actions.collectLoot(itemLoot)
-
-      const itemNames = Object.entries(itemLoot).map(([k, qty]) => `${qty}× ${ITEM_TYPES[k]?.label ?? k}`)
-      const lootStr = itemNames.length > 0 ? ` Butin : ${itemNames.join(', ')}.` : ''
-      log(`Tous les ennemis vaincus ! +${goldGain}g · +1 Réputation.${lootStr}`, 'narrative')
-
-      // Persister hp.current=0 en base en préservant le reste (loot, max)
-      enemies.forEach(enemy => {
-        if (!enemy.id) return
-        const hpData = typeof enemy.hp === 'string' ? JSON.parse(enemy.hp) : (enemy.hp ?? {})
-        pb.collection('kratNpcs').update(enemy.id, { hp: { ...hpData, current: 0 } }).catch(() => {})
-      })
-      setEnemyHps(newEnemyHps)
-      setLogs(prev => [...prev, ...roundLogs])
-      setCurrentRound(r => r + 1)
-      setIsOver(true)
-      setOutcome('win')
-      return
-    }
-
-    // Réajuster la cible si elle est morte
-    if (newEnemyHps[targetIdx] <= 0) {
-      const next = newEnemyHps.findIndex(h => h > 0)
-      if (next !== -1) setTargetIdx(next)
-    }
-
-    // ── Chaque ennemi vivant riposte ─────────────────────────────────────────
-    const aliveAllies = groupe.filter((_, ai) => (newAllyHps[ai] ?? 0) > 0)
-
-    enemies.forEach((enemy, ei) => {
-      if (newEnemyHps[ei] <= 0) return
-      const atk    = pickRoleAttack(enemy.role)
-      const eStats = typeof enemy.stats === 'string' ? JSON.parse(enemy.stats) : (enemy.stats ?? {})
-      const bonus  = Math.max(0, Math.floor((eStats.force ?? 4) / 4))
-      const rawDmg = rollDmg(atk) + bonus
-      const dmg    = Math.max(0, Math.floor(rawDmg * npcDmgMult))
-      const note   = npcDmgMult < 1 ? ' (réduit)' : ''
-
-      // 70% joueur, 30% allié aléatoire (si présent)
-      const hitAlly = aliveAllies.length > 0 && Math.random() < 0.3
-      if (hitAlly) {
-        const victim    = aliveAllies[Math.floor(Math.random() * aliveAllies.length)]
-        const victimIdx = groupe.indexOf(victim)
-        newAllyHps[victimIdx] = Math.max(0, (newAllyHps[victimIdx] ?? 0) - dmg)
-        log(`${enemy.name} (${atk.label}) → ${victim.name} : −${dmg} HP${note}`, 'enemyAction')
+      // ── Joueur attaque ────────────────────────────────────────────────────────
+      if (action.isBlock) {
+        npcDmgMult = 0.5
+        log('Tu prends position défensive.', 'playerAction')
       } else {
-        if (dmg > 0) {
-          actions.applyEffects({ forme: -dmg })
-          log(`${enemy.name} (${atk.label}) → toi : −${dmg} Forme${note}`, 'enemyAction')
-        } else {
-          log(`${enemy.name} manque son coup !`, 'enemyAction')
-        }
+        const rawDmg  = rollDmg(action)
+        const defMult = getDefMult(target.role)
+        const defLbl  = defLabel => defLabel ? ` (${defLabel})` : ''
+        const dmg     = defMult < 1 ? Math.max(1, Math.floor(rawDmg * defMult)) : rawDmg
+        newEnemyHps[targetIdx] = Math.max(0, newEnemyHps[targetIdx] - dmg)
+        log(`${action.label} → ${target.name} : −${dmg} HP${defLbl(getDefLabel(target.role))}`, 'playerAction')
+
+        if (action.special === 'blind')  { npcDmgMult = 0.35; log(`${target.name} est aveuglé !`, 'narrative') }
+        if (action.special === 'freeze') { npcDmgMult = 0.50; log(`${target.name} est ralenti !`, 'narrative') }
       }
-    })
 
-    setEnemyHps(newEnemyHps)
-    setAllyHps(newAllyHps)
-    setLogs(prev => [...prev, ...roundLogs])
+      // ── Membres du groupe attaquent ──────────────────────────────────────────
+      groupe.forEach((member, mi) => {
+        if ((newAllyHps[mi] ?? 0) <= 0) return
+        const firstAlive = newEnemyHps.findIndex(h => h > 0)
+        if (firstAlive === -1) return
+        const atk    = pickRoleAttack(member.role)
+        const rawDmg = rollDmg(atk)
+        const def    = getDefMult(enemies[firstAlive].role)
+        const dmg    = def < 1 ? Math.max(1, Math.floor(rawDmg * def)) : rawDmg
+        newEnemyHps[firstAlive] = Math.max(0, newEnemyHps[firstAlive] - dmg)
+        log(`${member.name} (${atk.label}) → ${enemies[firstAlive].name} : −${dmg} HP`, 'playerAction')
+      })
 
-    const nextRound = currentRound + 1
-    setCurrentRound(nextRound)
+      // ── Victoire si tous les ennemis tombent ──────────────────────────────────
+      if (newEnemyHps.every(h => h <= 0)) {
+        // La défaite des PNJ et la récompense sont validées dans la même transaction.
+        const reward = await actions.completeVictory(enemies)
+        const itemNames = Object.entries(reward.items).map(([k, qty]) => `${qty}× ${ITEM_TYPES[k]?.label ?? k}`)
+        const lootStr = itemNames.length > 0 ? ` Butin : ${itemNames.join(', ')}.` : ''
+        log(reward.count
+          ? `Tous les ennemis vaincus ! +${reward.gold}g · +1 Réputation.${lootStr}`
+          : 'Ces ennemis ont déjà été vaincus. Aucun butin supplémentaire.', 'narrative')
 
-    if (nextRound > 10) {
-      setLogs(prev => [...prev, { time: `R${nextRound}`, text: `Épuisement mutuel. Le combat s'arrête.`, narrative: true }])
-      setIsOver(true)
-      setOutcome('draw')
+        setEnemyHps(newEnemyHps)
+        setLogs(prev => [...prev, ...roundLogs])
+        setCurrentRound(r => r + 1)
+        setIsOver(true)
+        setOutcome('win')
+        return
+      }
+
+      // Réajuster la cible si elle est morte
+      if (newEnemyHps[targetIdx] <= 0) {
+        const next = newEnemyHps.findIndex(h => h > 0)
+        if (next !== -1) setTargetIdx(next)
+      }
+
+      // ── Chaque ennemi vivant riposte ─────────────────────────────────────────
+      const aliveAllies = groupe.filter((_, ai) => (newAllyHps[ai] ?? 0) > 0)
+
+      let playerDamage = 0
+      enemies.forEach((enemy, ei) => {
+        if (newEnemyHps[ei] <= 0) return
+        const atk    = pickRoleAttack(enemy.role)
+        const eStats = typeof enemy.stats === 'string' ? JSON.parse(enemy.stats) : (enemy.stats ?? {})
+        const bonus  = Math.max(0, Math.floor((eStats.force ?? 4) / 4))
+        const rawDmg = rollDmg(atk) + bonus
+        const dmg    = Math.max(0, Math.floor(rawDmg * npcDmgMult))
+        const note   = npcDmgMult < 1 ? ' (réduit)' : ''
+
+        // 70% joueur, 30% allié aléatoire (si présent)
+        const hitAlly = aliveAllies.length > 0 && Math.random() < 0.3
+        if (hitAlly) {
+          const victim    = aliveAllies[Math.floor(Math.random() * aliveAllies.length)]
+          const victimIdx = groupe.indexOf(victim)
+          newAllyHps[victimIdx] = Math.max(0, (newAllyHps[victimIdx] ?? 0) - dmg)
+          log(`${enemy.name} (${atk.label}) → ${victim.name} : −${dmg} HP${note}`, 'enemyAction')
+        } else {
+          if (dmg > 0) {
+            playerDamage += dmg
+            log(`${enemy.name} (${atk.label}) → toi : −${dmg} Forme${note}`, 'enemyAction')
+          } else {
+            log(`${enemy.name} manque son coup !`, 'enemyAction')
+          }
+        }
+      })
+
+      if (playerDamage > 0) actions.applyEffects({ forme: -playerDamage })
+      setEnemyHps(newEnemyHps)
+      setAllyHps(newAllyHps)
+      setLogs(prev => [...prev, ...roundLogs])
+
+      const nextRound = currentRound + 1
+      setCurrentRound(nextRound)
+
+      if (nextRound > 10) {
+        setLogs(prev => [...prev, { time: `R${nextRound}`, text: `Épuisement mutuel. Le combat s'arrête.`, narrative: true }])
+        setIsOver(true)
+        setOutcome('draw')
+      }
+    } catch {
+      setLogs(prev => [...prev, { time: '—', text: 'Impossible de valider le combat. Réessayez.', narrative: true }])
+    } finally {
+      roundPendingRef.current = false
+      setProcessing(false)
     }
   }
 
   function handleFlee() {
+    if (isOver || roundPendingRef.current) return
     escapeToSafeCell()
     actions.applyEffects({ reputation: -2 })
     setIsOver(true)
@@ -614,7 +610,7 @@ export default function CombatView() {
             {/* Boutons d'action */}
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, justifyContent: 'center' }}>
               {combatActions.map(act => (
-                <CombatBtn key={act.id} action={act} disabled={isOver}
+                <CombatBtn key={act.id} action={act} disabled={isOver || processing}
                   onClick={act.isFlee ? handleFlee : () => playRound(act)} />
               ))}
             </Box>

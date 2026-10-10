@@ -6,6 +6,8 @@ import Box            from '@mui/material/Box'
 import Typography     from '@mui/material/Typography'
 import Paper          from '@mui/material/Paper'
 import Menu           from '@mui/material/Menu'
+import Snackbar       from '@mui/material/Snackbar'
+import Alert          from '@mui/material/Alert'
 import MenuItem       from '@mui/material/MenuItem'
 import { useKrat }    from '../../context/KratContext'
 import { pb }         from '../../services/pb'
@@ -100,6 +102,7 @@ export default function CityView() {
   const [cityChars,    setCityChars]    = useState([])
   const [selectedChar, setSelectedChar] = useState(null)
   const [menuState,    setMenuState]    = useState(null)
+  const [buildError, setBuildError] = useState(false)
 
   // Terrain figé
   const terrainRef = useRef(null)
@@ -201,7 +204,7 @@ export default function CityView() {
   function closeMenu() { setMenuState(null) }
 
   function handleMove(pos, cost, info, options = {}) {
-    actions.movePlayer(pos, cost, options)
+    if (!actions.movePlayer(pos, cost, options)) return
     const chars       = info?.chars ?? []
     const firstTalkable = chars.find(c => c._type !== 'npc' || c.action !== 'Attaquer')
     if (firstTalkable) setSelectedChar(firstTalkable)
@@ -219,12 +222,12 @@ export default function CityView() {
     if (isPlayer) {
       // Building or exit on player's cell
       if (info?.building) items.push(
-        <MenuItem key="enter" onClick={() => { closeMenu(); actions.enterBuilding(info.building.id) }}>
+        <MenuItem key="enter" disabled={!canReach} onClick={() => { closeMenu(); actions.enterBuilding(info.building.id) }}>
           🚪 Entrer dans le bâtiment
         </MenuItem>
       )
       if (info?.exit) items.push(
-        <MenuItem key="exit-world" onClick={() => { closeMenu(); actions.exitToWorld() }}>
+        <MenuItem key="exit-world" disabled={!canReach} onClick={() => { closeMenu(); if (actions.movePlayer(pos, cost, { transition: true })) actions.exitToWorld() }}>
           🌍 Quitter la ville
         </MenuItem>
       )
@@ -236,7 +239,7 @@ export default function CityView() {
       ))
       // Build house
       if (!hasHouse) items.push(
-        <MenuItem key="build" disabled={!canBuildHouse} onClick={() => { closeMenu(); actions.buildHouse() }}>
+        <MenuItem key="build" disabled={!canBuildHouse} onClick={async () => { closeMenu(); const result = await actions.buildHouse(); if (result === 'error') setBuildError(true) }}>
           <Box>
             <Typography variant="body2">🏗️ Construire une cabane</Typography>
             <Typography variant="caption" color={canBuildHouse ? 'text.secondary' : 'error'}>
@@ -247,13 +250,13 @@ export default function CityView() {
       )
     } else if (info?.building) {
       items.push(
-        <MenuItem key="enter" onClick={() => { closeMenu(); actions.enterBuilding(info.building.id) }}>
+        <MenuItem key="enter" disabled={!canReach} onClick={() => { closeMenu(); actions.enterBuilding(info.building.id) }}>
           🚪 Entrer dans le bâtiment
         </MenuItem>
       )
     } else if (info?.exit) {
       items.push(
-        <MenuItem key="exit-world" onClick={() => { closeMenu(); actions.exitToWorld() }}>
+        <MenuItem key="exit-world" disabled={!canReach} onClick={() => { closeMenu(); if (actions.movePlayer(pos, cost, { transition: true })) actions.exitToWorld() }}>
           🌍 Quitter la ville
         </MenuItem>
       )
@@ -321,6 +324,9 @@ export default function CityView() {
         )}
       </Paper>
 
+      <Snackbar open={buildError} onClose={() => setBuildError(false)} autoHideDuration={6000}>
+        <Alert severity="error" onClose={() => setBuildError(false)}>Construction impossible. Aucun matériau n'a été consommé.</Alert>
+      </Snackbar>
       {/* Menu contextuel */}
       <Menu
         open={!!menuState}

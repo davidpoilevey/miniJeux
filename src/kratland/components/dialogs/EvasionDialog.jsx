@@ -108,7 +108,7 @@ export default function EvasionDialog({ open, onClose }) {
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.85rem' }}>
               {result.success
-                ? "Dans la confusion, vous vous glissez hors de la cellule !"
+                ? "Dans la confusion, vous vous glissez hors de la cellule ! Vous restez recherché : les déplacements en ville peuvent vous faire repérer."
                 : "Le garde vous rattrape alors que vous franchissez la porte. Vous êtes épuisé."}
             </Typography>
           </Box>

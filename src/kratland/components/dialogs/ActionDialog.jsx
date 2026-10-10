@@ -141,6 +141,7 @@ function RollPanel({ action, player, onExecute, onClose }) {
         )}
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {action.goldCost && <Typography variant="body2">Don : {action.goldCost.min} à {Math.min(action.goldCost.max, player.gold)}g</Typography>}
           {isAuto ? (
             <EffectsBlock label="Effets" effects={action.onSuccess ?? {}} reward={action.reward} />
           ) : (
@@ -160,6 +161,7 @@ function RollPanel({ action, player, onExecute, onClose }) {
           variant="contained"
           color={action.illegal ? 'error' : 'primary'}
           onClick={() => onExecute(effectiveChance)}
+          disabled={!!action.goldCost && player.gold < action.goldCost.min}
           startIcon={<MaterialIcon icon={action.icon} sx={{ fontSize: '1rem !important' }} />}
           sx={{ fontFamily: '"Plus Jakarta Sans", sans-serif', fontWeight: 700 }}
         >
@@ -252,9 +254,9 @@ function ResultScreen({ action, result, onClose }) {
           {message}
         </Typography>
 
-        {result.gold > 0 && (
+        {result.gold != null && result.gold !== 0 && (
           <Typography variant="h5" sx={{ fontFamily: '"Noto Serif", serif', color: 'warning.dark', mb: 1 }}>
-            +{result.gold}g
+            {result.gold > 0 ? '+' : ''}{result.gold}g
           </Typography>
         )}
         {result.item && (
@@ -293,15 +295,19 @@ export default function ActionDialog({ action, open, onClose, onSuccessCallback 
   const isFormMode = !!action.form
 
   function handleRoll(effectiveChance) {
+    if (action.goldCost && state.player.gold < action.goldCost.min) return
     const success = Math.random() < effectiveChance
     if (success) {
       const reward = action.reward ?? {}
       const gold   = reward.gold
         ? Math.floor(Math.random() * (reward.gold.max - reward.gold.min + 1)) + reward.gold.min
         : 0
-      actions.applyEffects({ gold, item: reward.item ?? null, ...(action.onSuccess ?? {}) })
+      const cost = action.goldCost
+        ? Math.floor(Math.random() * (Math.min(action.goldCost.max, state.player.gold) - action.goldCost.min + 1)) + action.goldCost.min
+        : 0
+      actions.applyEffects({ gold: gold - cost, item: reward.item ?? null, ...(action.onSuccess ?? {}) })
       onSuccessCallback?.()
-      setResult({ success: true, gold, item: reward.item ?? null, effects: action.onSuccess })
+      setResult({ success: true, gold: gold - cost, item: reward.item ?? null, effects: action.onSuccess })
     } else {
       actions.applyEffects(action.onFailure ?? {})
       setResult({ success: false, caught: action.illegal, effects: action.onFailure })

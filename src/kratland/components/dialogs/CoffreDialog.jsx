@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import Alert         from '@mui/material/Alert'
 import Dialog        from '@mui/material/Dialog'
 import DialogTitle   from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
@@ -38,7 +39,7 @@ function QtyControl({ value, max, onChange }) {
 
 // ─── Ligne item ───────────────────────────────────────────────────────────────
 
-function ItemRow({ slot, qty, onQtyChange, actionLabel, onAction }) {
+function ItemRow({ slot, qty, onQtyChange, actionLabel }) {
   const def = ITEM_TYPES[slot.typeId]
   if (!def) return null
   return (
@@ -48,9 +49,9 @@ function ItemRow({ slot, qty, onQtyChange, actionLabel, onAction }) {
         {def.label} <Typography component="span" variant="caption" color="text.secondary">×{slot.qty}</Typography>
       </Typography>
       <QtyControl value={qty} max={slot.qty} onChange={onQtyChange} />
-      <Button size="small" variant="outlined"
+      <Button size="small" variant="outlined" disabled
         sx={{ fontSize: '0.6rem', py: 0.25, px: 0.5, minWidth: 0, flexShrink: 0 }}
-        onClick={() => onAction(slot.typeId, qty)}>
+>
         {actionLabel}
       </Button>
     </Box>
@@ -59,10 +60,8 @@ function ItemRow({ slot, qty, onQtyChange, actionLabel, onAction }) {
 
 // ─── Ligne or (texte libre) ───────────────────────────────────────────────────
 
-function GoldRow({ available, actionLabel, onAction }) {
+function GoldRow({ available, actionLabel }) {
   const [input, setInput] = useState('')
-  const amount = Math.max(1, Math.min(available, parseInt(input) || 0))
-  const valid  = parseInt(input) > 0 && parseInt(input) <= available
 
   return (
     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, p: 0.5, borderRadius: 1,
@@ -71,7 +70,7 @@ function GoldRow({ available, actionLabel, onAction }) {
         💰 {available}g disponible
       </Typography>
       <TextField
-        size="small" type="number" value={input}
+        size="small" type="number" value={input} disabled
         onChange={e => setInput(e.target.value)}
         placeholder="qté"
         sx={{ width: 60 }}
@@ -79,8 +78,8 @@ function GoldRow({ available, actionLabel, onAction }) {
       />
       <Button size="small" variant="outlined" color="warning"
         sx={{ fontSize: '0.6rem', py: 0.25, px: 0.5, minWidth: 0, flexShrink: 0 }}
-        disabled={!valid}
-        onClick={() => { onAction(amount); setInput('') }}>
+        disabled
+>
         {actionLabel}
       </Button>
     </Box>
@@ -98,7 +97,6 @@ export default function CoffreDialog({ open, onClose, buildingId, isOwner }) {
   const [chestQtys,    setChestQtys]    = useState({})
   const forcedRef = useRef(false)
 
-  const cityId = state.player.location.city ?? state.city?.id ?? ''
   const { player } = state
 
   useEffect(() => {
@@ -140,81 +138,6 @@ export default function CoffreDialog({ open, onClose, buildingId, isOwner }) {
   const getItemQty  = (typeId) => itemQtys[typeId]  ?? 1
   const getChestQty = (typeId) => chestQtys[typeId] ?? 1
 
-  // ─── Dépôt item ─────────────────────────────────────────────────────────────
-
-  async function depositItem(typeId, qty) {
-    const record = chestItems.find(r => r.typeId === typeId)
-    try {
-      if (record) {
-        const updated = await pb.collection('kratItems').update(record.id, { qty: (record.qty ?? 0) + qty })
-        setChestItems(prev => prev.map(r => r.id === record.id ? updated : r))
-      } else {
-        const created = await pb.collection('kratItems').create({
-          typeId, qty,
-          location: { city: cityId, roomId: 'coffre', buildingId },
-        })
-        setChestItems(prev => [...prev, created])
-      }
-      actions.dropItems(typeId, qty)
-      setItemQtys(prev => ({ ...prev, [typeId]: 1 }))
-    } catch(e) { console.error('depositItem:', e) }
-  }
-
-  // ─── Retrait item ────────────────────────────────────────────────────────────
-
-  async function withdrawItem(typeId, qty) {
-    const record = chestItems.find(r => r.typeId === typeId)
-    if (!record) return
-    const remaining = (record.qty ?? 1) - qty
-    try {
-      if (remaining > 0) {
-        const updated = await pb.collection('kratItems').update(record.id, { qty: remaining })
-        setChestItems(prev => prev.map(r => r.id === record.id ? updated : r))
-      } else {
-        await pb.collection('kratItems').delete(record.id)
-        setChestItems(prev => prev.filter(r => r.id !== record.id))
-      }
-      actions.collectLoot({ [typeId]: qty })
-      setChestQtys(prev => ({ ...prev, [typeId]: 1 }))
-    } catch(e) { console.error('withdrawItem:', e) }
-  }
-
-  // ─── Dépôt or ────────────────────────────────────────────────────────────────
-
-  async function depositGold(amount) {
-    try {
-      if (chestGoldRec) {
-        const updated = await pb.collection('kratItems').update(chestGoldRec.id, { qty: chestGold + amount })
-        setChestItems(prev => prev.map(r => r.id === chestGoldRec.id ? updated : r))
-      } else {
-        const created = await pb.collection('kratItems').create({
-          typeId: 'gold', qty: amount,
-          location: { city: cityId, roomId: 'coffre', buildingId },
-        })
-        setChestItems(prev => [...prev, created])
-      }
-      actions.applyEffects({ gold: -amount })
-    } catch(e) { console.error('depositGold:', e) }
-  }
-
-  // ─── Retrait or ──────────────────────────────────────────────────────────────
-
-  async function withdrawGold(amount) {
-    if (!chestGoldRec) return
-    const remaining = chestGold - amount
-    try {
-      if (remaining > 0) {
-        const updated = await pb.collection('kratItems').update(chestGoldRec.id, { qty: remaining })
-        setChestItems(prev => prev.map(r => r.id === chestGoldRec.id ? updated : r))
-      } else {
-        await pb.collection('kratItems').delete(chestGoldRec.id)
-        setChestItems(prev => prev.filter(r => r.id !== chestGoldRec.id))
-      }
-      // Or → gold du joueur, PAS l'inventaire
-      actions.applyEffects({ gold: amount })
-    } catch(e) { console.error('withdrawGold:', e) }
-  }
-
   // ─── Rendu ───────────────────────────────────────────────────────────────────
 
   return (
@@ -222,6 +145,7 @@ export default function CoffreDialog({ open, onClose, buildingId, isOwner }) {
       <DialogTitle>{isOwner ? '🗝️ Votre coffre' : '🔓 Forcer le coffre'}</DialogTitle>
 
       <DialogContent dividers>
+        <Alert severity="info" sx={{ mb: 2 }}>Les dépôts et retraits sont temporairement suspendus. Le contenu des coffres est conservé.</Alert>
 
         {!isOwner && forceResult === 'fail' && (
           <Box sx={{ textAlign: 'center', py: 3 }}>
@@ -251,7 +175,6 @@ export default function CoffreDialog({ open, onClose, buildingId, isOwner }) {
                         qty={getItemQty(slot.typeId)}
                         onQtyChange={q => setItemQtys(prev => ({ ...prev, [slot.typeId]: q }))}
                         actionLabel="→"
-                        onAction={depositItem}
                       />
                     )
                 }
@@ -260,7 +183,7 @@ export default function CoffreDialog({ open, onClose, buildingId, isOwner }) {
               {player.gold > 0 && (
                 <>
                   <Divider sx={{ my: 1 }} />
-                  <GoldRow available={player.gold} actionLabel="→" onAction={depositGold} />
+                  <GoldRow available={player.gold} actionLabel="→" />
                 </>
               )}
             </Grid>
@@ -279,7 +202,6 @@ export default function CoffreDialog({ open, onClose, buildingId, isOwner }) {
                         qty={getChestQty(r.typeId)}
                         onQtyChange={q => setChestQtys(prev => ({ ...prev, [r.typeId]: q }))}
                         actionLabel="←"
-                        onAction={withdrawItem}
                       />
                     )
                 }
@@ -288,7 +210,7 @@ export default function CoffreDialog({ open, onClose, buildingId, isOwner }) {
               {chestGold > 0 && (
                 <>
                   <Divider sx={{ my: 1 }} />
-                  <GoldRow available={chestGold} actionLabel="←" onAction={withdrawGold} />
+                  <GoldRow available={chestGold} actionLabel="←" />
                 </>
               )}
             </Grid>

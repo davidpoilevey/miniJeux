@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { Box, Typography, Paper } from '@mui/material'
-import { useKrat } from '../../context/KratContext'
+import { useKrat, isAliveNpc } from '../../context/KratContext'
 import { pb }       from '../../services/pb'
 import { getSpeedMultiplier } from '../../data/catalog'
 import { GridCell } from './GridCell'
@@ -78,7 +78,7 @@ const worldChars = all.filter(c => {
   const isNotInCity = !loc.city;
   const isNotInBuilding = !loc.building;
 
-  return hasPosition && isNotInCity && isNotInBuilding;
+  return hasPosition && isNotInCity && isNotInBuilding && (c._type !== 'npc' || isAliveNpc(c));
 });
 
       setOthers(worldChars)
@@ -115,10 +115,13 @@ const worldChars = all.filter(c => {
   }, [world.cities, others])
 
   const handleClick = (pos, cellData) => {
-    if (pos === playerPos) return
+    if (pos === playerPos && !cellData) return
     
     if (cellData?.type === 'city') return actions.enterCity(cellData.info.id)
-    if (cellData?.type === 'npc') return actions.startCombat(cellData.info) // Ta future feature !
+    if (cellData?.type === 'npc') {
+      if (actions.movePlayer(pos, undefined, { transition: true })) actions.startCombat(cellData.info)
+      return
+    }
     
     // Déplacement classique
     const [tc, tr] = pos.split(',').map(Number)

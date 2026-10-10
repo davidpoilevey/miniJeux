@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react'
-import { buildRooms, ROOM_DEFINITIONS, CITY_GEO, BUILDING_ASSETS, BUILDING_TYPE_IMAGES, ITEM_TYPES, NPC_SPAWN_TEMPLATES, ROLES, RANDOM_ENCOUNTERS } from '../data/catalog'
-import { pb } from '../services/pb'
+import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react'
+import { buildRooms, ROOM_DEFINITIONS, CITY_GEO, BUILDING_ASSETS, BUILDING_TYPE_IMAGES, ITEM_TYPES, NPC_SPAWN_TEMPLATES, ROLES, RANDOM_ENCOUNTERS, getSpeedMultiplier, getInventoryRoom } from '../data/catalog'
+import { pb, savePlayer, queuePlayerWrite, saveNpcLocation } from '../services/pb'
 
 // ─── Couleurs et max des jauges (côté catalog, jamais en base) ────────────────
 
@@ -13,6 +13,34 @@ const JAUGE_COLORS = {
 const JAUGE_MAX = { forme: 24, faim: 20, reputation: 20 }
 
 // ─── Helpers inventaire ───────────────────────────────────────────────────────
+
+function getMovementCost(state, position) {
+  const parse = value => typeof value === 'string' && /^\d+,\d+$/.test(value) ? value.split(',').map(Number) : null
+  const target = parse(position)
+  const start = parse(state.player.location.position)
+  const map = state.player.location.city ? state.city : state.world
+  if (!target || !start || target[0] >= map.width || target[1] >= map.height) return null
+  const distance = Math.abs(target[0] - start[0]) + Math.abs(target[1] - start[1])
+  return Math.round(distance * getSpeedMultiplier(state.player.inventaire ?? []) * 10) / 100
+}
+
+function addInventoryItems(inventaire, typeId, qty) {
+  const def = ITEM_TYPES[typeId]
+  if (!def || !Number.isInteger(qty) || qty <= 0) return inventaire
+  if (!def.stackable) return [...inventaire, { typeId, qty }]
+  const added = Math.min(qty, getInventoryRoom(inventaire, typeId))
+  if (!added) return inventaire
+  if (inventaire.some(slot => slot.typeId === typeId)) {
+    let remaining = added
+    return inventaire.map(slot => {
+      if (slot.typeId !== typeId || !remaining) return slot
+      const result = { ...slot, qty: slot.qty + remaining }
+      remaining = 0
+      return result
+    })
+  }
+  return [...inventaire, { typeId, qty: added }]
+}
 
 function removeOneFromSlots(inventaire, typeId) {
   const result = []
@@ -57,6 +85,14 @@ async function tryEncounter(zoneType, location, dispatch, pb, chance = 0.10) {
 
 // ─── Helpers DB ───────────────────────────────────────────────────────────────
 
+export function isAliveNpc(n) {
+  if (!n || n._type === 'player' || n.type === 'Joueur') return false
+  try {
+    const hp = typeof n.hp === 'string' ? JSON.parse(n.hp) : n.hp
+    return (hp?.current ?? 20) > 0
+  } catch { return false }
+}
+
 function normalizeNpc(n) {
   return {
     id:        n.id,
@@ -94,7 +130,7 @@ async function fetchBuilding(buildingId, roomId = 'entrance') {
     let inhabitants = []
     try {
       const raw = await pb.collection('kratNpcs').getFullList({ filter: `location.building="${buildingId}"`, requestKey: null })
-      inhabitants = raw.filter(n => !n.groupeChef)
+      inhabitants = raw.filter(n => !n.groupeChef && isAliveNpc(n))
     } catch { /* filtre JSON non supporté — skip */ }
     const assets = BUILDING_ASSETS[br.buildingId] ?? {}
     const rooms = buildRooms(br.roomConfig)
@@ -299,20 +335,7 @@ function kratReducer(state, action) {
 
     case 'BUY_ITEM': {
       const { itemKey, price, qty = 1 } = action
-      const itemDef    = ITEM_TYPES[itemKey]
-      const inventaire = state.player.inventaire ?? []
-      const existing   = inventaire.find(i => i.typeId === itemKey)
-      const max        = itemDef?.maxStack ?? 99
-      let newInventaire
-      if (itemDef?.stackable && existing) {
-        newInventaire = inventaire.map(i =>
-          i.typeId === itemKey ? { ...i, qty: Math.min(i.qty + qty, max) } : i
-        )
-      } else if (itemDef?.stackable) {
-        newInventaire = [...inventaire, { typeId: itemKey, qty: Math.min(qty, max) }]
-      } else {
-        newInventaire = [...inventaire, { typeId: itemKey, qty: 1 }]
-      }
+      const newInventaire = addInventoryItems(state.player.inventaire ?? [], itemKey, qty)
       return {
         ...state,
         player: { ...state.player, gold: state.player.gold - price, inventaire: newInventaire },
@@ -322,27 +345,21 @@ function kratReducer(state, action) {
     case 'TRADE_ITEM':
       return { ...state, player: { ...state.player, gold: action.gold, inventaire: action.inventaire } }
 
+    case 'SET_PLAYER_RESOURCES':
+      return { ...state, player: { ...state.player, ...action.changes } }
+
     case 'SET_INVENTAIRE':
       return { ...state, player: { ...state.player, inventaire: action.inventaire } }
 
     case 'USE_ITEM':
-      return { ...state, player: { ...state.player, inventaire: action.inventaire, jauges: action.jauges, gold: action.gold } }
+      return { ...state, player: { ...state.player, inventaire: action.inventaire, jauges: action.jauges, gold: action.gold, stats: action.stats ?? state.player.stats } }
 
     case 'APPLY_EFFECTS': {
       const { gold = 0, forme = 0, faim = 0, reputation = 0, item = null, pointsDivins = 0 } = action
       const j     = state.player.jauges
       const clamp = (v, max) => Math.max(0, Math.min(max, v))
       let inventaire = state.player.inventaire ?? []
-      if (item) {
-        const itemDef  = ITEM_TYPES[item]
-        const existing = inventaire.find(i => i.typeId === item)
-        if (itemDef?.stackable && existing) {
-          const max = itemDef.maxStack ?? 99
-          inventaire = inventaire.map(i => i.typeId === item ? { ...i, qty: Math.min(i.qty + 1, max) } : i)
-        } else {
-          inventaire = [...inventaire, { typeId: item, qty: 1 }]
-        }
-      }
+      if (item) inventaire = addInventoryItems(inventaire, item, 1)
       return {
         ...state,
         player: {
@@ -487,11 +504,17 @@ const KratContext = createContext(null)
 
 function saveLocation(pbId, location, jauges) {
   if (!pbId) return
-  pb.collection('kratPlayers').update(pbId, { location, jauges }).catch(() => {})
+  savePlayer(pbId, { location, jauges }).catch(() => {})
 }
 
 export function KratProvider({ children, pbId, onAuthError }) {
-  const [state, dispatch] = useReducer(kratReducer, initialState)
+  const [state, reducerDispatch] = useReducer(kratReducer, initialState)
+  const stateRef = useRef(state)
+  stateRef.current = state
+  function dispatch(action) {
+    stateRef.current = kratReducer(stateRef.current, action)
+    reducerDispatch(action)
+  }
 
   // ── Chargement initial depuis PocketBase ───────────────────────────────────
   useEffect(() => {
@@ -557,15 +580,46 @@ export function KratProvider({ children, pbId, onAuthError }) {
     init()
   }, [pbId])
 
+  const playerTransactionRef = useRef(false)
+
   // ── Actions ────────────────────────────────────────────────────────────────
+
+  function syncGroupLocation(location) {
+    if (!stateRef.current.groupe.length) return
+    const groupe = stateRef.current.groupe.map(member => {
+      const loc = { ...location }
+      saveNpcLocation(member.id, loc).catch(() => {})
+      return { ...member, location: loc }
+    })
+    dispatch({ type: 'SET_GROUPE', groupe })
+  }
+
+  function arrestPlayer() {
+    const snapshot = stateRef.current
+    if (!snapshot.player.location.city) return false
+    const mairie = snapshot.city.buildings.find(b => b.type === 'mairie')
+    if (!mairie) return false
+    const stats = { ...snapshot.player.stats, fugitive: false }
+    dispatch({ type: 'SET_PLAYER_STATS', stats })
+    dispatch({ type: 'ENTER_BUILDING', buildingId: mairie.id, roomId: 'prison' })
+    const location = { position: null, city: snapshot.city.id, building: mairie.id, roomId: 'prison' }
+    savePlayer(snapshot.player.id, { location, jauges: snapshot.player.jauges, stats }).catch(() => {})
+    syncGroupLocation(location)
+    fetchBuilding(mairie.id, 'prison').then(building => {
+      if (building) dispatch({ type: 'SET_BUILDING', building })
+      else dispatch({ type: 'SET_LOADING', value: false })
+    })
+    return true
+  }
 
   const actions = {
     navigateTo: (view) => dispatch({ type: 'NAVIGATE', view }),
 
     selectRoom: (roomId) => {
       dispatch({ type: 'SELECT_ROOM', roomId })
-      const loc = { ...state.player.location, roomId }
-      saveLocation(state.player.id, loc, state.player.jauges)
+      const loc = { ...stateRef.current.player.location, roomId }
+      saveLocation(stateRef.current.player.id, loc, stateRef.current.player.jauges)
+      syncGroupLocation(loc)
     },
 
     updateJauge:       (jauge, current) => dispatch({ type: 'UPDATE_JAUGE',       jauge, current }),
@@ -573,80 +627,144 @@ export function KratProvider({ children, pbId, onAuthError }) {
     updateCompetence:  (key, value)     => dispatch({ type: 'UPDATE_COMPETENCE',   key, value    }),
     appendCombatLog:   (entry)          => dispatch({ type: 'COMBAT_LOG_APPEND',   entry         }),
     startCombat: (pnj) => {
-      const enemies = Array.isArray(pnj) ? pnj : (pnj ? [pnj] : [])
+      if (playerTransactionRef.current) return
+      const enemies = (Array.isArray(pnj) ? pnj : (pnj ? [pnj] : [])).filter(n => {
+        if (!isAliveNpc(n)) return false
+        let loc
+        try { loc = typeof n.location === 'string' ? JSON.parse(n.location) : n.location } catch { return false }
+        const here = stateRef.current.player.location
+        if (!loc) return false
+        return (loc.city || null) === (here.city || null)
+          && (loc.building || null) === (here.building || null)
+          && (!loc.roomId || loc.roomId === here.roomId)
+          && (here.building || loc.position === here.position)
+      })
+      if (!enemies.length) return
       dispatch({ type: 'SET_ACTIVE_PNJ', pnj: enemies })
       dispatch({ type: 'NAVIGATE', view: 'combat' })
     },
 
     exitBattle: () => {
       dispatch({ type: 'SET_ACTIVE_PNJ', pnj: null })
-      const loc  = state.player.location
+      const loc  = stateRef.current.player.location
       const view = loc.building ? 'building' : loc.city ? 'city' : 'worldmap'
       dispatch({ type: 'NAVIGATE', view })
     },
+    completeVictory: async (enemies) => {
+      if (playerTransactionRef.current) throw new Error('Une action est déjà en cours.')
+      playerTransactionRef.current = true
+      const playerId = stateRef.current.player.id
+      try {
+        return await queuePlayerWrite(playerId, async () => {
+          const defeated = []
+          for (const enemy of enemies) {
+            const record = await pb.collection('kratNpcs').getOne(enemy.id, { requestKey: null })
+            if (isAliveNpc(record)) defeated.push(record)
+          }
+          if (!defeated.length) return { gold: 0, items: {}, count: 0 }
+          let lootGold = 0
+          const items = {}
+          for (const enemy of defeated) {
+            const hp = typeof enemy.hp === 'string' ? JSON.parse(enemy.hp) : enemy.hp
+            for (const [key, qty] of Object.entries(hp?.loot ?? {})) {
+              if (!Number.isInteger(qty) || qty <= 0) continue
+              if (key === 'gold') lootGold += qty
+              else if (ITEM_TYPES[key]) items[key] = (items[key] ?? 0) + qty
+            }
+          }
+          const gold = Math.floor(Math.random() * 5) + defeated.length + lootGold
+          const reward = { type: 'APPLY_EFFECTS', gold, reputation: 1 }
+          const rewarded = kratReducer(stateRef.current, reward).player
+          let inventaire = rewarded.inventaire ?? []
+          for (const [key, qty] of Object.entries(items)) inventaire = addInventoryItems(inventaire, key, qty)
+          const batch = pb.createBatch()
+          for (const enemy of defeated) {
+            const hp = typeof enemy.hp === 'string' ? JSON.parse(enemy.hp) : enemy.hp
+            batch.collection('kratNpcs').update(enemy.id, { hp: { ...hp, current: 0, loot: {} } })
+          }
+          const changes = { gold: rewarded.gold, jauges: rewarded.jauges, inventaire }
+          batch.collection('kratPlayers').update(playerId, changes)
+          await batch.send({ requestKey: null })
+          dispatch({ type: 'SET_PLAYER_RESOURCES', changes })
+          return { gold, items, count: defeated.length }
+        })
+      } finally {
+        playerTransactionRef.current = false
+      }
+    },
+
     collectLoot: (loot) => {
+      if (playerTransactionRef.current) return
       // loot = { typeId: qty, ... } — le gold est déjà géré par applyEffects
-      let inventaire = [...(state.player.inventaire ?? [])]
+      let inventaire = [...(stateRef.current.player.inventaire ?? [])]
       Object.entries(loot).forEach(([typeId, qty]) => {
-        const itemDef = ITEM_TYPES[typeId]
-        if (!itemDef || qty <= 0) return
-        const existing = inventaire.find(s => s.typeId === typeId)
-        if (itemDef.stackable && existing) {
-          const max = itemDef.maxStack ?? 99
-          inventaire = inventaire.map(s =>
-            s.typeId === typeId ? { ...s, qty: Math.min(s.qty + qty, max) } : s
-          )
-        } else {
-          inventaire.push({ typeId, qty })
-        }
+        inventaire = addInventoryItems(inventaire, typeId, qty)
       })
       dispatch({ type: 'SET_INVENTAIRE', inventaire })
-      pb.collection('kratPlayers').update(state.player.id, { inventaire }).catch(() => {})
+      savePlayer(stateRef.current.player.id, { inventaire }).catch(() => {})
     },
 
     dropItem: (typeId) => {
-      const inventaire = removeOneFromSlots(state.player.inventaire ?? [], typeId)
+      if (playerTransactionRef.current) return
+      const inventaire = removeOneFromSlots(stateRef.current.player.inventaire ?? [], typeId)
       dispatch({ type: 'SET_INVENTAIRE', inventaire })
-      pb.collection('kratPlayers').update(state.player.id, { inventaire }).catch(() => {})
+      savePlayer(stateRef.current.player.id, { inventaire }).catch(() => {})
     },
 
     dropItems: (typeId, qty = 1) => {
-      let inventaire = state.player.inventaire ?? []
+      if (playerTransactionRef.current) return
+      let inventaire = stateRef.current.player.inventaire ?? []
       for (let i = 0; i < qty; i++) inventaire = removeOneFromSlots(inventaire, typeId)
       dispatch({ type: 'SET_INVENTAIRE', inventaire })
-      pb.collection('kratPlayers').update(state.player.id, { inventaire }).catch(() => {})
+      savePlayer(stateRef.current.player.id, { inventaire }).catch(() => {})
     },
 
     useItem: (typeId) => {
+      if (playerTransactionRef.current) return
+      const player = stateRef.current.player
       const def = ITEM_TYPES[typeId]
-      if (!def) return
+      if (!def || !(player.inventaire ?? []).some(s => s.typeId === typeId && s.qty > 0)) return
       const effects = def.effects ?? {}
-      const j       = state.player.jauges
-      const clamp   = (v, max) => Math.max(0, Math.min(max, v))
-      const newJauges = {
-        ...j,
-        ...(effects.forme      != null ? { forme:      { ...j.forme,      current: clamp(j.forme.current      + effects.forme,      j.forme.max)      } } : {}),
-        ...(effects.faim       != null ? { faim:       { ...j.faim,       current: clamp(j.faim.current       + effects.faim,       j.faim.max)       } } : {}),
-        ...(effects.reputation != null ? { reputation: { ...j.reputation, current: clamp(j.reputation.current + effects.reputation, j.reputation.max) } } : {}),
+      const clamp = (v, max) => Math.max(0, Math.min(max, v))
+      const jauges = { ...player.jauges }
+      for (const key of ['forme', 'faim', 'reputation']) {
+        if (Number.isFinite(effects[key])) {
+          jauges[key] = { ...jauges[key], current: clamp(jauges[key].current + effects[key], jauges[key].max) }
+        }
       }
-      const newGold    = state.player.gold + (effects.gold ?? 0)
-      const inventaire = removeOneFromSlots(state.player.inventaire ?? [], typeId)
-      dispatch({ type: 'USE_ITEM', inventaire, jauges: newJauges, gold: newGold })
-      pb.collection('kratPlayers').update(state.player.id, { inventaire, jauges: newJauges, gold: newGold }).catch(() => {})
+      let stats = { ...player.stats }
+      if (effects.competence) {
+        stats.competences = { ...stats.competences, [effects.competence]: 1 }
+      }
+      for (const key of ['force', 'intelligence', 'charisme', 'perception']) {
+        if (Number.isFinite(effects[key])) stats[key] = (stats[key] ?? 0) + effects[key]
+      }
+      if (Number.isFinite(effects.pointsDivins)) {
+        const pd = stats.pointsDivins ?? { current: 0, max: 20 }
+        stats.pointsDivins = { ...pd, current: clamp(pd.current + effects.pointsDivins, pd.max) }
+      }
+      const gold = player.gold + (Number.isFinite(effects.gold) ? effects.gold : 0)
+      const inventaire = removeOneFromSlots(player.inventaire ?? [], typeId)
+      dispatch({ type: 'USE_ITEM', inventaire, jauges, gold, stats })
+      savePlayer(player.id, { inventaire, jauges, gold, stats }).catch(() => {})
     },
 
     sellItem: (typeId) => {
+      if (playerTransactionRef.current) return
       const def = ITEM_TYPES[typeId]
       if (!def?.prix) return
       const sellPrice  = Math.max(1, Math.floor(def.prix * 0.5))
-      const newGold    = state.player.gold + sellPrice
-      const inventaire = removeOneFromSlots(state.player.inventaire ?? [], typeId)
+      const newGold    = stateRef.current.player.gold + sellPrice
+      const inventaire = removeOneFromSlots(stateRef.current.player.inventaire ?? [], typeId)
       dispatch({ type: 'TRADE_ITEM', inventaire, gold: newGold })
-      pb.collection('kratPlayers').update(state.player.id, { inventaire, gold: newGold }).catch(() => {})
+      savePlayer(stateRef.current.player.id, { inventaire, gold: newGold }).catch(() => {})
     },
 
     tradeItem: (typeIdToGet, tradeForTypeId, goldCost = 0) => {
-      const inventaire = state.player.inventaire ?? []
+      if (playerTransactionRef.current) return
+      const inventaire = stateRef.current.player.inventaire ?? []
+      if (!Number.isFinite(goldCost) || goldCost < 0 || stateRef.current.player.gold < goldCost) return false
+      if (!inventaire.some(slot => slot.typeId === tradeForTypeId && slot.qty > 0)) return false
       let newInventaire = []
       let removed = false
       for (const slot of inventaire) {
@@ -657,6 +775,7 @@ export function KratProvider({ children, pbId, onAuthError }) {
           newInventaire.push(slot)
         }
       }
+      if (getInventoryRoom(newInventaire, typeIdToGet) < 1) return false
       const getItemDef = ITEM_TYPES[typeIdToGet]
       const existing = newInventaire.find(i => i.typeId === typeIdToGet)
       if (getItemDef?.stackable && existing) {
@@ -667,32 +786,24 @@ export function KratProvider({ children, pbId, onAuthError }) {
       } else {
         newInventaire.push({ typeId: typeIdToGet, qty: 1 })
       }
-      const newGold = state.player.gold - goldCost
+      const newGold = stateRef.current.player.gold - goldCost
       dispatch({ type: 'TRADE_ITEM', inventaire: newInventaire, gold: newGold })
-      pb.collection('kratPlayers').update(state.player.id, { gold: newGold, inventaire: newInventaire }).catch(() => {})
+      savePlayer(stateRef.current.player.id, { gold: newGold, inventaire: newInventaire }).catch(() => {})
+      return true
     },
 
     buyItem: (itemKey, price, qty = 1) => {
-      const itemDef    = ITEM_TYPES[itemKey]
-      const inventaire = state.player.inventaire ?? []
-      const existing   = inventaire.find(i => i.typeId === itemKey)
-      const max        = itemDef?.maxStack ?? 99
-      let newInventaire
-      if (itemDef?.stackable && existing) {
-        newInventaire = inventaire.map(i =>
-          i.typeId === itemKey ? { ...i, qty: Math.min(i.qty + qty, max) } : i
-        )
-      } else if (itemDef?.stackable) {
-        newInventaire = [...inventaire, { typeId: itemKey, qty: Math.min(qty, max) }]
-      } else {
-        newInventaire = [...inventaire, { typeId: itemKey, qty: 1 }]
-      }
-      const totalPrice = price * (itemDef?.stackable ? qty : 1)
-      dispatch({ type: 'BUY_ITEM', itemKey, price: totalPrice, qty })
-      pb.collection('kratPlayers').update(state.player.id, {
-        gold:       state.player.gold - totalPrice,
-        inventaire: newInventaire,
-      }).catch(() => {})
+      if (playerTransactionRef.current) return
+      const itemDef = ITEM_TYPES[itemKey]
+      const player = stateRef.current.player
+      const actualQty = itemDef?.stackable ? qty : 1
+      if (!itemDef || !Number.isFinite(price) || price < 0 || !Number.isInteger(actualQty) || actualQty <= 0) return false
+      if (getInventoryRoom(player.inventaire ?? [], itemKey) < actualQty) return false
+      const totalPrice = price * actualQty
+      if (player.gold < totalPrice) return false
+      dispatch({ type: 'BUY_ITEM', itemKey, price: totalPrice, qty: actualQty })
+      const boughtPlayer = stateRef.current.player
+      savePlayer(boughtPlayer.id, { gold: boughtPlayer.gold, inventaire: boughtPlayer.inventaire }).catch(() => {})
 
       // Fiscalité municipale : la part du prix catalogue au-delà de 1× (taxMultiplier du maire) revient au budget de la ville.
       // Calculée sur le prix catalogue, indépendamment d'un éventuel marchandage négocié par le joueur.
@@ -702,10 +813,11 @@ export function KratProvider({ children, pbId, onAuthError }) {
         const taxRevenue = taxUnit * (itemDef.stackable ? qty : 1)
         if (taxRevenue > 0) actions.addCityBudget(taxRevenue)
       }
+      return true
     },
 
     becomeMayor: () => {
-      const mayorName = state.player.name
+      const mayorName = stateRef.current.player.name
       dispatch({ type: 'SET_CITY_MAYOR', mayor: mayorName })
       pb.collection('kratCities')
         .getFullList({ filter: `cityId="${state.city.id}"` })
@@ -742,86 +854,66 @@ export function KratProvider({ children, pbId, onAuthError }) {
     },
 
     applyEffects: ({ gold = 0, forme = 0, faim = 0, reputation = 0, item = null, pointsDivins = 0 } = {}) => {
-      dispatch({ type: 'APPLY_EFFECTS', gold, forme, faim, reputation, item, pointsDivins })
-      const j     = state.player.jauges
-      const clamp = (v, max) => Math.max(0, Math.min(max, v))
-      const newGold   = state.player.gold + gold
-      const newJauges = {
-        ...j,
-        forme:      { ...j.forme,      current: clamp(j.forme.current      + forme,      j.forme.max)      },
-        faim:       { ...j.faim,       current: clamp(j.faim.current       + faim,       j.faim.max)       },
-        reputation: { ...j.reputation, current: clamp(j.reputation.current + reputation, j.reputation.max) },
-      }
-      const update = { gold: newGold, jauges: newJauges }
-      if (item) {
-        const inventaire = state.player.inventaire ?? []
-        const itemDef    = ITEM_TYPES[item]
-        const existing   = inventaire.find(i => i.typeId === item)
-        update.inventaire = itemDef?.stackable && existing
-          ? inventaire.map(i => i.typeId === item ? { ...i, qty: i.qty + 1 } : i)
-          : [...inventaire, { typeId: item, qty: 1 }]
-      }
-      if (pointsDivins !== 0) {
-        const pd = state.player.stats.pointsDivins ?? { current: 0, max: 20 }
-        const newPd = { ...pd, current: Math.max(0, Math.min(pd.max, pd.current + pointsDivins)) }
-        update.stats = { ...state.player.stats, pointsDivins: newPd }
-      }
-      pb.collection('kratPlayers').update(state.player.id, update).catch(() => {})
+      if (playerTransactionRef.current) return
+      if (![gold, forme, faim, reputation, pointsDivins].every(Number.isFinite)) return
+      const effect = { type: 'APPLY_EFFECTS', gold, forme, faim, reputation, item, pointsDivins }
+      dispatch(effect)
+      const player = stateRef.current.player
+      const update = { gold: player.gold, jauges: player.jauges }
+      if (item) update.inventaire = player.inventaire
+      if (pointsDivins !== 0) update.stats = player.stats
+      return savePlayer(player.id, update).catch(() => {})
     },
 
     boostStat: (stat) => {
-      const pd = state.player.stats.pointsDivins ?? { current: 0, max: 20 }
+      if (!['force', 'intelligence', 'charisme'].includes(stat)) return
+      const pd = stateRef.current.player.stats.pointsDivins ?? { current: 0, max: 20 }
       if (pd.current < 1) return
-      const newPd    = { ...pd, current: pd.current - state.player.stats[stat] }
-      const newStats = { ...state.player.stats, [stat]: (state.player.stats[stat] ?? 0) + 1, pointsDivins: newPd }
+      const newPd    = { ...pd, current: pd.current - 1 }
+      const newStats = { ...stateRef.current.player.stats, [stat]: (stateRef.current.player.stats[stat] ?? 0) + 1, pointsDivins: newPd }
       dispatch({ type: 'SET_PLAYER_STATS', stats: newStats })
-      pb.collection('kratPlayers').update(state.player.id, { stats: newStats }).catch(() => {})
+      savePlayer(stateRef.current.player.id, { stats: newStats }).catch(() => {})
     },
 
     acquireCompetence: (key) => {
-      const comp  = state.player.stats.competences ?? {}
+      const comp  = stateRef.current.player.stats.competences ?? {}
       const n     = Object.keys(comp).length
       const cost  = n === 0 ? 0 : n * n
-      const pd    = state.player.stats.pointsDivins ?? { current: 0, max: 20 }
+      const pd    = stateRef.current.player.stats.pointsDivins ?? { current: 0, max: 20 }
       if (pd.current < cost) return
       const newPd    = { ...pd, current: pd.current - cost }
-      const newStats = { ...state.player.stats, competences: { ...comp, [key]: 1 }, pointsDivins: newPd }
+      const newStats = { ...stateRef.current.player.stats, competences: { ...comp, [key]: 1 }, pointsDivins: newPd }
       dispatch({ type: 'SET_PLAYER_STATS', stats: newStats })
-      pb.collection('kratPlayers').update(state.player.id, { stats: newStats }).catch(() => {})
+      savePlayer(stateRef.current.player.id, { stats: newStats }).catch(() => {})
     },
 
     updateAvatar: (url) => {
       dispatch({ type: 'SET_AVATAR_URL', url })
-      pb.collection('kratPlayers').update(state.player.id, { avatarUrl: url }).catch(() => {})
+      savePlayer(stateRef.current.player.id, { avatarUrl: url }).catch(() => {})
     },
 
-    doWork: (act) => {
-      const { salary = 0, forme = 0, faim = 0, reputation = 0 } = act
+    doWork: ({ salary = 0, forme = 0, faim = 0, reputation = 0 }) => {
+      if (playerTransactionRef.current) return
       dispatch({ type: 'DO_WORK', salary, forme, faim, reputation })
-      const j     = state.player.jauges
-      const clamp = (v, max) => Math.max(0, Math.min(max, v))
-      const newJauges = {
-        ...j,
-        forme:      { ...j.forme,      current: clamp(j.forme.current      + forme,      j.forme.max)      },
-        faim:       { ...j.faim,       current: clamp(j.faim.current       + faim,       j.faim.max)       },
-        reputation: { ...j.reputation, current: clamp(j.reputation.current + reputation, j.reputation.max) },
-      }
-      pb.collection('kratPlayers').update(state.player.id, { gold: state.player.gold + salary, jauges: newJauges }).catch(() => {})
+      const player = stateRef.current.player
+      savePlayer(player.id, { gold: player.gold, jauges: player.jauges }).catch(() => {})
     },
 
     hireNpc: (npc, cost) => {
-      if (state.player.gold < cost) return
-      const memberLoc = { ...(npc.location ?? {}), position: state.player.location.position }
+      if (playerTransactionRef.current) return
+      if (stateRef.current.player.gold < cost) return
+      const memberLoc = { ...(npc.location ?? {}), position: stateRef.current.player.location.position }
       const npcWithLoc = { ...npc, location: memberLoc }
       dispatch({ type: 'HIRE_NPC', npc: npcWithLoc, cost })
-      pb.collection('kratNpcs').update(npc.id, { groupeChef: state.player.id, location: memberLoc }).catch(() => {})
-      pb.collection('kratPlayers').update(state.player.id, { gold: state.player.gold - cost }).catch(() => {})
+      pb.collection('kratNpcs').update(npc.id, { groupeChef: stateRef.current.player.id, location: memberLoc }).catch(() => {})
+      savePlayer(stateRef.current.player.id, { gold: stateRef.current.player.gold }).catch(() => {})
     },
 
     spawnNpc: async (template) => {
+      if (playerTransactionRef.current) return 'busy'
       const cost = ROLES[template.role]?.cost ?? 0
-      if (state.player.gold < cost) return 'too_poor'
-      const loc  = state.player.location
+      if (stateRef.current.player.gold < cost) return 'too_poor'
+      const loc  = stateRef.current.player.location
       const data = {
         name:       template.name,
         role:       template.role,
@@ -831,83 +923,92 @@ export function KratProvider({ children, pbId, onAuthError }) {
         hp:         template.hp        ?? { current: 10, max: 10 },
         shop:       null,
         mission:    null,
-        groupeChef: state.player.id,
+        groupeChef: stateRef.current.player.id,
         location:   loc,
       }
       try {
         const created = await pb.collection('kratNpcs').create(data)
         const npc = normalizeNpc(created)
         dispatch({ type: 'HIRE_NPC', npc, cost })
-        pb.collection('kratPlayers').update(state.player.id, { gold: state.player.gold - cost }).catch(() => {})
+        savePlayer(stateRef.current.player.id, { gold: stateRef.current.player.gold }).catch(() => {})
         return 'hired'
       } catch { return 'error' }
     },
 
     buildHouse: async () => {
-      const inv = state.player.inventaire ?? []
-      const plancheSlot = inv.find(i => i.typeId === 'planche')
-      const ferSlot     = inv.find(i => i.typeId === 'fer_brut')
-      if ((plancheSlot?.qty ?? 0) < 10 || (ferSlot?.qty ?? 0) < 4) return
-
-      // Capturer les valeurs stable avant tout dispatch asynchrone
-      const buildingId = `maison_${state.player.id}`
-      const playerId   = state.player.id
-      const playerName = state.player.name
-      const position   = state.player.location.position
-      const cityId     = state.city.id
-      const jauges     = state.player.jauges
-
-      // Vérification d'unicité globale (fail silencieux si collection injoignable)
+      if (playerTransactionRef.current) return 'busy'
+      const snapshot = stateRef.current
+      const player = snapshot.player
+      if (snapshot.currentView !== 'city' || !player.location.position) return 'invalid'
+      playerTransactionRef.current = true
+      const buildingId = `maison_${player.id}`
+      const cityId = snapshot.city.id
+      const position = player.location.position
       try {
-        const existing = await pb.collection('kratBuildings').getFullList({
-          filter: `buildingId="${buildingId}"`, requestKey: null,
+        await queuePlayerWrite(player.id, async () => {
+          const existing = await pb.collection('kratBuildings').getFullList({
+            filter: pb.filter('buildingId = {:id}', { id: buildingId }), requestKey: null,
+          })
+          if (existing.length) throw new Error('Vous possédez déjà une maison.')
+          const record = await pb.collection('kratPlayers').getOne(player.id, { requestKey: null })
+          const inv = record.inventaire ?? []
+          if ((inv.find(i => i.typeId === 'planche')?.qty ?? 0) < 10 || (inv.find(i => i.typeId === 'fer_brut')?.qty ?? 0) < 4) {
+            throw new Error('Matériaux insuffisants.')
+          }
+          let inventaire = inv
+          for (let i = 0; i < 10; i++) inventaire = removeOneFromSlots(inventaire, 'planche')
+          for (let i = 0; i < 4; i++) inventaire = removeOneFromSlots(inventaire, 'fer_brut')
+          const batch = pb.createBatch()
+          // ID déterministe : deux demandes de construction ne peuvent pas créer deux maisons.
+          batch.collection('kratBuildings').create({
+            id: player.id, buildingId, type: 'maison', cityId, position,
+            roomConfig: 'entrance_bed', name: `Maison de ${player.name}`, ownerId: player.id,
+          })
+          batch.collection('kratPlayers').update(player.id, { inventaire })
+          await batch.send({ requestKey: null })
+          dispatch({ type: 'SET_INVENTAIRE', inventaire })
         })
-        if (existing.length > 0) return
-      } catch { return }
-
-      // Consommer les matériaux
-      let inventaire = inv
-      for (let i = 0; i < 10; i++) inventaire = removeOneFromSlots(inventaire, 'planche')
-      for (let i = 0; i < 4;  i++) inventaire = removeOneFromSlots(inventaire, 'fer_brut')
-      dispatch({ type: 'SET_INVENTAIRE', inventaire })
-      pb.collection('kratPlayers').update(playerId, { inventaire }).catch(() => {})
-
-      // Créer le bâtiment — bloquant (on ne peut pas continuer sans lui)
-      try {
-        await pb.collection('kratBuildings').create({
-          buildingId, type: 'maison', cityId, position,
-          roomConfig: 'entrance_bed',
-          name:       `Maison de ${playerName}`,
-          ownerId:    playerId,
-        })
-      } catch(e) { console.error('buildHouse: kratBuildings.create failed', e); return }
-
-      // Le coffre sera créé à la volée dans kratItems au premier dépôt (roomId='coffre')
-
-      // Mettre à jour la carte
-      dispatch({ type: 'ADD_CITY_BUILDING', building: { id: buildingId, position, type: 'maison', ownerId: playerId } })
-
-      // Entrer dans la maison directement
+      } catch (error) {
+        console.error('Construction impossible :', error)
+        return 'error'
+      } finally {
+        playerTransactionRef.current = false
+      }
+      dispatch({ type: 'ADD_CITY_BUILDING', building: { id: buildingId, position, type: 'maison', ownerId: player.id } })
       const newLoc = { position: null, city: cityId, building: buildingId, roomId: 'entrance' }
       dispatch({ type: 'ENTER_BUILDING', buildingId })
-      saveLocation(playerId, newLoc, jauges)
-
+      saveLocation(player.id, newLoc, stateRef.current.player.jauges)
+      syncGroupLocation(newLoc)
       const bldg = await fetchBuilding(buildingId)
-      // Forcer ownerId dans le state même si PB n'a pas le champ
-      if (bldg) dispatch({ type: 'SET_BUILDING', building: { ...bldg, ownerId: playerId } })
-      else      dispatch({ type: 'SET_LOADING', value: false })
+      if (bldg) dispatch({ type: 'SET_BUILDING', building: { ...bldg, ownerId: player.id } })
+      else dispatch({ type: 'SET_LOADING', value: false })
+      return 'built'
     },
 
     escapeFromPrison: (formeCost, goldCost = 0) => {
-      const forme = state.player.jauges.forme
+      const player = stateRef.current.player
+      const forme = player.jauges.forme
       const newForme = Math.max(0, forme.current - formeCost)
-      const newGold  = state.player.gold + goldCost
-      const newJauges = { ...state.player.jauges, forme: { ...forme, current: newForme } }
-      const newLoc = { ...state.player.location, roomId: 'entrance' }
+      const newGold = player.gold + goldCost
+      const newJauges = { ...player.jauges, forme: { ...forme, current: newForme } }
+      const newLoc = { ...player.location, roomId: 'entrance' }
+      const stats = { ...player.stats, fugitive: true }
       dispatch({ type: 'UPDATE_JAUGE', jauge: 'forme', current: newForme })
       if (goldCost !== 0) dispatch({ type: 'APPLY_EFFECTS', gold: goldCost })
+      dispatch({ type: 'SET_PLAYER_STATS', stats })
       dispatch({ type: 'SELECT_ROOM', roomId: 'entrance' })
-      pb.collection('kratPlayers').update(state.player.id, { gold: newGold, jauges: newJauges, location: newLoc }).catch(() => {})
+      savePlayer(player.id, { gold: newGold, jauges: newJauges, location: newLoc, stats }).catch(() => {})
+      syncGroupLocation(newLoc)
+    },
+
+    checkForPolice: ({ discreet = false } = {}) => {
+      const snapshot = stateRef.current
+      const player = snapshot.player
+      if (!player.stats.fugitive || player.jauges.reputation.current > 0 || !player.location.city) return false
+      const comp = player.stats.competences ?? {}
+      const exhausted = player.jauges.forme.current < player.jauges.forme.max / 4
+      const chance = Math.max(0.03, 0.15 + (exhausted ? 0.05 : 0) - (comp.discretion ? 0.05 : 0) - (comp.survie ? 0.02 : 0)) * (discreet ? 0.5 : 1)
+      return Math.random() < chance && arrestPlayer()
     },
 
     fireNpc: (npcId) => {
@@ -915,32 +1016,33 @@ export function KratProvider({ children, pbId, onAuthError }) {
       pb.collection('kratNpcs').update(npcId, { groupeChef: null, action:'Embaucher' }).catch(() => {})
     },
 
-    movePlayer: (position, cost, options = {}) => {
-      const { discreet = false } = options
-      const actualCost = discreet ? cost * 2 : cost
+    movePlayer: (position, _cost, options = {}) => {
+      if (playerTransactionRef.current) return false
+      const snapshot = stateRef.current
+      const retreat = options.retreat && snapshot.currentView === 'combat'
+      const cost = getMovementCost(snapshot, position)
+      if (cost === null || snapshot.player.location.building) return false
+      const actualCost = retreat ? 0 : cost * (options.discreet ? 2 : 1)
+      if (snapshot.player.jauges.forme.current < actualCost) return false
       dispatch({ type: 'PLAYER_MOVE', position, cost: actualCost })
-      const forme    = state.player.jauges.forme
-      const newForme = Math.round((forme.current - actualCost) * 10) / 10
-      const newJauges = { ...state.player.jauges, forme: { ...forme, current: newForme } }
-      const newLoc   = { ...state.player.location, position }
-      saveLocation(state.player.id, newLoc, newJauges)
-      if (state.groupe?.length > 0) {
-        const updatedGroupe = state.groupe.map(m => {
-          const loc = { ...(m.location ?? {}), position }
-          pb.collection('kratNpcs').update(m.id, { location: loc }).catch(() => {})
-          return { ...m, location: loc }
-        })
-        dispatch({ type: 'SET_GROUPE', groupe: updatedGroupe })
+      const player = stateRef.current.player
+      saveLocation(player.id, player.location, player.jauges)
+      syncGroupLocation(player.location)
+      if (!retreat && cost > 0 && actions.checkForPolice(options)) return false
+      if (!retreat && !options.transition) {
+        const zoneType = player.location.city ? 'city' : 'worldmap'
+        tryEncounter(zoneType, player.location, dispatch, pb, options.discreet ? 0.01 : 0.10)
       }
-      const zoneType = state.player.location.city ? 'city' : 'worldmap'
-      tryEncounter(zoneType, newLoc, dispatch, pb, discreet ? 0.01 : 0.10)
+      return true
     },
 
     exitBuilding: async () => {
       dispatch({ type: 'EXIT_BUILDING' })
       const b      = state.city.buildings.find(b => b.id === state.building.id)
       const newLoc = { position: b?.position ?? '0,0', city: state.city.id, building: null, roomId: null }
-      saveLocation(state.player.id, newLoc, state.player.jauges)
+      saveLocation(stateRef.current.player.id, newLoc, stateRef.current.player.jauges)
+      syncGroupLocation(newLoc)
+      if (actions.checkForPolice()) return
       const [encountered, city] = await Promise.all([
         tryEncounter('city', newLoc, dispatch, pb),
         fetchCity(state.city.id),
@@ -950,9 +1052,14 @@ export function KratProvider({ children, pbId, onAuthError }) {
     },
 
     enterBuilding: async (buildingId) => {
+      const snapshot = stateRef.current
+      const destination = snapshot.city.buildings.find(b => b.id === buildingId)
+      if (snapshot.currentView !== 'city' || !destination) return false
+      if (!actions.movePlayer(destination.position, undefined, { transition: true })) return false
       dispatch({ type: 'ENTER_BUILDING', buildingId })
       const newLoc = { position: null, city: state.city.id, building: buildingId, roomId: 'entrance' }
-      saveLocation(state.player.id, newLoc, state.player.jauges)
+      saveLocation(stateRef.current.player.id, newLoc, stateRef.current.player.jauges)
+      syncGroupLocation(newLoc)
       const [encountered, bldg] = await Promise.all([
         tryEncounter('city', newLoc, dispatch, pb),
         fetchBuilding(buildingId),
@@ -963,24 +1070,34 @@ export function KratProvider({ children, pbId, onAuthError }) {
     },
 
     exitToWorld: () => {
+      if (playerTransactionRef.current) return false
+      const snapshot = stateRef.current
+      if (snapshot.currentView !== 'city' || !snapshot.city.exits.includes(snapshot.player.location.position)) return false
       dispatch({ type: 'EXIT_TO_WORLD' })
       const c      = state.world.cities.find(c => c.id === state.city.id)
       const newLoc = { position: c?.position ?? '0,0', city: null, building: null, roomId: null }
-      saveLocation(state.player.id, newLoc, state.player.jauges)
+      saveLocation(stateRef.current.player.id, newLoc, stateRef.current.player.jauges)
+      syncGroupLocation(newLoc)
       tryEncounter('worldmap', newLoc, dispatch, pb)
     },
 
     enterCity: async (cityId) => {
+      const snapshot = stateRef.current
+      const destination = snapshot.world.cities.find(c => c.id === cityId)
+      if (snapshot.currentView !== 'worldmap' || !destination) return false
+      if (!actions.movePlayer(destination.position, undefined, { transition: true })) return false
       dispatch({ type: 'ENTER_CITY', cityId })
       const geo    = CITY_GEO[cityId]
       const newLoc = { position: geo?.exits[0] ?? '0,0', city: cityId, building: null, roomId: null }
-      saveLocation(state.player.id, newLoc, state.player.jauges)
+      saveLocation(stateRef.current.player.id, newLoc, stateRef.current.player.jauges)
+      syncGroupLocation(newLoc)
       const [encountered, city] = await Promise.all([
         tryEncounter('worldmap', newLoc, dispatch, pb),
         fetchCity(cityId),
       ])
       if (city) dispatch({ type: 'SET_CITY', city })
       else      dispatch({ type: 'SET_LOADING', value: false })
+      if (actions.checkForPolice()) return
       if (encountered) dispatch({ type: 'NAVIGATE', view: 'combat' })
     },
   }
@@ -992,17 +1109,16 @@ export function KratProvider({ children, pbId, onAuthError }) {
     const loc = state.player.location
     const inPrison = state.building?.type === 'mairie' && loc.roomId === 'prison'
     if (inPrison) return
-    const mairie = state.city?.buildings?.find(b => b.type === 'mairie')
-    if (!mairie) return
-
-    dispatch({ type: 'ENTER_BUILDING', buildingId: mairie.id, roomId: 'prison' })
-    const newLoc = { position: null, city: state.city.id, building: mairie.id, roomId: 'prison' }
-    saveLocation(state.player.id, newLoc, state.player.jauges)
-    fetchBuilding(mairie.id, 'prison').then(bldg => {
-      if (bldg) dispatch({ type: 'SET_BUILDING', building: bldg })
-      else      dispatch({ type: 'SET_LOADING', value: false })
-    })
+    if (state.player.stats.fugitive) return
+    arrestPlayer()
   }, [state.player.jauges.reputation.current, state.loading])
+
+  useEffect(() => {
+    if (!state.player.stats.fugitive || state.player.jauges.reputation.current <= 0) return
+    const stats = { ...stateRef.current.player.stats, fugitive: false }
+    dispatch({ type: 'SET_PLAYER_STATS', stats })
+    savePlayer(state.player.id, { stats }).catch(() => {})
+  }, [state.player.jauges.reputation.current, state.player.stats.fugitive])
 
   return (
     <KratContext.Provider value={{ state, actions }}>

@@ -127,11 +127,11 @@ export const CONTEXTUAL_ACTIONS = {
         successMessage: "Vous vous réveillez courbaturé mais vaguement moins épuisé.",
       },
       { id: 'sleep_room', label: 'Dormir dans un lit (necessite lit)', icon: 'bed', primary: true,
-        auto: true, confirmLabel: 'Louer',
+        auto: true, confirmLabel: 'Se coucher',
         description: "Un lit propre, une nuit au chaud. Le luxe, c'est relatif. Sinon ca s'achete au marché",
         condition: state => state.player.inventaire.find(item => item.typeId === 'lit'),
-        onSuccess: { forme: 10, gold: -10, pointsDivins: 5 },
-        successMessage: "Vous vous réveillez reposé. La nuit valait ses 10 pièces.",
+        onSuccess: { forme: 10, pointsDivins: 5 },
+        successMessage: "Vous vous réveillez reposé dans votre propre lit.",
       },
       { id: 'coffre', label: 'Ouvrir le coffre', icon: 'lock_open', primary: false },
     ],
@@ -219,7 +219,9 @@ export const CONTEXTUAL_ACTIONS = {
              icon: 'volunteer_activism',  auto: true
              , confirmLabel: "Donner de l'argent",
         description: "Votre générosité envers les divinités pourrait vous porter chance... ou pas.",
-        onSuccess: {gold: { min: -100, max: -10 }, reputation: 1, pointsDivins: 1 },
+        condition: state => state.player.gold >= 10,
+        goldCost: { min: 10, max: 100 },
+        onSuccess: { reputation: 1, pointsDivins: 1 },
         successMessage: "Vous faites un don à la hauteur de votre foi. Vous sentez une présence bienveillante.",
     primary: false },
     ],
@@ -1159,4 +1161,12 @@ export const RANDOM_ENCOUNTERS = {
     { id: 'cycliste_lycra', name: 'Cycliste de l\'extrême en retard', stats: { force: 9, intelligence: 4, charisme: 3 }, hp: { current: 22, max: 22 }, loot: { medikit: 1, casque: 1 } },
     { id: 'licorne_claquee', name: 'Licorne sous anti-dépresseurs', stats: { force: 6, intelligence: 5, charisme: 4 }, hp: { current: 25, max: 25 }, loot: { cuir: 1, plat_viande: 10 } },
   ],
+}
+
+// Place restante pour un achat. Ce point pourra intégrer la charge après choix de sa règle.
+export function getInventoryRoom(inventaire, typeId) {
+  const item = ITEM_TYPES[typeId]
+  if (!item) return 0
+  const owned = inventaire.filter(s => s.typeId === typeId).reduce((n, s) => n + s.qty, 0)
+  return item.stackable ? Math.max(0, (item.maxStack ?? 99) - owned) : (owned ? 0 : 1)
 }
