@@ -185,6 +185,20 @@ const Echiquier = ({ reset, gameOver }) => {
         }
     };
 
+    // Filet de sécurité : si le prochain coup du livre est injouable sur l'échiquier réel,
+    // on abandonne l'ouverture au lieu de bloquer la partie (IA muette ou joueur refusé en boucle).
+    const abandonUnplayableOpening = (color, legalMoves) => {
+        const expected = openingManager.isActive && openingManager.currentOpening?.moves[openingManager.moveIndex];
+        if (!expected || expected.color !== color) return;
+        const playable = legalMoves.some(candidate =>
+            candidate.from.x === expected.from.col && candidate.from.y === expected.from.row &&
+            candidate.to.x === expected.to.col && candidate.to.y === expected.to.row);
+        if (!playable) {
+            console.warn(`⚠️ Coup injouable dans ${openingManager.currentOpening.name} (index ${openingManager.moveIndex}) : on sort du livre.`);
+            openingManager.isActive = false;
+        }
+    };
+
     const playHumanMove = move => {
         const managerMove = {
             from: { row: move.from.y, col: move.from.x },
@@ -201,6 +215,7 @@ const Echiquier = ({ reset, gameOver }) => {
             commitMove(move, result);
             return;
         }
+        abandonUnplayableOpening(humanColor, getAllLegalMoves(humanColor, cases, { enPassantTarget }));
         // Enregistrer aussi l'état du gestionnaire avant la validation de l'ouverture.
         const openingState = { openingIndex: openingManager.moveIndex, openingActive: openingManager.isActive };
         const validation = openingManager.validatePlayerMove(managerMove, humanColor);
@@ -238,12 +253,14 @@ const Echiquier = ({ reset, gameOver }) => {
         if (gameFinished || puzzle || isHumanTurn || cases.length !== 8 || pendingPromotion) return;
         const timeout = setTimeout(() => {
             const damier = cases.map(row => [...row]);
+            const legalMoves = getAllLegalMoves(currentColor, cases, { enPassantTarget });
+            abandonUnplayableOpening(currentColor, legalMoves);
             const bestMove = openingManager.getAIMove(damier, currentColor, difficulte, { enPassantTarget });
             if (!bestMove) return;
             const from = { x: bestMove.from.col ?? bestMove.from.x, y: bestMove.from.row ?? bestMove.from.y };
             const to = { x: bestMove.to.col ?? bestMove.to.x, y: bestMove.to.row ?? bestMove.to.y };
             // Les coups du livre passent eux aussi par la validation du moteur.
-            const move = getAllLegalMoves(currentColor, cases, { enPassantTarget }).find(candidate =>
+            const move = legalMoves.find(candidate =>
                 candidate.from.x === from.x && candidate.from.y === from.y && candidate.to.x === to.x &&
                 candidate.to.y === to.y && (!bestMove.promotion || candidate.promotion === bestMove.promotion));
             if (move) commitMove(move);

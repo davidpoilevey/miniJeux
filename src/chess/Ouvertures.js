@@ -45,12 +45,12 @@ const FAMOUS_OPENINGS = {
     { from: { row: 1, col: 4 }, to: { row: 3, col: 4 }, color: 'black' }, // 1...e5
     { from: { row: 7, col: 6 }, to: { row: 5, col: 5 }, color: 'white' }, // 2.Nf3
     { from: { row: 0, col: 1 }, to: { row: 2, col: 2 }, color: 'black' }, // 2...Nc6
-    { from: { row: 7, col: 5 }, to: { row: 3, col: 1 }, color: 'white' }, // 3.Bc4
-    { from: { row: 0, col: 5 }, to: { row: 2, col: 3 }, color: 'black' }, // 3...Bc5
-    { from: { row: 6, col: 3 }, to: { row: 5, col: 3 }, color: 'white' }, // 4.c3
-    { from: { row: 1, col: 3 }, to: { row: 2, col: 3 }, color: 'black' }, // 4...d6
-    { from: { row: 7, col: 4 }, to: { row: 6, col: 4 }, color: 'white' }, // 5.O-O (Roque)
-    { from: { row: 0, col: 4 }, to: { row: 1, col: 4 }, color: 'black' }, // 5...Nf6
+    { from: { row: 7, col: 5 }, to: { row: 4, col: 2 }, color: 'white' }, // 3.Bc4
+    { from: { row: 0, col: 5 }, to: { row: 3, col: 2 }, color: 'black' }, // 3...Bc5
+    { from: { row: 6, col: 2 }, to: { row: 5, col: 2 }, color: 'white' }, // 4.c3
+    { from: { row: 0, col: 6 }, to: { row: 2, col: 5 }, color: 'black' }, // 4...Nf6
+    { from: { row: 7, col: 4 }, to: { row: 7, col: 6 }, color: 'white' }, // 5.O-O (Roque)
+    { from: { row: 1, col: 3 }, to: { row: 2, col: 3 }, color: 'black' }, // 5...d6
   ],
   difficulty: 'intermediate',
   century: '17ème siècle',
@@ -96,12 +96,12 @@ const FAMOUS_OPENINGS = {
     { from: { row: 1, col: 3 }, to: { row: 3, col: 3 }, color: 'black' }, // 1...d5
     { from: { row: 6, col: 2 }, to: { row: 4, col: 2 }, color: 'white' }, // 2.c4
     { from: { row: 1, col: 4 }, to: { row: 2, col: 4 }, color: 'black' }, // 2...e6
-    { from: { row: 7, col: 6 }, to: { row: 5, col: 5 }, color: 'white' }, // 3.Nc3
+    { from: { row: 7, col: 1 }, to: { row: 5, col: 2 }, color: 'white' }, // 3.Nc3
     { from: { row: 0, col: 6 }, to: { row: 2, col: 5 }, color: 'black' }, // 3...Nf6
-    { from: { row: 7, col: 5 }, to: { row: 5, col: 7 }, color: 'white' }, // 4.Bg5
-    { from: { row: 1, col: 5 }, to: { row: 2, col: 5 }, color: 'black' }, // 4...Be7
-    { from: { row: 7, col: 4 }, to: { row: 6, col: 4 }, color: 'white' }, // 5.e3
-    { from: { row: 0, col: 5 }, to: { row: 1, col: 6 }, color: 'black' }, // 5...O-O (Roque noir)
+    { from: { row: 7, col: 2 }, to: { row: 3, col: 6 }, color: 'white' }, // 4.Bg5
+    { from: { row: 0, col: 5 }, to: { row: 1, col: 4 }, color: 'black' }, // 4...Be7
+    { from: { row: 6, col: 4 }, to: { row: 5, col: 4 }, color: 'white' }, // 5.e3
+    { from: { row: 0, col: 4 }, to: { row: 0, col: 6 }, color: 'black' }, // 5...O-O (Roque noir)
   ],
   difficulty: 'intermediate',
   century: '15ème siècle',
@@ -134,14 +134,14 @@ const FAMOUS_OPENINGS = {
     { from: { row: 6, col: 3 }, to: { row: 4, col: 3 }, color: 'white' }, // 1.d4
     { from: { row: 1, col: 3 }, to: { row: 3, col: 3 }, color: 'black' }, // 1...d5
     { from: { row: 6, col: 2 }, to: { row: 4, col: 2 }, color: 'white' }, // 2.c4
-    { from: { row: 1, col: 6 }, to: { row: 3, col: 6 }, color: 'black' }, // 2...e6
+    { from: { row: 1, col: 4 }, to: { row: 2, col: 4 }, color: 'black' }, // 2...e6
     { from: { row: 7, col: 6 }, to: { row: 5, col: 5 }, color: 'white' }, // 3.Nf3
     { from: { row: 0, col: 6 }, to: { row: 2, col: 5 }, color: 'black' }, // 3...Nf6
-    { from: { row: 6, col: 1 }, to: { row: 5, col: 1 }, color: 'white' }, // 4.g3
+    { from: { row: 6, col: 6 }, to: { row: 5, col: 6 }, color: 'white' }, // 4.g3
     { from: { row: 1, col: 2 }, to: { row: 2, col: 2 }, color: 'black' }, // 4...c6
     { from: { row: 7, col: 5 }, to: { row: 6, col: 6 }, color: 'white' }, // 5.Bg2
     { from: { row: 0, col: 5 }, to: { row: 1, col: 4 }, color: 'black' }, // 5...Be7
-    { from: { row: 7, col: 4 }, to: { row: 6, col: 4 }, color: 'white' }, // 6.O-O
+    { from: { row: 7, col: 4 }, to: { row: 7, col: 6 }, color: 'white' }, // 6.O-O
   ],
   difficulty: 'advanced',
   century: '20ème siècle',
@@ -153,12 +153,12 @@ const FAMOUS_OPENINGS = {
   description: "Une attaque provocante et farfelue, réservée aux audacieux.",
   moves: [
     { from: { row: 6, col: 6 }, to: { row: 4, col: 6 }, color: 'white' }, // 1.g4
-    { from: { row: 1, col: 4 }, to: { row: 3, col: 4 }, color: 'black' }, // 1...e5
-    { from: { row: 7, col: 6 }, to: { row: 5, col: 5 }, color: 'white' }, // 2.Nf3
-    { from: { row: 0, col: 6 }, to: { row: 2, col: 5 }, color: 'black' }, // 2...Nf6
-    { from: { row: 6, col: 5 }, to: { row: 4, col: 5 }, color: 'white' }, // 3.f4
-    { from: { row: 1, col: 3 }, to: { row: 2, col: 3 }, color: 'black' }, // 3...d6
-    { from: { row: 7, col: 5 }, to: { row: 6, col: 4 }, color: 'white' }, // 4.Bg2 (après g4)
+    { from: { row: 1, col: 3 }, to: { row: 3, col: 3 }, color: 'black' }, // 1...d5
+    { from: { row: 7, col: 5 }, to: { row: 6, col: 6 }, color: 'white' }, // 2.Bg2
+    { from: { row: 1, col: 2 }, to: { row: 2, col: 2 }, color: 'black' }, // 2...c6
+    { from: { row: 6, col: 2 }, to: { row: 4, col: 2 }, color: 'white' }, // 3.c4
+    { from: { row: 3, col: 3 }, to: { row: 4, col: 2 }, color: 'black' }, // 3...dxc4
+    { from: { row: 6, col: 1 }, to: { row: 5, col: 1 }, color: 'white' }, // 4.b3 (le gambit Grob)
   ],
   difficulty: 'troll',
   century: '20ème siècle',
@@ -206,15 +206,15 @@ const FAMOUS_OPENINGS = {
     { from: { row: 6, col: 3 }, to: { row: 4, col: 3 }, color: 'white' }, // 2.d4
     { from: { row: 1, col: 3 }, to: { row: 3, col: 3 }, color: 'black' }, // 2...d5
     { from: { row: 7, col: 1 }, to: { row: 5, col: 2 }, color: 'white' }, // 3.Nc3
-    { from: { row: 3, col: 3 }, to: { row: 4, col: 3 }, color: 'black' }, // 3...dxe4
-    { from: { row: 5, col: 2 }, to: { row: 4, col: 3 }, color: 'white' }, // 4.Nxe4
-    { from: { row: 0, col: 5 }, to: { row: 3, col: 2 }, color: 'black' }, // 4...Bf5
-    { from: { row: 6, col: 6 }, to: { row: 4, col: 5 }, color: 'white' }, // 5.Ng3
-    { from: { row: 3, col: 2 }, to: { row: 2, col: 1 }, color: 'black' }, // 5...Bg6
-    { from: { row: 6, col: 7 }, to: { row: 5, col: 7 }, color: 'white' }, // 6.h4
+    { from: { row: 3, col: 3 }, to: { row: 4, col: 4 }, color: 'black' }, // 3...dxe4
+    { from: { row: 5, col: 2 }, to: { row: 4, col: 4 }, color: 'white' }, // 4.Nxe4
+    { from: { row: 0, col: 2 }, to: { row: 3, col: 5 }, color: 'black' }, // 4...Bf5
+    { from: { row: 4, col: 4 }, to: { row: 5, col: 6 }, color: 'white' }, // 5.Ng3
+    { from: { row: 3, col: 5 }, to: { row: 2, col: 6 }, color: 'black' }, // 5...Bg6
+    { from: { row: 6, col: 7 }, to: { row: 4, col: 7 }, color: 'white' }, // 6.h4
     { from: { row: 1, col: 7 }, to: { row: 2, col: 7 }, color: 'black' }, // 6...h6
     { from: { row: 7, col: 6 }, to: { row: 5, col: 5 }, color: 'white' }, // 7.Nf3
-    { from: { row: 0, col: 1 }, to: { row: 2, col: 2 }, color: 'black' }, // 7...Nd7
+    { from: { row: 0, col: 1 }, to: { row: 1, col: 3 }, color: 'black' }, // 7...Nd7
   ],
   difficulty: 'intermediate',
   century: '19ème siècle',
@@ -276,10 +276,10 @@ const FAMOUS_OPENINGS = {
   description: "Un système solide et flexible, idéal pour les joueurs cherchant un développement rapide et harmonieux.",
   moves: [
     { from: { row: 6, col: 3 }, to: { row: 4, col: 3 }, color: 'white' }, // 1.d4
-    { from: { row: 1, col: 4 }, to: { row: 3, col: 4 }, color: 'black' }, // 1...d5
-    { from: { row: 7, col: 5 }, to: { row: 5, col: 2 }, color: 'white' }, // 2.Bf4
-    { from: { row: 1, col: 3 }, to: { row: 3, col: 3 }, color: 'black' }, // 2...c5
-    { from: { row: 6, col: 2 }, to: { row: 4, col: 2 }, color: 'white' }, // 3.c4
+    { from: { row: 1, col: 3 }, to: { row: 3, col: 3 }, color: 'black' }, // 1...d5
+    { from: { row: 7, col: 2 }, to: { row: 4, col: 5 }, color: 'white' }, // 2.Bf4
+    { from: { row: 1, col: 2 }, to: { row: 3, col: 2 }, color: 'black' }, // 2...c5
+    { from: { row: 6, col: 4 }, to: { row: 5, col: 4 }, color: 'white' }, // 3.e3
     { from: { row: 0, col: 6 }, to: { row: 2, col: 5 }, color: 'black' }, // 3...Nf6
     { from: { row: 7, col: 6 }, to: { row: 5, col: 5 }, color: 'white' }, // 4.Nf3
     { from: { row: 0, col: 1 }, to: { row: 2, col: 2 }, color: 'black' }, // 4...Nc6
