@@ -25,6 +25,7 @@ const WorldBox =  lazy(() => import( './worldBox/WorldBox'));
 const Carbonifere14 = lazy(() => import( './b14/Carbonifere14'));
 const Bacterie15 = lazy(() => import( './b15/Bacterie15'));
 const Bacterie16 = lazy(() => import( './b16/Bacterie16'));
+const B17 = lazy(() => import('./b17/B17'));
 const AwaleBoard = lazy(() => import( './awale/AwaleBoard'));
 const Bomberman = lazy(() => import( './bomberman/components/BombermanGame'));
 const Jardin = lazy(() => import( './jds/components/Jardin'));
@@ -393,6 +394,15 @@ export const GAMES_DATA = [
   {
     categorie: 'Ca bouge tout seul',
     jeux: [
+      {
+        name: 'Les jardins des liens · B17',
+        id: 'b17',
+        component: B17,
+        icon: 'Forest',
+        description: 'Des plantes autonomes poussent sur une paroi, se greffent, échangent et se séparent. Premier prototype évolutif.',
+        status: 'info',
+        tags: ['zeroJoueur', 'simulation', 'evolution', 'workInProgress'],
+      },
       {
         name: 'Organism Race 16',
         id: 'bacterie16',
