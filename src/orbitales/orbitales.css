@@ -1,0 +1,65 @@
+.orb { --cyan: #5ee6d0; --ink: #e6e9ff; --dim: #8a90b4; min-height: 100%; background: #05060d radial-gradient(ellipse at 50% 0%, #1a1636 0%, #05060d 60%); color: var(--ink); font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; padding: 10px 12px 14px; box-sizing: border-box; user-select: none; }
+.orb *, .orb *::before, .orb *::after { box-sizing: border-box; }
+.orb-top { max-width: 900px; margin: 0 auto; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 13px; }
+.orb-title { font-weight: 800; letter-spacing: 4px; font-size: 13px; color: var(--cyan); display: flex; align-items: center; gap: 6px; }
+.orb-logo { font-size: 18px; color: #ffcf6a; text-shadow: 0 0 12px #ff9d3a; }
+.orb-level { font-weight: 700; }
+.orb-level span { color: var(--dim); font-weight: 400; }
+.orb-meta { margin-left: auto; display: flex; gap: 14px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.orb-meta > span:nth-child(2) { color: #ffd98a; font-weight: 700; }
+.orb-lives { color: #ff6b8a; letter-spacing: 2px; }
+.orb-lives i { color: #3a3550; font-style: normal; }
+.orb-power { max-width: 900px; margin: 8px auto 6px; height: 6px; border-radius: 3px; overflow: hidden; display: flex; gap: 2px; background: #15172a; }
+.orb-power > div { transition: flex-grow .4s ease; min-width: 2px; box-shadow: 0 0 10px currentColor; }
+.orb-stage { position: relative; max-width: 900px; margin: 0 auto; display: flex; justify-content: center; }
+.orb-canvas { display: block; border-radius: 50%; touch-action: none; cursor: crosshair; box-shadow: 0 0 80px #2a1d5a55; }
+.orb-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 12px; background: #05060dcc; backdrop-filter: blur(2px); animation: orb-fade .35s ease; }
+.orb-overlay.soft { background: radial-gradient(circle, #05060de0 0%, #05060d88 55%, transparent 80%); backdrop-filter: none; }
+.orb-card { max-width: 420px; width: 100%; text-align: center; background: #0c0e1fe8; border: 1px solid #2c2f55; border-radius: 16px; padding: 22px 22px 18px; box-shadow: 0 20px 60px #000a; }
+.orb h1 { font: 800 clamp(40px, 9vw, 64px)/1 system-ui, sans-serif; letter-spacing: -2px; margin: 6px 0 14px; background: linear-gradient(90deg, #5ee6d0, #ffd36a 55%, #ff6b6b); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.orb h2 { font-size: 26px; margin: 4px 0 12px; letter-spacing: -.5px; }
+.orb-eyebrow { font-size: 10px; letter-spacing: 2px; color: var(--dim); margin: 0; font-weight: 700; }
+.orb-card ul { text-align: left; padding: 0; margin: 0 0 18px; list-style: none; font-size: 14px; line-height: 1.5; }
+.orb-card li { padding: 7px 0 7px 22px; position: relative; border-top: 1px solid #23264a; }
+.orb-card li::before { content: '◦'; position: absolute; left: 4px; color: var(--cyan); font-weight: 900; }
+.orb-card b { color: var(--cyan); }
+.orb .orb-cta { width: 100%; padding: 12px; font-weight: 800; text-transform: none; font-size: 15px; border-radius: 10px; background: linear-gradient(90deg, #2bb8a3, #5ee6d0); color: #06201c; box-shadow: 0 0 24px #5ee6d055; }
+.orb .orb-cta:hover { background: linear-gradient(90deg, #36cdb7, #8af2e2); }
+.orb .orb-link { margin-top: 6px; color: var(--dim); text-transform: none; }
+.orb-fine { font-size: 11px; color: var(--dim); margin: 12px 0 0; }
+.orb-sub { font-size: 13px; color: var(--dim); line-height: 1.5; margin: 0 0 16px; }
+.orb-vs { display: flex; justify-content: center; gap: 18px; font-weight: 800; font-size: 15px; margin-bottom: 12px; }
+.orb-vs span::before { content: 'contre '; color: var(--dim); font-weight: 400; }
+.orb-vs span + span::before { content: '& '; }
+.orb-warn { font-size: 12px; color: #ffb27a; margin: 0 0 12px; }
+.orb-score { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 16px; font-variant-numeric: tabular-nums; }
+.orb-score td { padding: 5px 2px; border-bottom: 1px solid #23264a; }
+.orb-score td:last-child { text-align: right; font-weight: 700; }
+.orb-score .burn { color: #ffab7a; }
+.orb-score .sum td { border: 0; padding-top: 10px; color: #ffd98a; font-size: 16px; }
+.orb-taunt { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); max-width: min(92%, 460px); background: #0c0e1fee; border: 1px solid var(--c); border-left: 4px solid var(--c); border-radius: 10px; padding: 8px 12px; font-size: 13px; line-height: 1.4; box-shadow: 0 0 20px color-mix(in srgb, var(--c) 30%, transparent); animation: orb-pop .3s ease; pointer-events: none; }
+.orb-taunt b { display: block; color: var(--c); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; }
+.orb-hint { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); width: min(92%, 440px); background: #0f2a2bee; border: 1px solid #5ee6d066; border-radius: 10px; padding: 8px 12px; font-size: 13px; line-height: 1.4; color: #c9fff5; cursor: pointer; animation: orb-pop .3s ease; }
+.orb-hint small { float: right; opacity: .6; }
+.orb-controls { max-width: 900px; margin: 10px auto 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+.orb-ratio { display: flex; align-items: center; gap: 4px; background: #11132a; border: 1px solid #23264a; border-radius: 12px; padding: 4px; }
+.orb-ratio span { font-size: 11px; color: var(--dim); padding: 0 8px; }
+.orb-ratio button { background: transparent; border: 0; color: var(--ink); font: 700 13px system-ui, sans-serif; padding: 8px 10px; border-radius: 8px; cursor: pointer; min-width: 52px; }
+.orb-ratio button.on { background: var(--cyan); color: #06201c; box-shadow: 0 0 14px #5ee6d066; }
+.orb-tools { display: flex; gap: 2px; }
+.orb-tools .MuiIconButton-root { color: var(--dim); }
+.orb-tools .MuiIconButton-root.on { color: #ffd36a; }
+.orb-tools .MuiIconButton-root.Mui-disabled { color: #34375a; }
+.orb-help { max-width: 900px; margin: 8px auto 0; font-size: 11px; color: #5d6288; text-align: center; line-height: 1.7; }
+.orb-help kbd { border: 1px solid #34375a; border-radius: 4px; padding: 0 4px; font-family: inherit; }
+@keyframes orb-fade { from { opacity: 0 } }
+@keyframes orb-pop { from { opacity: 0; transform: translate(-50%, -6px) } }
+@media (max-width: 560px) { .orb-help { display: none; } .orb-ratio button { min-width: 44px; padding: 8px 6px; } .orb-meta { gap: 10px; } }
+@media (max-width: 560px) {
+  .orb-stage { min-height: 440px; align-items: center; }
+  .orb-card { padding: 16px 16px 14px; }
+  .orb-card ul { font-size: 13px; margin-bottom: 14px; }
+  .orb-card li { padding: 5px 0 5px 20px; }
+  .orb h1 { margin: 4px 0 10px; }
+  .orb h2 { font-size: 22px; }
+}

@@ -15,6 +15,8 @@ const lazy = (importFn, name) =>
   );
 
 const Echecs = lazy(() => import('./chess/EchecBoard'));
+const Minuit = lazy(() => import('./minuit/Minuit'));
+const Orbitales = lazy(() => import('./orbitales/Orbitales'));
 const Lemmings = lazy(() => import('./lemmings/Lemmings'));
 
 const Bactery9 = lazy(() => import( './b9/Bactery9'));
@@ -127,6 +129,26 @@ export const GAMES_DATA = [
   {
     categorie: 'Une partie contre une IA ?',
     jeux: [
+      {
+        name: 'Orbitales',
+        id: 'orbitales',
+        component: Orbitales,
+        icon: 'Public',
+        image: `${process.env.PUBLIC_URL}/orbitales.svg`,
+        description: 'Conquête spatiale en temps réel autour d’une étoile qui grille les flottes. Les planètes tournent : vise où elles seront. Deux IA rivales, et elles ont la langue bien pendue.',
+        status: 'info',
+        tags: ['iaInside', 'strategie', 'mobileFriendly', 'souris'],
+      },
+      {
+        name: 'Le Casse de Minuit',
+        id: 'minuit',
+        component: Minuit,
+        icon: 'Diamond',
+        image: `${process.env.PUBLIC_URL}/minuit.svg`,
+        description: 'Trois salles, neuf joyaux et des gardiens IA à duper. Chaque pas compte ; un leurre bien placé peut tout changer.',
+        status: 'info',
+        tags: ['iaInside', 'strategie', 'casse-tete', 'mobileFriendly', 'clavier', 'souris'],
+      },
       {
         name: "Jeu d'echec",
         id:'echec',
