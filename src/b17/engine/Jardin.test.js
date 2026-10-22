@@ -207,7 +207,7 @@ test('nutrients are harvested from soil, limit growth and pass through grafts wi
   const { world, a, b } = pair();
   expect(world.nutrients[world.index(8, 5)]).toBe(0);
   expect(world.nutrients[world.index(8, 19)]).toBeGreaterThan(0);
-  tissue(world, a, [[8, 19]]); a.nutrients = 0;
+  tissue(world, a, [[8, 19]]); a.nutrients = 0; a.traits.prospecting = 0;
   const before = world.nutrients[world.index(8, 19)]; world.metabolize(a);
   expect(a.mineralIntake).toBeGreaterThan(0);
   expect(world.nutrients[world.index(8, 19)]).toBeCloseTo(before - a.mineralIntake);
@@ -249,6 +249,7 @@ const thirstyBranch = (source, reverse = false) => {
   world.weatherEnabled = false;
   world.moisture.fill(0.30); world.waterRecharge.fill(0.025); world.water.fill(0);
   const plant = world.createPlant(20, 19, randomGenome());
+  plant.traits.prospecting = 0; plant.traits.drought = 0; plant.traits.frugality = 0.5; plant.traits.fertility = 0.5;
   plant.traits.solar = 0.5; plant.traits.uptake = 0.5; plant.traits.minerals = 0.5; plant.traits.patience = 1;
   const cells = Array.from({ length: 10 }, (_, i) => [20 + i, 19]);
   tissue(world, plant, reverse ? cells.reverse() : cells);
@@ -298,4 +299,163 @@ test('outside fissures there is more background water, and surplus rain still fa
   world.rain = 0; world.water.fill(1); world.stepResources();
   expect(world.water[0]).toBeCloseTo(0.975);
   expect([...world.water].every(value => Math.abs(value - 0.975) < 0.00001)).toBe(true);
+});
+
+const genomeWith = (genes) => {
+  const genome = Array.from({ length: 400 }, () => ['A', 'A', 'A', 'A']);
+  for (const [key, value] of Object.entries(genes)) {
+    let hash = 0; for (const c of key) hash = ((hash << 5) - hash + c.charCodeAt(0)) | 0;
+    genome[Math.abs(hash) % 400] = Array(4).fill(value ? 'G' : 'A');
+  }
+  return genome;
+};
+
+test('DNA drought resistance changes the actual distress threshold and has a photosynthetic tradeoff', () => {
+  const world = new Jardin({ founders: 0 });
+  const fragile = world.createPlant(8, 63, genomeWith({}));
+  const resistant = world.createPlant(9, 63, genomeWith({ b17Secheresse: 1 }));
+  expect(resistant.traits.drought).toBe(1); expect(fragile.traits.drought).toBe(0);
+  expect(resistant.traits.solar).toBe(fragile.traits.solar);
+  for (const p of [fragile, resistant]) p.water = 0.02;
+  world.metabolize = () => {}; world.weatherEnabled = false;
+  for (let i = 0; i < 6; i++) world.step();
+  expect(fragile.stress).toBe(6); expect(resistant.stress).toBe(0);
+  expect(world.requirements(resistant).photoEfficiency).toBeLessThan(world.requirements(fragile).photoEfficiency);
+  expect(world.requirements(resistant).waterPerEnergy).toBeLessThan(world.requirements(fragile).waterPerEnergy);
+});
+
+test('DNA mineral frugality reduces real consumption and construction cost at the expense of growth rate', () => {
+  const world = new Jardin({ founders: 0 });
+  const hungry = world.createPlant(8, 63, genomeWith({}));
+  const frugal = world.createPlant(9, 63, genomeWith({ b17Sobriete: 1 }));
+  world.nutrients.fill(0); world.metabolize(hungry); world.metabolize(frugal);
+  expect(frugal.mineralUse).toBeLessThan(hungry.mineralUse);
+  expect(frugal.nutrients).toBeGreaterThan(hungry.nutrients);
+  expect(world.requirements(frugal).buildMinerals).toBeLessThan(world.requirements(hungry).buildMinerals);
+  expect(world.requirements(frugal).growthInterval).toBeGreaterThan(world.requirements(hungry).growthInterval);
+  const before = frugal.nutrients; world.grow(frugal);
+  expect(frugal.cells).toHaveLength(2);
+  expect(frugal.nutrients).toBeCloseTo(before - world.requirements(frugal).buildMinerals);
+});
+
+test('a successful birth flowers, transfers seed minerals and keeps the flower attached during a fall', () => {
+  const world = new Jardin({ width: 40, height: 30, founders: 0, random: () => 0 });
+  const mother = world.createPlant(15, 15, genomeWith({b17Fertilite: 1}));
+  tissue(world, mother, Array.from({length: 8}, (_, i) => [15, 15 + i]));
+  const minerals = mother.nutrients;
+  world.reproduce(mother);
+  expect(world.blooms).toHaveLength(1); expect(world.births).toBe(1);
+  const flower = world.blooms[0], child = world.plants.get(flower.seedId);
+  expect(child.generation).toBe(1); expect(child.lineage).toBe(mother.lineage);
+  expect(mother.nutrients + child.nutrients).toBeCloseTo(minerals);
+  expect(flower.cell).toBe(mother.cells[7]);
+  const y = flower.cell.y; world.gravity(); expect(flower.cell.y).toBe(y + 1);
+  world.metabolize = () => {}; world.grow = () => {}; world.reproduce = () => {};
+  world.tick = flower.born + flower.duration; world.step();
+  expect(world.blooms).toHaveLength(0);
+});
+
+test('DNA fertility changes birth attempts; blocked or undernourished attempts produce no decorative flower', () => {
+  const world = new Jardin({ width: 40, height: 30, founders: 0, random: () => 0.3 });
+  const low = world.createPlant(10, 15, genomeWith({}));
+  const high = world.createPlant(25, 15, genomeWith({b17Fertilite: 1}));
+  for (const p of [low, high]) tissue(world, p, Array.from({length: 8}, (_, i) => [p.cells[0].x, 15 + i]));
+  world.reproduce(low); expect(world.births).toBe(0); expect(world.blooms).toHaveLength(0);
+  world.reproduce(high); expect(world.births).toBe(1); expect(world.blooms).toHaveLength(1);
+  expect(world.requirements(high).reproductionInterval).toBeLessThan(world.requirements(low).reproductionInterval);
+  high.nutrients = 0; world.reproduce(high); expect(world.births).toBe(1);
+});
+
+test('exploited soil replenishes slowly and a body can draw down its mineral stock', () => {
+  const { world, plant } = thirstyBranch(true);
+  const i = world.index(29, 19), stock = world.soil[i]; world.nutrients[i] = 0;
+  world.stepResources(); expect(world.nutrients[i]).toBeCloseTo(stock * 0.003);
+  world.nutrients.fill(0); world.soil.fill(0); plant.nutrients = 0.2;
+  for (let t = 0; t < 20; t++) world.metabolize(plant);
+  expect(plant.nutrients).toBe(0);
+});
+
+test('a flower follows the fragment retaining its tissue and disappears when that tissue dies', () => {
+  const world = new Jardin({width: 40, height: 30, founders: 0, random: () => 0});
+  const mother = world.createPlant(15, 15, genomeWith({b17Fertilite: 1}));
+  tissue(world, mother, Array.from({length: 8}, (_, i) => [15, 15 + i]));
+  world.reproduce(mother); const flower = world.blooms[0];
+  world.shedCell(mother, 5);
+  expect(flower.plantId).not.toBe(mother.id);
+  const fragment = world.plants.get(flower.plantId);
+  expect(fragment.cells).toContain(flower.cell);
+  const y = flower.cell.y; world.gravity(); expect(flower.cell.y).toBe(y + 1);
+  world.kill(fragment); world.step(); expect(world.blooms).toHaveLength(0);
+});
+
+const mineralMatter = world => [...world.nutrients, ...world.detritus].reduce((sum, n) => sum + n, 0)
+  + [...world.spores.values()].reduce((sum, s) => sum + s.nutrients, 0)
+  + [...world.plants.values()].reduce((sum, p) => sum + p.nutrients + p.cells.reduce((n, c) => n + (c.minerals || 0), 0), 0);
+
+test('DNA prospecting reaches neighboring ground with a shared extraction budget and an energy cost', () => {
+  const world = new Jardin({founders: 0}); world.nutrients.fill(0);
+  const local = world.createPlant(8, 5, genomeWith({}));
+  const pump = world.createPlant(18, 5, genomeWith({b17Prospection: 1}));
+  world.nutrients[world.index(9, 5)] = 1; world.nutrients[world.index(19, 5)] = 1;
+  for (const p of [local, pump]) p.nutrients = 0;
+  world.metabolize(local); world.metabolize(pump);
+  expect(local.mineralIntake).toBe(0); expect(pump.remoteIntake).toBeCloseTo(0.012);
+  expect(world.nutrients[world.index(19, 5)]).toBeCloseTo(1 - pump.remoteIntake);
+  expect(pump.energy).toBeLessThan(local.energy);
+  world.nutrients.fill(1); pump.nutrients = 0; world.metabolize(pump);
+  expect(pump.mineralIntake).toBeCloseTo(0.012); // Five reachable sites do not multiply the budget.
+});
+
+test('constructed tissue minerals become falling debris on death without duplicating spore reserves', () => {
+  const world = new Jardin({founders: 0});
+  const plant = world.createPlant(8, 30, genomeWith({}));
+  world.grow(plant); expect(plant.cells).toHaveLength(2);
+  expect(plant.cells[1].minerals).toBeCloseTo(world.requirements(plant).buildMinerals);
+  const before = mineralMatter(world); world.kill(plant);
+  expect(world.detritus.reduce((n, v) => n + v, 0)).toBeGreaterThan(0);
+  expect(mineralMatter(world)).toBeCloseTo(before, 5);
+  const once = mineralMatter(world); world.kill(plant); expect(mineralMatter(world)).toBeCloseTo(once, 5);
+});
+
+test('losing one live cell recycles just its tissue and its fraction of stored minerals', () => {
+  const world = new Jardin({founders: 0});
+  const plant = world.createPlant(8, 30, genomeWith({})); world.grow(plant);
+  const before = mineralMatter(world), cell = plant.cells[1];
+  const deposit = cell.minerals + plant.nutrients / plant.cells.length;
+  world.shedCell(plant, 1);
+  expect(world.detritus[world.index(cell.x, cell.y)]).toBeCloseTo(deposit);
+  expect(mineralMatter(world)).toBeCloseTo(before, 5);
+});
+
+test('debris falls once per cycle, rests on tissue and gradually releases the same minerals locally', () => {
+  const world = new Jardin({width: 20, height: 20, founders: 0}); world.nutrients.fill(0);
+  world.createPlant(5, 8, genomeWith({})); world.depositDebris({x: 5, y: 5}, 1);
+  world.stepDetritus(); expect(world.detritus[world.index(5, 6)]).toBeCloseTo(0.994);
+  expect(world.nutrients[world.index(5, 6)]).toBeCloseTo(0.006);
+  world.stepDetritus(); world.stepDetritus();
+  expect(world.detritus[world.index(5, 7)]).toBeGreaterThan(0.98);
+  expect(world.detritus[world.index(5, 8)]).toBe(0);
+  expect([...world.nutrients, ...world.detritus].reduce((n, v) => n + v, 0)).toBeCloseTo(1, 6);
+  expect(world.recycled).toBeGreaterThan(0);
+});
+
+test('an exhausted spore recycles its remaining minerals while germination transfers them only once', () => {
+  const {world, a} = pair(); world.kill(a);
+  const spore = [...world.spores.values()][0], before = mineralMatter(world);
+  const at = world.index(spore.x, spore.y), oldDebris = world.detritus[at], saved = spore.nutrients;
+  spore.energy = 0; world.stepSpores();
+  expect(world.spores.has(spore.id)).toBe(false); expect(world.detritus[at]).toBeCloseTo(oldDebris + saved);
+  expect(mineralMatter(world)).toBeCloseTo(before, 5);
+  const second = pair(); second.world.kill(second.a); second.world.updateLight();
+  const dormant = [...second.world.spores.values()][0]; second.world.water[second.world.index(dormant.x, dormant.y)] = 1;
+  const beforeRevival = mineralMatter(second.world);
+  for (let t = 0; t < 15; t++) second.world.stepSpores();
+  expect(second.world.awakenings).toBe(1); expect(mineralMatter(second.world)).toBeCloseTo(beforeRevival, 5);
+});
+
+test('background mineral supply persists even when no organism has died', () => {
+  const world = new Jardin({founders: 0}); world.nutrients.fill(0);
+  const i = world.index(40, 63); world.stepResources();
+  expect(world.nutrients[i]).toBeCloseTo(world.soil[i] * 0.003);
+  expect(world.detritus[i]).toBe(0); expect(world.recycled).toBe(0);
 });

@@ -13,6 +13,15 @@ export function dessiner(ctx, jardin, width, height, { layer = 'vivant', selecte
       ctx.fillRect(x * sx, y * sy, sx + 0.2, sy + 0.2);
     }
   }
+  // Loose organic matter settles and fades as minerals become available locally.
+  ctx.fillStyle = '#daaa70';
+  for (let i = 0; i < jardin.detritus.length; i++) if (jardin.detritus[i] > 0.004) {
+    const x = i % jardin.W, y = Math.floor(i / jardin.W);
+    ctx.globalAlpha = Math.min(0.8, 0.2 + jardin.detritus[i]);
+    for (let n = 0; n < 3; n++) ctx.fillRect((x + 0.2 + n * 0.25) * sx,
+      (y + 0.2 + ((x * 7 + n * 3) % 5) * 0.14) * sy, Math.max(1, sx * 0.14), Math.max(1, sy * 0.14));
+  }
+  ctx.globalAlpha = 1;
   if (jardin.shower) {
     ctx.strokeStyle = '#82d4e5'; ctx.lineWidth = Math.max(1, sx * 0.12);
     for (let n = 0; n < 65; n++) {
@@ -71,6 +80,42 @@ export function dessiner(ctx, jardin, width, height, { layer = 'vivant', selecte
     }
     ctx.strokeStyle = '#fff1bc'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc((x1 + x2) / 2, (y1 + y2) / 2, sx * 0.75, 0, Math.PI * 2); ctx.stroke();
+  }
+  // A flower marks an actual birth; the seed trail links mother and living child.
+  for (const bloom of jardin.blooms) {
+    const age = jardin.tick - bloom.born, fade = Math.min(1, (bloom.duration - age) / 35);
+    const size = sx * (0.35 + Math.min(1, age / 12) * 0.55);
+    const x = (bloom.cell.x + 0.5) * sx;
+    const y = Math.max(size * 1.6, (bloom.cell.y - 0.5) * sy);
+    ctx.save();
+    ctx.globalAlpha = fade * (!selected || selected === bloom.plantId || selected === bloom.seedId ? 1 : 0.32);
+    ctx.strokeStyle = `hsl(${bloom.hue},45%,55%)`; ctx.lineWidth = Math.max(1, sx * 0.15);
+    ctx.beginPath(); ctx.moveTo(x, (bloom.cell.y + 0.5) * sy); ctx.lineTo(x, y); ctx.stroke();
+    ctx.translate(x, y);
+    for (let petal = 0; petal < bloom.petals; petal++) {
+      ctx.save(); ctx.rotate(petal / bloom.petals * Math.PI * 2);
+      ctx.fillStyle = `hsl(${bloom.hue + 25},75%,${petal % 2 ? 79 : 67}%)`;
+      ctx.strokeStyle = `hsl(${bloom.hue},50%,40%)`; ctx.lineWidth = Math.max(0.5, sx * 0.06);
+      ctx.beginPath(); ctx.ellipse(0, -size * 0.6, size * (0.28 + bloom.shape * 0.22), size * 0.75, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.fillStyle = '#ffe3a1'; ctx.beginPath(); ctx.arc(0, 0, size * 0.3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    const seed = jardin.plants.get(bloom.seedId)?.cells[0];
+    if (!seed) continue;
+    const tx = (seed.x + 0.5) * sx, ty = (seed.y + 0.5) * sy;
+    ctx.save(); ctx.globalAlpha = fade * 0.75;
+    if (age < 45) {
+      const t = age / 45;
+      ctx.strokeStyle = '#e8d5a1'; ctx.lineWidth = Math.max(1, sx * 0.1); ctx.setLineDash([sx * 0.3, sx * 0.5]);
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo((x + tx) / 2, Math.min(y, ty) - sy * 3, tx, ty); ctx.stroke();
+      ctx.setLineDash([]); ctx.fillStyle = '#fff0ba';
+      const px = x + (tx - x) * t, py = (1 - t) ** 2 * y + 2 * (1 - t) * t * (Math.min(y, ty) - sy * 3) + t * t * ty;
+      ctx.beginPath(); ctx.ellipse(px, py, sx * 0.27, sy * 0.4, -0.4, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.strokeStyle = '#ffe3a1'; ctx.lineWidth = Math.max(1, sx * 0.13);
+    ctx.beginPath(); ctx.arc(tx, ty, sx * (0.75 + Math.sin(age * 0.15) * 0.12), 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
   }
   ctx.fillStyle = '#b58b62'; ctx.fillRect(0, height - Math.max(2, sy * 0.4), width, Math.max(2, sy * 0.4));
   ctx.fillStyle = '#f0d991'; ctx.fillRect(0, 0, width, Math.max(2, sy * 0.3));

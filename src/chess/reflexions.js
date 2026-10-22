@@ -583,7 +583,7 @@ export const DIFFICULTY_CONFIGS = {
     kingSafetyWeight: 0.2,
     randomFactor: 0.3,
     blunderChance: 0.15, // Chance de faire une grosse erreur
-    estimatedElo: "800-1000"
+    estimatedElo: "300-500"
   },
   2: { // Facile
     name: "Facile", 
@@ -595,11 +595,11 @@ export const DIFFICULTY_CONFIGS = {
     kingSafetyWeight: 0.4,
     randomFactor: 0.2,
     blunderChance: 0.08,
-    estimatedElo: "1000-1200"
+    estimatedElo: "500-750"
   },
   3: { // Moyen
     name: "Moyen",
-    description: "Bon joueur de club",
+    description: "Solide, mais il laisse encore passer des tactiques",
     depth: 3,
     errorRate: 0.05,
     materialWeight: 1.0,
@@ -607,11 +607,11 @@ export const DIFFICULTY_CONFIGS = {
     kingSafetyWeight: 0.6,
     randomFactor: 0.1,
     blunderChance: 0.04,
-    estimatedElo: "1200-1500"
+    estimatedElo: "850-1050"
   },
   4: { // Difficile
     name: "Difficile",
-    description: "Joueur expérimenté",
+    description: "Punit la moindre erreur, il faut s'accrocher",
     depth: 4,
     errorRate: 0.04,
     materialWeight: 1.0,
@@ -619,11 +619,11 @@ export const DIFFICULTY_CONFIGS = {
     kingSafetyWeight: 0.8,
     randomFactor: 0.05,
     blunderChance: 0.02,
-    estimatedElo: "1500-1800"
+    estimatedElo: "1250-1450"
   },
   5: { // Expert
     name: "Expert",
-    description: "Niveau maître",
+    description: "Ne pardonne rien, prépare-toi à souffrir",
     depth: 5,
     errorRate: 0.02,
     materialWeight: 1.0,
@@ -631,7 +631,7 @@ export const DIFFICULTY_CONFIGS = {
     kingSafetyWeight: 1.0,
     randomFactor: 0.02,
     blunderChance: 0.005,
-    estimatedElo: "1800-2200"
+    estimatedElo: "1500-1700"
   },
   6: { // Maître
     name: "Maître",
@@ -643,7 +643,7 @@ export const DIFFICULTY_CONFIGS = {
     kingSafetyWeight: 1.0,
     randomFactor: 0.01,
     blunderChance: 0.001,
-    estimatedElo: "2200+"
+    estimatedElo: "1800+"
   }
 };
 

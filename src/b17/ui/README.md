@@ -20,3 +20,11 @@ spontanées désactivables, pluie générale et averse locale déclenchables.
 Le bas de la paroi est un sol brun riche en nutriments, avec une vue dédiée. Les
 flux orange montrent les échanges minéraux. Les flèches près des identifiants
 signalent la chute ; l'inspection distingue chute, contact au sol et soutien.
+
+Une naissance laisse une fleur à pétales sur la mère, avec une graine animée et
+un anneau autour du descendant. La fleur s'efface après 180 cycles. L'inspection
+affiche les nouveaux traits ADN, leur effet concret et le bilan minéral par cycle.
+
+Les débris morts apparaissent en poussière ocre qui tombe et se décompose. Les
+compteurs distinguent matière encore en débris et minéraux déjà recyclés ;
+l'inspection affiche le trait de prospection et les prélèvements à distance.

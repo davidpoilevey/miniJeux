@@ -222,8 +222,8 @@ concrètes à observer et à discuter après essai, plutôt que des questions bl
   peuvent capter la lumière et prélever l'eau avec des rendements héritables.
 - Croissance dans les cases voisines libres selon lumière, eau, direction,
   voisinage et variation locale. Aucun corps prédessiné.
-- Neuf gènes via `ADNHandler`, clés vérifiées sans collision : direction verticale,
-  ramification, captation solaire, absorption, partage, patience, dispersion, dormance et absorption minérale.
+- Treize gènes via `ADNHandler`, clés vérifiées sans collision : direction verticale,
+  ramification, captation solaire, absorption, partage, patience, dispersion, dormance, absorption minérale, résistance à la sécheresse, sobriété minérale, fertilité et prospection.
 - Bonne santé des deux partenaires et différence de réserves pour ouvrir une
   greffe de contact. Les deux propensions génétiques au partage interviennent.
 - Une greffe par paire de plantes, avec conductance limitée, flux signés d'eau et
@@ -360,7 +360,7 @@ imposées de racines ou de feuilles.
 
 Limites de ce premier essai : corps rigides, sans flexion, rotation ni résistance
 mécanique calculée. Les contacts suffisent à porter un corps ; aucune structure de
-racines prédéfinie. Le sol ne recycle pas encore les tissus morts. Ce sont des
+racines prédéfinie. Dans cette première itération, le sol ne recyclait pas encore les tissus morts. Ce sont des
 contraintes matérielles à observer, pas une garantie de diversité ou de coexistence.
 Les mesures antérieures à cette itération décrivent l'ancien milieu.
 
@@ -425,6 +425,103 @@ jardins. Inspection navigateur vérifiée dans un aperçu séparé, en pause au 
 1 564 : le panneau indique eau prélevée, eau utilisée et échanges par greffes.
 Le jardin initial de David n'a pas été rechargé.
 
+
+## Itération : diversité génétique et floraison (10 octobre 2026)
+
+Retour de David : trop de constantes communes et de schémas similaires ; varier
+la résistance au manque d'eau et les besoins minéraux, rendre les naissances
+visibles avec de petites fleurs inspirées de carbonifere14 (`b14`).
+
+Trois nouveaux gènes indépendants, lus par `ADNHandler`, avec les douze positions
+chromosomiques vérifiées sans collision :
+
+- `b17Secheresse` : seuil hydrique de détresse 0,030 → 0,005 ; entretien hydrique
+  réduit jusqu'à 60 % et eau par énergie réduite jusqu'à 30 %. Contrepartie :
+  photosynthèse maximale réduite jusqu'à 25 %. La résistance n'immunise pas contre
+  la pénurie d'énergie, le vieillissement ni le manque de minéraux.
+- `b17Sobriete` : entretien minéral par cellule de 0,004 à 0,0015 ; construction
+  de 0,34 à 0,12 ; réserve donnée à une graine de 0,45 à 0,20. Contrepartie :
+  croissance tous les 4 à 9 cycles, les plus économes étant plus lentes. La
+  capacité d'absorber les minéraux reste un autre gène (`b17Mineraux`).
+- `b17Fertilite` : tentative tous les 180 à 70 cycles d'âge, avec une probabilité
+  de 10 à 60 %. Les réserves restent nécessaires et sont transférées à la graine.
+  Les tentatives suivent chaque plante plutôt qu'une horloge commune de 100 cycles.
+
+La recharge minérale du sol passe de 1,2 % à 0,6 % du déficit par cycle. La ressource
+reste renouvelable, mais le prélèvement, la construction et l'entretien peuvent
+maintenant épuiser les réserves locales et le stock d'un grand corps. L'inspection
+montre les trois traits, leurs seuils/coûts/rythmes et les minéraux consommés.
+
+Une naissance réussie laisse une fleur sur une extrémité de la mère pendant
+180 cycles (7,2 secondes à vitesse normale). Les pétales elliptiques disposés en
+couronne reprennent l'idée graphique de `b14/plants/PlantRenderer.js`, avec une
+couleur liée à la lignée ; leur nombre varie avec la fertilité et leur forme avec
+la ramification. Une trace courbe et une graine animée relient la mère au descendant,
+qui est créé immédiatement comme auparavant. C'est une animation de naissance,
+pas un nouveau modèle de graine en vol, de maturation ou de pollinisation.
+La fleur suit la gravité et le fragment portant son tissu, puis disparaît si ce
+tissu meurt ; une tentative ratée n'affiche rien. Pause et vitesses agissent aussi
+sur ces animations. Fleurs et naissances sont distinctes des réveils de spores.
+
+Validation : les 25 tests moteur précédents et nouveaux passent, dont changement
+réel du seuil de détresse par ADN, sobriété/coût de construction, fertilité,
+transfert des réserves et fleur suivant une chute. Compilation réussie avec les
+avertissements existants hors b17. Trois essais aléatoires de 4 000 cycles :
+10 à 13 lignées actives, 530 à 875 cellules, 15 à 21 naissances et au maximum
+2 à 5 fleurs simultanées. Certaines grandes plantes arrivent à un stock minéral
+proche de zéro ; ces essais ne prouvent pas une diversité morphologique durable.
+La vérification dans un navigateur n'a pas pu être réalisée dans cette session :
+le navigateur intégré est indisponible et les permissions de contrôle de Chrome
+ne sont pas accordées. Le serveur d'aperçu compilé local a été relancé sur le port
+3001, sans rechargement d'un jardin de David.
+
+## Itération : prospection et recyclage des morts (10 octobre 2026)
+
+David souhaite que certaines plantes prélèvent dans les cases voisines, et que
+les tissus morts qui tombent ainsi que les spores épuisées nourrissent le milieu.
+Choix explicitement confirmé : **garder une faible recharge du sol et ajouter
+le recyclage**, afin que le milieu ne dépende pas uniquement des morts.
+
+- La recharge automatique est dans `stepResources()` : elle passe de 0,6 % à
+  0,3 % du déficit par cycle, vers la richesse initiale `soil`. Les apports issus
+  des débris peuvent dépasser cette richesse initiale sans disparaître à la
+  recharge suivante. `soil` sert de cible à la source de fond, pas de plafond.
+- Treizième gène, `b17Prospection`, lu par `ADNHandler` sans collision : à partir
+  de 50 %, une cellule explore ses quatre voisines orthogonales. Elle prélève
+  d'abord sous elle puis dans les cases voisines les plus riches. Le débit total
+  par cellule reste le même (0,012–0,040 selon `b17Mineraux`) et la capacité du
+  corps limite toujours l'extraction. Le prélèvement éloigné coûte 0,15 énergie
+  par unité minérale. C'est le champ du milieu qui est exploité, y compris les
+  poches disputées, sans prélèvement dans les réserves internes d'un voisin.
+- Les minéraux investis dans la construction restent enregistrés dans la cellule.
+  La perte d'une cellule restitue cette matière plus sa fraction de réserve libre.
+  À la mort d'un corps, les réserves des spores sont prélevées dans son budget
+  minéral réel ; le reste est réparti en débris sur les anciens emplacements.
+  Les plantes fondatrices commencent avec 0,12 de minéraux dans leur tissu initial.
+  Les graines et germinations transfèrent leurs réserves sans nouveau bonus minéral.
+- `stepDetritus()` fait descendre les débris d'une case par cycle jusqu'au sol ou
+  jusqu'à un tissu porteur. Chaque cycle, 0,6 % de leur matière devient nutriment
+  disponible à leur emplacement. Les débris ne bloquent pas la croissance.
+- Une spore dont l'énergie est épuisée rejoint les débris avec ses minéraux
+  restants. Une spore qui germe transfère ces mêmes minéraux au nouveau corps :
+  aucun second dépôt. Une longue attente défavorable ne suffit pas à supprimer
+  arbitrairement une spore tant que ses réserves permettent la dormance.
+- Poussière ocre sur la paroi pour les débris, quantités de débris et minéraux
+  recyclés dans les compteurs. L'inspection indique la prospection et le débit
+  réellement prélevé à distance. La vue nutriments montre les apports disponibles.
+
+L'entretien minéral reste une consommation et la recharge du substrat une source :
+il ne s'agit pas d'un monde strictement fermé. Les tests vérifient la conservation
+lors des transformations tissu/spore/débris et lors de la germination, séparément
+ces flux d'entretien et d'alimentation. Aucune fonte instantanée de tous les morts
+ni fertilisation globale : les apports restent localisés et progressifs.
+
+Validation : 32 tests moteur passent, dont pompage héréditaire, budget d'extraction
+non multiplié par les voisines, chute/décomposition et absence de double compte
+entre tissu, spores, réserves et débris. Compilation réussie avec les avertissements
+existants hors b17. Le contrôle visuel dans un navigateur reste non effectué :
+les permissions de contrôle ne sont pas accordées dans cette session. David avait
+confirmé apprécier les fleurs et trajectoires de naissance de l'itération précédente.
 
 ## Ce qu'il faut juger avec David
 

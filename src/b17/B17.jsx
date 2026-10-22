@@ -62,6 +62,7 @@ export default function B17() {
     setSelected(null); setStats(garden.current.stats);
   };
   const plant = garden.current.plants.get(selected);
+  const needs = plant ? garden.current.requirements(plant) : null;
   const spore = selected < 0 ? garden.current.spores.get(-selected) : null;
   const connections = plant ? [...garden.current.grafts.values()].filter(g => g.a === plant.id || g.b === plant.id) : [];
   const buttonStyle = { borderColor: '#45625d', color: '#d5eee2', textTransform: 'none' };
@@ -95,7 +96,7 @@ export default function B17() {
             <Box ref={container}>
               <canvas ref={canvas} onClick={inspect} aria-label="Paroi végétale : cliquer une plante pour inspecter ses réserves et ses greffes" style={{ display: 'block', width: '100%', borderRadius: 12, cursor: 'crosshair' }} />
             </Box>
-            <Typography sx={{ mt: 1.5, fontSize: 12, color: '#a7bcb6' }}>Sol brun : réserve minérale · Une couleur par lignée · Cercles dorés : greffes · Losanges : spores · Flux bleus : eau · Flux jaunes : énergie · Flux orange : nutriments</Typography>
+            <Typography sx={{ mt: 1.5, fontSize: 12, color: '#a7bcb6' }}>Poussière ocre : débris en décomposition · Sol brun : réserve minérale · Une couleur par lignée · Cercles dorés : greffes · Losanges : spores · Fleurs : naissance d’une graine · Flux bleus : eau · Flux jaunes : énergie · Flux orange : nutriments</Typography>
           </Box>
           <Box sx={{ ...panel, mt: 2 }}>
             <Typography sx={{ mb: 1, fontSize: 14 }}>Changer les conditions</Typography>
@@ -120,18 +121,19 @@ export default function B17() {
           <Box sx={panel}>
             <Typography sx={{ color: '#a7bcb6', fontSize: 12, mb: 1 }}>CYCLE {stats.tick}</Typography>
             <Stack direction="row" flexWrap="wrap" gap={1}>
-              {[`${stats.plants} plantes`, `${stats.lineages} lignées actives`, `${stats.grafts} greffes`, `${stats.cells} cellules`, `${stats.spores} spores`].map(label => <Chip key={label} label={label} size="small" sx={{ bgcolor: '#263d37', color: '#d6eadc' }} />)}
+              {[`${stats.plants} plantes`, `${stats.lineages} lignées actives`, `${stats.grafts} greffes`, `${stats.cells} cellules`, `${stats.spores} spores`, `${stats.flowers} fleurs`].map(label => <Chip key={label} label={label} size="small" sx={{ bgcolor: '#263d37', color: '#d6eadc' }} />)}
             </Stack>
             <Typography sx={{ fontSize: 12, color: '#a7bcb6', mt: 1.5 }}>{stats.births} naissances · {stats.deaths} morts · Génération {stats.generation}</Typography>
-            <Typography sx={{ fontSize: 12, color: '#a7bcb6', mt: 0.5 }}>{stats.grounded} plantes au sol · {stats.falling} en chute<br />{stats.falls} pertes d’appui · {stats.fragments} fragments détachés<br />{stats.grafted} greffes formées · {stats.broken} ruptures</Typography>
+            <Typography sx={{ fontSize: 12, color: '#a7bcb6', mt: 0.5 }}>{stats.grounded} plantes au sol · {stats.falling} en chute<br />{stats.falls} pertes d’appui · {stats.fragments} fragments détachés<br />Débris {stats.detritus.toFixed(1)} · minéraux recyclés {stats.recycled.toFixed(1)}<br />{stats.grafted} greffes formées · {stats.broken} ruptures</Typography>
             <Typography sx={{ fontSize: 12, color: '#a7bcb6', mt: 0.5 }}>{stats.dormantLineages} lignées en dormance · {stats.awakenings} réveils · {stats.showers} averses</Typography>
           </Box>
           <Box sx={panel}>
             <Typography sx={{ fontFamily: 'Georgia, serif', fontSize: 20, mb: 1 }}>{plant ? `Plante ${plant.id}` : spore ? `Spore de la plante ${spore.sourceId}` : selected < 0 ? 'Spore germée ou disparue' : selected ? 'Plante disparue' : 'Approchez-vous'}</Typography>
             {plant ? <>
               <Typography sx={{ fontSize: 13, color: '#b1c6bd' }}>Lignée {plant.lineage} · génération {plant.generation}<br />{plant.cells.length} cellules · âge {plant.age}<br />Énergie {plant.energy.toFixed(2)} · eau {plant.water.toFixed(2)}<br />Nutriments {plant.nutrients.toFixed(2)} · {plant.falling ? 'en chute' : plant.grounded ? 'au sol' : plant.supported ? 'soutenue' : 'cherche un appui'}<br />{plant.stress ? `En difficulté depuis ${plant.stress} cycles` : 'Réserves vitales disponibles'}</Typography>
-              <Typography sx={{ fontSize: 12, mt: 1.5 }}>Par cycle : +{plant.photo.toFixed(3)} énergie captée · +{plant.intake.toFixed(3)} eau prélevée / −{plant.waterUse.toFixed(3)} utilisée · +{plant.mineralIntake.toFixed(3)} nutriments</Typography>
+              <Typography sx={{ fontSize: 12, mt: 1.5 }}>Par cycle : +{plant.photo.toFixed(3)} énergie captée · +{plant.intake.toFixed(3)} eau prélevée / −{plant.waterUse.toFixed(3)} utilisée · +{plant.mineralIntake.toFixed(3)} nutriments / −{plant.mineralUse.toFixed(3)} utilisés</Typography>
               <Typography sx={{ color: '#a7bcb6', fontSize: 12, mt: 1.5 }}>Tendances héritées : hauteur {(plant.traits.vertical * 100).toFixed(0)} % · ramification {(plant.traits.branching * 100).toFixed(0)} % · partage {(plant.traits.sharing * 100).toFixed(0)} %</Typography>
+              <Typography sx={{ color: '#a7bcb6', fontSize: 12, mt: 1 }}>Sécheresse {(plant.traits.drought * 100).toFixed(0)} % · seuil d’eau {needs.dryThreshold.toFixed(3)}<br />Sobriété minérale {(plant.traits.frugality * 100).toFixed(0)} % · construction {needs.buildMinerals.toFixed(2)} · croissance tous les {needs.growthInterval} cycles<br />Prospection {(plant.traits.prospecting * 100).toFixed(0)} % · {plant.traits.prospecting >= 0.5 ? 'prélève dans les cases voisines' : 'prélève sous son tissu'} · +{plant.remoteIntake.toFixed(3)} à distance<br />Fertilité {(plant.traits.fertility * 100).toFixed(0)} % · tentative tous les {needs.reproductionInterval} cycles</Typography>
               {connections.map(g => <Typography key={g.key} sx={{ fontSize: 12, mt: 1, color: '#e3cf91' }}>↔ Plante {g.a === plant.id ? g.b : g.a} · eau {((g.a === plant.id ? -1 : 1) * g.water).toFixed(3)} · énergie {((g.a === plant.id ? -1 : 1) * g.energy).toFixed(3)} · nutriments {((g.a === plant.id ? -1 : 1) * (g.nutrients || 0)).toFixed(3)} / cycle</Typography>)}
               {!connections.length && <Typography sx={{ fontSize: 12, mt: 1 }}>Aucune greffe active.</Typography>}
               <Button size="small" sx={buttonStyle} onClick={() => setSelected(null)}>Voir tout le jardin</Button>

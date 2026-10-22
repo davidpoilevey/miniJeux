@@ -34,3 +34,15 @@ Les prélèvements de toutes les cellules alimentent la réserve commune avant l
 photosynthèse ; celle-ci ralentit quand l'eau manque, en conservant une petite
 réserve. Les tests isolent notamment une seule branche humide nourrissant un corps
 majoritairement sec, la conservation de l'eau et l'indépendance de l'ordre cellulaire.
+
+Les douze gènes comprennent résistance à la sécheresse, sobriété minérale et
+fertilité. `requirements()` traduit ces traits en seuils, coûts et rythmes, avec
+contreparties de photosynthèse ou de vitesse de croissance. Les fleurs enregistrent
+des naissances réussies, suivent leur cellule et expirent en temps de simulation.
+
+`stepResources()` garde une recharge de fond des minéraux (0,3 % du déficit vers
+`soil`). `stepDetritus()` fait tomber puis minéralise localement les débris. Les
+cellules mémorisent leurs minéraux de construction ; mort et fragmentation les
+restituent avec les réserves restantes, après allocation des spores. La prospection
+génétique permet de prélever dans les quatre cases voisines avec le même débit
+total et un coût énergétique supplémentaire.

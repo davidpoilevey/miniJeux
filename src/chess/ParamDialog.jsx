@@ -11,7 +11,7 @@ import {
   Tooltip,
   Divider
 } from '@mui/material';
-import { Close as CloseIcon, CheckCircle as CheckCircleIcon } from '@mui/icons-material';
+import { Close as CloseIcon, CheckCircle as CheckCircleIcon, Tune as TuneIcon } from '@mui/icons-material';
 import { useChess } from './ChessContext';
 import { DIFFICULTY_CONFIGS } from './reflexions';
 import { useEffect, useState } from 'react';
@@ -73,7 +73,19 @@ useEffect(() => {
   };
 
   const maxDifficulty = Object.keys(DIFFICULTY_CONFIGS).length - 1;
-  const sliderDifficulte = Math.max(1, difficulte);
+  const isCustom = difficulte === 0;
+  // Le niveau 0 ("Personnalisé") vit à côté de l'échelle, pas dedans : on mémorise
+  // le palier d'où l'on vient pour y revenir en un clic.
+  const [lastPreset, setLastPreset] = useState(() => Math.max(1, difficulte));
+  const sliderDifficulte = isCustom ? lastPreset : Math.max(1, difficulte);
+  const toggleCustomDifficulty = () => {
+    if (isCustom) {
+      setDifficulte(lastPreset);
+    } else {
+      setLastPreset(difficulte);
+      setDifficulte(0);
+    }
+  };
 
   return (
     <Dialog
@@ -181,7 +193,7 @@ useEffect(() => {
               <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Typography sx={LABEL_SX}>Difficulté de l'IA</Typography>
                 <Typography sx={{ fontSize: '0.72rem', fontWeight: 700, color: '#D2B48C' }}>
-                  {DIFFICULTY_CONFIGS[sliderDifficulte]?.name} • {DIFFICULTY_CONFIGS[sliderDifficulte]?.estimatedElo} Elo
+                  {DIFFICULTY_CONFIGS[difficulte]?.name} • {DIFFICULTY_CONFIGS[difficulte]?.estimatedElo} Elo
                 </Typography>
               </Box>
               <Box sx={{ background: '#f4f4f0', borderRadius: 3, p: 3, mt: 1.5 }}>
@@ -197,6 +209,7 @@ useEffect(() => {
                     '& .MuiSlider-track': { height: 4 },
                     '& .MuiSlider-rail': { height: 4, opacity: 0.3 },
                     mb: 0.5,
+                    opacity: isCustom ? 0.35 : 1, // l'échelle est en veille tant qu'on règle à la main
                   }}
                 />
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', px: 0.5 }}>
@@ -211,6 +224,26 @@ useEffect(() => {
                     "{DIFFICULTY_CONFIGS[difficulte].description}"
                   </Typography>
                 )}
+                <Button
+                  fullWidth
+                  onClick={toggleCustomDifficulty}
+                  startIcon={<TuneIcon fontSize="small" />}
+                  sx={{
+                    mt: 2,
+                    borderRadius: 2,
+                    textTransform: 'uppercase',
+                    fontSize: '0.62rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.1em',
+                    border: '1px solid',
+                    borderColor: isCustom ? '#835425' : 'rgba(131,84,37,0.35)',
+                    color: isCustom ? '#faf9f6' : '#835425',
+                    background: isCustom ? '#835425' : 'transparent',
+                    '&:hover': { background: isCustom ? '#6d4520' : 'rgba(210,180,140,0.25)' },
+                  }}
+                >
+                  {isCustom ? 'Revenir aux niveaux prédéfinis' : "Régler l'IA moi-même"}
+                </Button>
               </Box>
               {/* Réglages personnalisés (niveau 0) */}
               <Collapse in={difficulte === 0} timeout="auto" unmountOnExit>
