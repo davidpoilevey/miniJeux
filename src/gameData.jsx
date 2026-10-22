@@ -15,6 +15,7 @@ const lazy = (importFn, name) =>
   );
 
 const Echecs = lazy(() => import('./chess/EchecBoard'));
+const Lemmings = lazy(() => import('./lemmings/Lemmings'));
 
 const Bactery9 = lazy(() => import( './b9/Bactery9'));
 const Precambrien = lazy(() => import( './b10/Precambrien'));
@@ -1027,6 +1028,15 @@ export const GAMES_DATA = [
   {
     categorie: 'Work in progress',
     jeux: [
+      {
+        name: 'Lemmings',
+        id: 'lemmings',
+        component: Lemmings,
+        icon: 'Groups',
+        description: 'Dix petites têtes vertes, trois métiers et une sortie. À toi de sauver la troupe !',
+        status: 'info',
+        tags: ['casse-tete', 'strategie', 'retro', 'souris', 'mobileFriendly', 'workInProgress'],
+      },
     {
         name:"Gipsy", 
         id:'gipsy',
