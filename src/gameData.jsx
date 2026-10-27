@@ -34,6 +34,7 @@ const Bomberman = lazy(() => import( './bomberman/components/BombermanGame'));
 const Jardin = lazy(() => import( './jds/components/Jardin'));
 const UnoBoard = lazy(() => import( './uno/Plateau'));
 const CultManagementGame = lazy(() => import( './cultManager/CultManager'));
+const Bouillon = lazy(() => import( './bouillon/Bouillon'));
 const GipsyGame = lazy(() => import( './gipsy/Gipsy'));
 const SnookerGame = lazy(() => import( './snooker/SnookerGame'));
 const Sorcery = lazy(() => import( './sorcery/Sorcery'));
@@ -696,6 +697,16 @@ export const GAMES_DATA = [
   {
     categorie: 'Creation originales',
     jeux: [
+      {
+        name: 'Bouillon de Culture',
+        id: 'bouillon',
+        component: Bouillon,
+        icon: 'Science',
+        image: `${process.env.PUBLIC_URL}/bouillon.svg`,
+        description: "Gilou version ! Des microbes tombent dans la bouillon, deux identiques fusionnent... mais l'évolution change leur FORME : pilule, jumeaux, 8, paramécie ciliée, triangle à flagelle, roue, tardigrade à 8 pattes. Physique chaotique, maths égales, combos en cascade. Le Suika mutagène du site.",
+        status: 'success',
+        tags: ['physique', 'hasard', 'mobileFriendly', 'souris', 'original', 'casse-tete'],
+      },
       {
         name: "Can't Stop",
         id:'cantstop',
