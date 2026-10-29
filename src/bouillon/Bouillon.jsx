@@ -11,6 +11,9 @@ import Matter, { Bodies, Body } from 'matter-js';
  * pas seulement la taille. Toutes les masses sont égales : les gros ne broient
  * pas les petits, ils leur font juste vivre un enfer balistique.
  * Gilou's contribution : 2026-10-26 — v2 "souches mutantes".
+ * v2.1 (2026-10-29) — le sel manquant : vraie croissance d'échelle (k par espèce,
+ * la Souche-Mère bouffe un tiers du bac) + prolifération (les cellules matures
+ * bourgeonnent des spores si on les laisse traîner). Attendre ne sauve plus.
  */
 
 const STAGE_W = 420;
@@ -24,27 +27,57 @@ const DROP_Y = 70;
 const COOLDOWN_MS = 480;
 const MASS = 0.62; // masse identique pour tous : l'évolution, c'est la forme, pas l'écrasement
 
+// ---------- prolifération : ce qui traîne sans fusionner finit par se reproduire ----------
+const MATURE_MS = 9000;   // une cellule « mûrit » après 9 s de vie sans fusion
+const BUD_EVERY = 5200;   // intervalle de bourgeonnement du spore
+const BUD_STEP = 1400;    // les stades supérieurs bourgeonnent plus lentement
+const BUD_CAP = 30;       // au-delà de 30 corps, le bouillon sature : plus rien ne bourgeonne
+
 // physique : c = cercle, r = capsule (rect arrondi), e = ellipse, p = polygone régulier
-const SPECIES = [
-  { name: 'Spore',   color: '#9be36a', br: 14,
+// k = coefficient d'échelle de chaque espèce : les morphologies de BASE sont conservées,
+// mais cette fois chaque stade occupe franchement plus de place — le Souika doit
+// devenir un tetris sous pression, pas un tapis roulant de fusions automatiques.
+const BASE = [
+  { name: 'Spore',   color: '#9be36a', k: 1,
     phys: [{ t: 'c', o: [0, 0], r: 14 }] },
-  { name: 'Bacille', color: '#64c8f0', br: 26,
+  { name: 'Bacille', color: '#64c8f0', k: 1,
     phys: [{ t: 'r', o: [0, 0], w: 52, h: 26 }] },
-  { name: 'Diplocoque', color: '#f0a860', br: 31,
+  { name: 'Diplocoque', color: '#f0a860', k: 1.2,
     phys: [{ t: 'c', o: [-15, 0], r: 15 }, { t: 'c', o: [15, 0], r: 15 }] },
-  { name: "L'Huit",  color: '#b06ad0', br: 37,
+  { name: "L'Huit",  color: '#b06ad0', k: 1.7,
     phys: [{ t: 'c', o: [0, -16], r: 19 }, { t: 'c', o: [0, 16], r: 19 }] },
-  { name: 'Paramécie', color: '#f066a0', br: 41,
+  { name: 'Paramécie', color: '#f066a0', k: 1.9,
     phys: [{ t: 'e', o: [0, 0], rx: 40, ry: 18 }] },
-  { name: 'Euglène', color: '#50d0c0', br: 44,
+  { name: 'Euglène', color: '#50d0c0', k: 2.2,
     phys: [{ t: 'p', o: [0, 0], s: 3, r: 42 }], friction: 0.3, restitution: 0.18 },
-  { name: 'Rotifère', color: '#f0d050', br: 50,
+  { name: 'Rotifère', color: '#f0d050', k: 1.9,
     phys: [{ t: 'p', o: [0, 0], s: 8, r: 47 }], friction: 0.22, frictionAir: 0.008 },
-  { name: 'Tardigrade', color: '#8070f0', br: 62,
+  { name: 'Tardigrade', color: '#8070f0', k: 2,
     phys: [{ t: 'r', o: [0, 0], w: 104, h: 46 }, { t: 'c', o: [-49, 1], r: 18 }, { t: 'c', o: [49, 1], r: 18 }] },
-  { name: 'La Souche-Mère', color: '#f04848', br: 70,
+  { name: 'La Souche-Mère', color: '#f04848', k: 2.8,
     phys: [{ t: 'c', o: [0, -25], r: 28 }, { t: 'c', o: [-25, 17], r: 28 }, { t: 'c', o: [25, 17], r: 28 }] },
 ];
+
+// phys mise à l'échelle + demi-emprise (br) recalculée : une seule source de vérité
+// pour la physique ET le rendu Konva
+const SPECIES = BASE.map((s) => {
+  const k = s.k;
+  const phys = s.phys.map((p) => {
+    const o = [p.o[0] * k, p.o[1] * k];
+    switch (p.t) {
+      case 'c': return { ...p, o, r: p.r * k };
+      case 'r': return { ...p, o, w: p.w * k, h: p.h * k };
+      case 'e': return { ...p, o, rx: p.rx * k, ry: p.ry * k };
+      default:  return { ...p, o, r: p.r * k }; // polygone régulier
+    }
+  });
+  const ext = phys.reduce((m, p) => Math.max(m,
+    p.t === 'r'
+      ? Math.max(Math.abs(p.o[0]) + p.w / 2, Math.abs(p.o[1]) + p.h / 2)
+      : Math.max(Math.abs(p.o[0]), Math.abs(p.o[1])) + (p.rx ? Math.max(p.rx, p.ry) : p.r)
+  ), 0);
+  return { ...s, phys, br: Math.ceil(ext * 1.02) };
+});
 
 const MERGE_PTS = [0, 3, 7, 12, 20, 30, 45, 65, 90, 140];
 const DROP_POOL = [0, 0, 0, 0, 1, 1, 1, 2, 2, 3];
@@ -153,6 +186,7 @@ export default function Bouillon() {
       bornAt: performance.now(),
       dangerMs: 0,
       popAt: performance.now(),
+      budAt: performance.now() + MATURE_MS + Math.random() * 1500,
     };
     bodiesRef.current.set(id, body);
     Matter.Composite.add(engineRef.current.world, body);
@@ -254,6 +288,7 @@ export default function Bouillon() {
           node.rotation(body.angle * 57.29);
           const t = (now - body.plugin.popAt) / 260;
           if (t < 1) node.scale({ x: 1 + Math.sin(Math.PI * t) * (0.15 + body.plugin.level * 0.03), y: 1 + Math.sin(Math.PI * t) * (0.15 + body.plugin.level * 0.03) });
+          else if (body.plugin.budAt - now < 1200) node.scale({ x: 1 + Math.sin(now / 110) * 0.05, y: 1 - Math.sin(now / 110) * 0.05 }); // bientôt prêt à bourgeonner
           else node.scale({ x: 1, y: 1 });
         }
         const age = now - body.plugin.bornAt;
@@ -264,6 +299,19 @@ export default function Bouillon() {
           maxDanger = Math.max(maxDanger, body.plugin.dangerMs);
         } else {
           body.plugin.dangerMs = Math.max(0, body.plugin.dangerMs - 33);
+        }
+        // prolifération : une cellule mature qui traîne bourgeonne une spore
+        if (bodiesRef.current.size <= BUD_CAP && now > body.plugin.budAt) {
+          body.plugin.budAt = now + BUD_EVERY + body.plugin.level * BUD_STEP + Math.random() * 1200;
+          const pr = SPECIES[body.plugin.level].br;
+          const a = Math.random() * Math.PI * 2;
+          const bx = Math.min(WALL_R - 16, Math.max(WALL_L + 16, body.position.x + Math.cos(a) * pr * 0.6));
+          const by = Math.min(FLOOR_Y - 16, Math.max(DROP_Y + 16, body.position.y + Math.sin(a) * pr * 0.6));
+          spawnPiece(0, bx, by);
+          const bId = 'b' + now + Math.random();
+          setFloaters((f) => [...f, { id: bId, x: bx, y: by, text: '🌱', color: '#9be36a', t0: now }]);
+          setTimeout(() => setFloaters((f) => f.filter((o) => o.id !== bId)), 900);
+          beep(660, 0.05, 'sine', 0.05);
         }
       }
       dangerMsRef.current = maxDanger;
@@ -378,7 +426,8 @@ export default function Bouillon() {
     <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 2 }}>
       <Typography variant="h5" sx={{ mb: 0.5 }}>🧫 Bouillon de Culture</Typography>
       <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-        Fusionne deux microbes identiques : l'évolution change leur FORME, pas leur taille. Attention au débordement !
+        Fusionne deux microbes identiques : l'évolution change leur FORME — et cette fois, VRAIMENT la taille.
+        Et n'oublie pas : ce qui traîne dans le bouillon finit par bourgeonner !
       </Typography>
 
       <Box sx={{ display: 'flex', gap: 4, mb: 1, alignItems: 'baseline' }}>
@@ -459,7 +508,7 @@ export default function Bouillon() {
         <Button variant="outlined" onClick={restart}>Recommencer</Button>
       </Box>
       <Typography variant="caption" color="textSecondary" sx={{ mt: 0.5 }}>
-        ← → pour viser · clic pour lâcher · MAINTIENS le clic pour mitrailler · combo si tu fusionnes vite
+        ← → pour viser · clic pour lâcher · MAINTIENS le clic pour mitrailler · combo si tu fusionnes vite · une cellule qui traîne 9 s bourgeonne 🌱
       </Typography>
 
       <GameOver
@@ -585,9 +634,12 @@ const Decor = ({ level, eyeAng }) => {
 // silhouette complète d'une pièce
 const PieceLooks = ({ level, eyeSeed }) => {
   const eyeAng = seedAngle(eyeSeed);
+  const k = SPECIES[level].k;
   return (<>
     <PhysShapes level={level} />
-    <Decor level={level} eyeAng={eyeAng} />
+    <Group scale={{ x: k, y: k }}>
+      <Decor level={level} eyeAng={eyeAng} />
+    </Group>
   </>);
 };
 
