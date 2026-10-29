@@ -1,7 +1,7 @@
 {
   "files": {
-    "main.css": "/miniJeux/static/css/main.77b6ba77.css",
-    "main.js": "/miniJeux/static/js/main.d985c10e.js",
+    "main.css": "/miniJeux/static/css/main.2741860f.css",
+    "main.js": "/miniJeux/static/js/main.c666dd12.js",
     "static/js/830.e4c6afe3.chunk.js": "/miniJeux/static/js/830.e4c6afe3.chunk.js",
     "static/css/2497.ee4639ad.chunk.css": "/miniJeux/static/css/2497.ee4639ad.chunk.css",
     "static/js/2497.a807ec39.chunk.js": "/miniJeux/static/js/2497.a807ec39.chunk.js",
@@ -664,7 +664,7 @@
     "static/media/sonPet5.mp3": "/miniJeux/static/media/sonPet5.b3530edd2fe95e48aec6.mp3"
   },
   "entrypoints": [
-    "static/css/main.77b6ba77.css",
-    "static/js/main.d985c10e.js"
+    "static/css/main.2741860f.css",
+    "static/js/main.c666dd12.js"
   ]
 }
