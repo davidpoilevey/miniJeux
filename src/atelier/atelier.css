@@ -113,7 +113,6 @@
 .atelier-review-label { display: flex; justify-content: space-between; }
 .atelier-review blockquote { margin: 10px 0 0; padding-left: 12px; border-left: 2px solid #c5ccba; font-size: 11px; font-style: italic; }
 .atelier-review cite { display: block; margin-top: 6px; font-size: 9px; font-style: normal; }
-.atelier-review small { display: block; margin-top: 3px; font-size: 8px; font-style: normal; }
 .atelier-empty { text-align: center; padding: 60px 10px; }
 .atelier-empty > span { color: var(--rust); font-size: 40px; }
 .atelier h3 { font-size: 35px; }

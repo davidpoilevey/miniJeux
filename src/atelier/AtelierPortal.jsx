@@ -53,7 +53,6 @@ function GameCard({ game, index, score, onSelect, onTag }) {
         <p className="atelier-review-label">Un avis très peu objectif <span aria-hidden="true">✧</span></p>
         <blockquote>« {review.text} »
           <cite>— {review.name} · {review.stars}</cite>
-          <small>Avis fictif, pour le plaisir.</small>
         </blockquote>
       </div>
     </article>
