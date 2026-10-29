@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" width="240" height="240">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#123623"/>
+      <stop offset="1" stop-color="#0d2418"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="240" rx="28" fill="url(#bg)"/>
+  <!-- boîte de pétri -->
+  <rect x="58" y="52" width="124" height="138" rx="16" fill="#1d3f2a" stroke="#cfd8dc" stroke-width="7"/>
+  <!-- microbes -->
+  <circle cx="92" cy="150" r="17" fill="#f0a860" stroke="#b06a20" stroke-width="3"/>
+  <circle cx="146" cy="158" r="17" fill="#f0a860" stroke="#b06a20" stroke-width="3"/>
+  <circle cx="93" cy="145" r="4.5" fill="#fff"/>
+  <circle cx="99" cy="145" r="4.5" fill="#fff"/>
+  <circle cx="94.5" cy="146" r="2" fill="#222"/>
+  <circle cx="100.5" cy="146" r="2" fill="#222"/>
+  <circle cx="145" cy="153" r="4.5" fill="#fff"/>
+  <circle cx="151" cy="153" r="4.5" fill="#fff"/>
+  <circle cx="146.5" cy="154" r="2" fill="#222"/>
+  <circle cx="152.5" cy="154" r="2" fill="#222"/>
+  <!-- gros microbe en haut -->
+  <circle cx="120" cy="102" r="30" fill="#8070f0" stroke="#4a3cc0" stroke-width="3"/>
+  <circle cx="109" cy="97" r="7" fill="#fff"/>
+  <circle cx="131" cy="97" r="7" fill="#fff"/>
+  <circle cx="111" cy="99" r="3.4" fill="#222"/>
+  <circle cx="133" cy="99" r="3.4" fill="#222"/>
+  <ellipse cx="120" cy="114" rx="6" ry="3.5" fill="#222" opacity="0.55"/>
+  <!-- ligne de danger -->
+  <line x1="58" y1="190" x2="182" y2="190" stroke="#ffb700" stroke-width="3" stroke-dasharray="10 6"/>
+</svg>
