@@ -21,7 +21,7 @@ function findGameById(id) {
   return null;
 }
 
-const AppStitch = () => {
+const AppStitch = ({ Portal }) => {
   const [selectedApp, setSelectedApp] = useState(() => {
     const id = new URLSearchParams(window.location.search).get('game');
     return id ? findGameById(id) : null;
@@ -62,7 +62,9 @@ const AppStitch = () => {
 
   useEffect(() => {
     if (selectedApp) {
-      const url = `?game=${encodeURIComponent(selectedApp.id || selectedApp.name)}`;
+      const params = new URLSearchParams(window.location.search);
+      params.set('game', selectedApp.id || selectedApp.name);
+      const url = `?${params}`;
       window.history.pushState({ minijeuxGame: true }, '', url);
       const onPop = () => {
         sendCloseEvent(selectedApp);
@@ -89,10 +91,32 @@ const AppStitch = () => {
       <CssBaseline />
 
       {/* Back button overlay (shown while a game is open) */}
-      <AppBackButton selectedApp={selectedApp} returnBack={returnBack} />
+      {Portal ? (
+        <Box sx={{ position: 'fixed', inset: 0, zIndex: 1300, pointerEvents: 'none' }}>
+          <AppBackButton selectedApp={selectedApp} returnBack={returnBack} />
+        </Box>
+      ) : <AppBackButton selectedApp={selectedApp} returnBack={returnBack} />}
 
       {/* ── Library view ── */}
       <Fade in={!selectedApp} timeout={400} mountOnEnter unmountOnExit>
+        {Portal ? (
+          <Box>
+            <Portal
+              gamesData={GAMES_DATA}
+              searchQuery={searchQuery}
+              onSearch={setSearchQuery}
+              currentView={currentView}
+              onChangeView={setCurrentView}
+              onRandom={handleRandom}
+              onSelectGame={(app) => {
+                if (window.gtag) window.gtag('event', 'jeu_selectionne', {
+                  event_category: 'nouveauJeu', event_label: app.name, value: 1,
+                });
+                handleSelectApp(app);
+              }}
+            />
+          </Box>
+        ) : (
         <Box sx={{ display: 'flex', minHeight: '100dvh', bgcolor: 'background.default' }}>
           <TopNavBar
             searchQuery={searchQuery}
@@ -144,6 +168,7 @@ const AppStitch = () => {
             )}
           </Box>
         </Box>
+        )}
       </Fade>
 
       {/* ── Game view ── */}

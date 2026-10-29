@@ -6,7 +6,7 @@ import '../stitch.css';
 const LABEL_FONT = { fontFamily: '"Space Grotesk", sans-serif' };
 
 // La sélection maison — un jeu par ligne, choisi à la main, pas par algorithme.
-const FAVORITES = [
+export const FAVORITES = [
   {
     matchId: 'echec',
     eyebrow: 'Le plus abouti',

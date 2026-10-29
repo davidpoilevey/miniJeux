@@ -1,8 +1,8 @@
 import { GAMES_DATA } from './gameData';
 
-const BASE = 'https://davidpoilevey.github.io/miniJeux';
-const SITE_TITLE = 'Jeux React de David Poilevey';
-const SITE_DESC = "Découvrez les mini-jeux développés en React par David Poilevey. Vieux jeux rétro et expériences en ReactJS. Un site ludique, créatif et open source, hébergé sur GitHub Pages.";
+const BASE = process.env.REACT_APP_SITE_URL || 'https://davidpoilevey.github.io/miniJeux';
+const SITE_TITLE = process.env.REACT_APP_SITE_TITLE || 'Jeux React de David Poilevey';
+const SITE_DESC = process.env.REACT_APP_SITE_DESCRIPTION || "Découvrez les mini-jeux développés en React par David Poilevey. Vieux jeux rétro et expériences en ReactJS. Un site ludique, créatif et open source, hébergé sur GitHub Pages.";
 
 export function injectGamesJsonLd() {
   if (document.getElementById('games-jsonld')) return;

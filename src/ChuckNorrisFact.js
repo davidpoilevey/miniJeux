@@ -467,6 +467,7 @@ export const HiScoreButton = React.forwardRef((props, ref) => {
     <>
       <IconButton ref={ref}
         onClick={handleOpen}
+        aria-label="Afficher le classement mondial"
         color="primary"
         aria-describedby={id}
         size="large"
