@@ -3,7 +3,7 @@ import { Box, Button, IconButton, Typography } from '@mui/material';
 import { VolumeUp, VolumeOff } from '@mui/icons-material';
 import { GameOver as GameOverPanel } from '../ChuckNorrisFact';
 import { soundManager, soundMap } from '../rpg/sons/SoundManager';
-import { W, H, DT, R_PLAYER, R_ECHO, R_TARGET, GRACE, createGame, start, step, setAim, echoPos } from './engine';
+import { W, H, DT, R_PLAYER, R_ECHO, R_TARGET, R_BONUS, GRACE, FREEZE_TICKS, LUCID_TICKS, createGame, start, step, setAim, echoPos } from './engine';
 
 /*
  * Déjà-vu — le jeu de Claude.
@@ -12,7 +12,12 @@ import { W, H, DT, R_PLAYER, R_ECHO, R_TARGET, GRACE, createGame, start, step, s
  */
 
 const BEST_KEY = 'dejavu_best';
-const SOUNDS = { pick: 'gold', near: 'slash', dead: 'punch' };
+const SOUNDS = { pick: 'gold', near: 'slash', dead: 'punch', bonus: 'levelUp', eat: 'coupReussi' };
+const BONUS = {
+  oubli: { glyph: '∅', color: '#c79bff', label: 'Oubli' },
+  gel: { glyph: '✻', color: '#8fe3ff', label: 'Gel' },
+  lucide: { glyph: '✦', color: '#7dffb0', label: 'Lucidité' },
+};
 const pickOne = a => a[Math.floor(Math.random() * a.length)];
 
 const EPITAPHS = [
@@ -84,10 +89,25 @@ function draw(ctx, s, view, now) {
     ctx.globalAlpha = 1;
   }
 
+  // bonus
+  if (s.bonus && s.phase === 'playing') {
+    const b = s.bonus, look = BONUS[b.kind];
+    const left = Math.max(0, 1 - (s.tick - b.born) / b.ttl);
+    ctx.globalAlpha = left < 0.25 && Math.floor(now / 110) % 2 ? 0.35 : 1;
+    ctx.shadowColor = look.color; ctx.shadowBlur = 14;
+    ctx.strokeStyle = look.color; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(b.x, b.y, R_BONUS + 2 * Math.sin(now / 200), -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * left); ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = look.color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '700 15px system-ui, sans-serif';
+    ctx.fillText(look.glyph, b.x, b.y + 1);
+    ctx.textBaseline = 'alphabetic'; ctx.globalAlpha = 1;
+  }
+
   // échos
+  const lucid = s.phase === 'playing' && s.lucid > 0, frozen = s.phase === 'playing' && s.frozen > 0;
   s.echoes.forEach((e, i) => {
-    const [x, y] = echoPos(e, s.tick);
-    const age = s.tick - e.born;
+    const [x, y] = echoPos(e, s.etick);
+    const age = s.etick - e.born;
     const killer = s.phase === 'dead' && s.cause.echo === i;
     if (age < GRACE) { // matérialisation : anneau qui se referme, inoffensif
       const k = age / GRACE;
@@ -95,8 +115,14 @@ function draw(ctx, s, view, now) {
       ctx.beginPath(); ctx.arc(x, y, R_ECHO + 14 * (1 - k), 0, Math.PI * 2); ctx.stroke();
       return;
     }
-    ctx.shadowColor = `hsl(${e.hue},90%,60%)`; ctx.shadowBlur = killer ? 26 : 12;
-    ctx.fillStyle = `hsl(${e.hue},85%,${killer ? 80 : 64}%)`;
+    if (lucid) { // proie : creuse et tremblante
+      ctx.strokeStyle = `hsla(${e.hue},85%,70%,0.8)`; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.arc(x + Math.sin(now / 40 + i) * 1.2, y + Math.cos(now / 47 + i) * 1.2, R_ECHO - 1, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+      return;
+    }
+    ctx.shadowColor = frozen ? '#bfefff' : `hsl(${e.hue},90%,60%)`; ctx.shadowBlur = killer ? 26 : 12;
+    ctx.fillStyle = frozen ? `hsl(${e.hue},35%,82%)` : `hsl(${e.hue},85%,${killer ? 80 : 64}%)`;
     ctx.beginPath(); ctx.arc(x, y, R_ECHO, 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
     ctx.fillStyle = 'rgba(10,13,24,0.75)';
@@ -105,8 +131,9 @@ function draw(ctx, s, view, now) {
 
   // toi
   if (s.phase !== 'dead' || Math.floor(now / 180) % 2) {
-    ctx.shadowColor = '#fff'; ctx.shadowBlur = 14; ctx.fillStyle = '#fff';
-    ctx.beginPath(); ctx.arc(s.x, s.y, R_PLAYER, 0, Math.PI * 2); ctx.fill();
+    const strong = lucid && (s.lucid > 60 || Math.floor(now / 90) % 2); // clignote sur la fin
+    ctx.shadowColor = strong ? '#7dffb0' : '#fff'; ctx.shadowBlur = strong ? 24 : 14; ctx.fillStyle = strong ? '#c9ffe0' : '#fff';
+    ctx.beginPath(); ctx.arc(s.x, s.y, R_PLAYER + (strong ? 2 : 0), 0, Math.PI * 2); ctx.fill();
     ctx.shadowBlur = 0;
   }
 
@@ -125,6 +152,14 @@ function draw(ctx, s, view, now) {
   ctx.fillText(String(s.score), 14, 32);
   ctx.textAlign = 'right'; ctx.fillStyle = 'rgba(255,255,255,0.45)'; ctx.font = '500 12px system-ui, sans-serif';
   ctx.fillText(`${s.echoes.length} écho${s.echoes.length > 1 ? 's' : ''} · record ${view.best}`, W - 14, 28);
+
+  // jauges des effets en cours
+  if (s.phase === 'playing') {
+    [[s.lucid / LUCID_TICKS, BONUS.lucide], [s.frozen / FREEZE_TICKS, BONUS.gel]].filter(g => g[0] > 0).forEach(([k, look], i) => {
+      ctx.fillStyle = 'rgba(255,255,255,0.12)'; ctx.fillRect(14, 42 + i * 9, 90, 4);
+      ctx.fillStyle = look.color; ctx.fillRect(14, 42 + i * 9, 90 * k, 4);
+    });
+  }
 
   if (s.phase === 'ready') {
     ctx.textAlign = 'center';
@@ -199,6 +234,9 @@ export default function Dejavu() {
         for (const e of s.events) {
           if (e.type === 'pick') { v.floaters.push({ x: e.x, y: e.y, text: `+${e.points}`, color: '#ffd76a', t0: now }); sfx('pick', 0.25); }
           if (e.type === 'near') { v.floaters.push({ x: e.x, y: e.y, text: `frôlé +${e.points}`, color: '#8fe3ff', t0: now }); sfx('near', 0.08); }
+          if (e.type === 'bonus') { v.floaters.push({ x: e.x, y: e.y, text: BONUS[e.kind].label, color: BONUS[e.kind].color, t0: now }); sfx('bonus', 0.25); }
+          if (e.type === 'forget') v.floaters.push({ x: e.x, y: e.y, text: 'oublié', color: `hsl(${e.hue},85%,72%)`, t0: now });
+          if (e.type === 'eat') { v.floaters.push({ x: e.x, y: e.y, text: `gobé +${e.points}`, color: '#7dffb0', t0: now }); sfx('eat', 0.2); }
           if (e.type === 'dead') {
             sfx('dead', 0.35);
             v.deadAt = now;
@@ -255,7 +293,8 @@ export default function Dejavu() {
         {over > 0 && <Button onClick={() => setShowPanel(true)}>Publier mon score</Button>}
       </Box>
       <Typography variant="caption" sx={{ opacity: 0.6, maxWidth: W, textAlign: 'center', px: 1 }}>
-        Plus tu vas droit, plus tes échos seront sages. Les frôler rapporte. Hésiter aussi se rejoue.
+        Plus tu vas droit, plus tes échos seront sages. Les frôler rapporte.<br />
+        <b style={{ color: BONUS.oubli.color }}>∅ Oubli</b> efface tes 2 plus vieux échos · <b style={{ color: BONUS.gel.color }}>✻ Gel</b> les fige · <b style={{ color: BONUS.lucide.color }}>✦ Lucidité</b> : 4 s pour les gober.
       </Typography>
       {showPanel && <GameOverPanel open gameName="dejavu" score={over} gameOverReason={view.current.epitaph} handleClose={() => setShowPanel(false)} handleRestart={() => { setShowPanel(false); newGame(); }} />}
     </Box>
