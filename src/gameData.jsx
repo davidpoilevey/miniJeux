@@ -18,6 +18,7 @@ const Echecs = lazy(() => import('./chess/EchecBoard'));
 const Minuit = lazy(() => import('./minuit/Minuit'));
 const Orbitales = lazy(() => import('./orbitales/Orbitales'));
 const Dejavu = lazy(() => import('./dejavu/Dejavu'));
+const PhareOuest = lazy(() => import('./phare/PhareOuest'));
 const Lemmings = lazy(() => import('./lemmings/Lemmings'));
 
 const Bactery9 = lazy(() => import( './b9/Bactery9'));
@@ -698,6 +699,16 @@ export const GAMES_DATA = [
   {
     categorie: 'Creation originales',
     jeux: [
+      {
+        name: 'Phare Ouest',
+        id: 'phareouest',
+        component: PhareOuest,
+        icon: 'Lightbulb',
+        image: `${process.env.PUBLIC_URL}/phareouest.svg`,
+        description: "Le second jeu de Claude. Tu es gardien de phare et les capitaines sont aveugles : un bateau ne voit les récifs que dans ta lumière, et il oublie vite. Un seul faisceau, lourd à tourner, des cargos têtus, des nuits de tempête et une Chose qui n'aime pas qu'on l'éclaire. Un jeu sur l'attention — la tienne.",
+        status: 'info',
+        tags: ['action', 'strategie', 'original', 'mobileFriendly', 'souris'],
+      },
       {
         name: 'Déjà-vu',
         id: 'dejavu',
