@@ -1,6 +1,7 @@
 import { useC14, WORLD_NAMES } from '../C14Context';
 import { styles } from '../Carbonifere14';
 import { useState, useEffect } from 'react';
+import { Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Button, Snackbar, Alert } from '@mui/material';
 
 function useDayFactor() {
   const compute = () => {
@@ -44,7 +45,24 @@ export default function C14TopBar() {
     worldIds, selectedWorldId, setSelectedWorldId,
     statsCache, seaLevel,
     cellSize, setCellSize,
+    resetWorld, serverStatus,
   } = useC14();
+  const [resetTarget, setResetTarget] = useState(null);
+  const [resetting, setResetting] = useState(false);
+  const [notice, setNotice] = useState(null);
+  const confirmReset = async () => {
+    if (resetting) return;
+    setResetting(true);
+    try {
+      const result = await resetWorld(resetTarget);
+      setNotice(result.ok
+        ? { severity: 'success', text: `Reset de ${WORLD_NAMES[resetTarget]} envoyé. Le nouveau monde apparaîtra après traitement par le serveur.` }
+        : { severity: 'error', text: 'Impossible d’envoyer le reset. Réessaie dans un instant.' });
+      if (result.ok) setResetTarget(null);
+    } finally {
+      setResetting(false);
+    }
+  };
   const dayFactor = useDayFactor();
   const sunIcon = dayFactor > 0.75 ? '☀️' : dayFactor > 0.4 ? '🌤️' : dayFactor > 0.15 ? '🌙' : '🌑';
 
@@ -65,6 +83,8 @@ export default function C14TopBar() {
       <button type="button" style={s.zoomBtn} onClick={() => setCellSize(cellSize - 2)}>−</button>
       <span style={s.zoomVal}>{cellSize}</span>
       <button type="button" style={s.zoomBtn} onClick={() => setCellSize(cellSize + 2)}>+</button>
+      <button type="button" style={s.worldBtn(false)} disabled={!selectedWorldId || serverStatus !== 'ok' || resetting}
+        onClick={() => setResetTarget(selectedWorldId)}>↻ Repartir de zéro</button>
 
       <div style={{ width: 1, height: 20, background: '#374151', margin: '0 4px' }} />
 
@@ -87,6 +107,25 @@ export default function C14TopBar() {
         </span>
         {worldSeed !== null && <span>seed {worldSeed} · tick {tick}</span>}
       </span>
+      <Dialog open={Boolean(resetTarget)} onClose={() => { if (!resetting) setResetTarget(null); }}>
+        <DialogTitle>Recréer {WORLD_NAMES[resetTarget]} ?</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Le relief, les plantes et l’historique de cette planète seront effacés.
+            Un nouveau monde sera généré avec 80 plantes et un compteur remis à zéro.
+            Cette action est irréversible et s’applique à tous les visiteurs.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button disabled={resetting} onClick={() => setResetTarget(null)}>Annuler</Button>
+          <Button color="error" disabled={resetting} onClick={confirmReset}>
+            {resetting ? 'Envoi…' : 'Recréer cette planète'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Snackbar open={Boolean(notice)} autoHideDuration={10000} onClose={() => setNotice(null)}>
+        {notice ? <Alert severity={notice.severity} onClose={() => setNotice(null)}>{notice.text}</Alert> : undefined}
+      </Snackbar>
     </div>
   );
 }

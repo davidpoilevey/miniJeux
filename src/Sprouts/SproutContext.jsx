@@ -46,7 +46,7 @@ export const SproutProvider = ({ frameWidth, frameHeight, children }) => {
     const ctxt = {
         organismes, setOrganismes, setMessage
         , gridMap, setGridMap, reset, gridSize, setGridSize, setcoutDeLaVie, coutDeLaVie
-        , cycle, isRunning, toggleRunning
+        , cycle, isRunning, toggleRunning, frameWidth, frameHeight
     }
     return <SproutContext.Provider value={ctxt}>
         {children}

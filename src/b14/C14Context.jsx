@@ -147,6 +147,7 @@ export function C14Provider({ children }) {
     if (!savedWorlds?.length) { setServerStatus('error'); return; }
 
     const processed = savedWorlds.map(processWorldData);
+    for (const world of processed) worldDataCache.current.set(world.worldId, world);
     const ids = processed.map(w => w.worldId);
     setWorldIds(ids);
     setServerStatus('ok');
@@ -246,6 +247,16 @@ export function C14Provider({ children }) {
     return sendInteraction(selectedWorldIdRef.current, GEO_EVENTS.GERME_FRUIT, plantId, fruitId);
   }, []);
 
+  const resetWorld = useCallback(async (worldId) => {
+    const result = await sendGeoEvent(worldId, 'resetWorld');
+    if (result.ok) {
+      setActiveEvent(null);
+      setSelectedFlower(null);
+      setSelectedFruit(null);
+    }
+    return result;
+  }, []);
+
   // ── GeoEvent ──────────────────────────────────────────────────────────────
   const applyGeoEvent = useCallback(async (type, cellX, cellY) => {
     setActiveEvent(null);
@@ -272,6 +283,7 @@ export function C14Provider({ children }) {
       likeFlower, fecondFlower,
       germerFruit,
       hasLiked,
+      resetWorld,
       plantsRef,
       // multi-mondes
       worldIds,

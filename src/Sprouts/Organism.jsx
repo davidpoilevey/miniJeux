@@ -36,6 +36,10 @@ export const SproutCellule = ({ type, position, nrj,branches ,size}) => {
                 
                 color = '#dedd03'
                 break;
+            case 'apex':
+                cp='circle(35%)';
+                color = '#f4f38c'
+                break;
             case 'graine':
                 
                 color = '#aead23'

@@ -89,7 +89,9 @@
 .atelier-selected-tags button { font-size: 10px; border-radius: 3px; padding: 4px 9px; }
 .atelier-selected-tags button:last-child { background: transparent; text-decoration: underline; color: var(--rust); }
 .atelier-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 28px; row-gap: 35px; }
-.atelier-card { min-width: 0; display: flex; flex-direction: column; }
+.atelier-card { min-width: 0; display: flex; flex-direction: column; position: relative; }
+.atelier-card-trophy { position: absolute; top: 9px; right: 9px; z-index: 1; }
+.atelier-card-trophy .MuiIconButton-root { box-shadow: 0 1px 4px #263d3440; }
 .atelier .atelier-card-launch { display: block; width: 100%; text-align: left; padding: 0; }
 .atelier-card-cover { display: block; position: relative; overflow: hidden; border-radius: 5px; aspect-ratio: 16 / 10; background: #e3e7da; }
 .atelier-image { display: block; width: 100%; height: 100%; overflow: hidden; background: #e5e8db; }

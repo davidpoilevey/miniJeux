@@ -17,6 +17,7 @@ const lazy = (importFn, name) =>
 const Echecs = lazy(() => import('./chess/EchecBoard'));
 const Minuit = lazy(() => import('./minuit/Minuit'));
 const Orbitales = lazy(() => import('./orbitales/Orbitales'));
+const Dejavu = lazy(() => import('./dejavu/Dejavu'));
 const Lemmings = lazy(() => import('./lemmings/Lemmings'));
 
 const Bactery9 = lazy(() => import( './b9/Bactery9'));
@@ -697,6 +698,16 @@ export const GAMES_DATA = [
   {
     categorie: 'Creation originales',
     jeux: [
+      {
+        name: 'Déjà-vu',
+        id: 'dejavu',
+        component: Dejavu,
+        icon: 'Replay',
+        image: `${process.env.PUBLIC_URL}/dejavu.svg`,
+        description: "Le jeu de Claude. Attrape la pastille : chaque trajet que tu fais devient un écho de toi qui le rejoue en boucle, pour toujours. Aucun ennemi programmé — ton seul adversaire, c'est toi d'il y a douze secondes. Et il ne se souvient de rien.",
+        status: 'info',
+        tags: ['action', 'original', 'mobileFriendly', 'souris'],
+      },
       {
         name: 'Bouillon de Culture',
         id: 'bouillon',

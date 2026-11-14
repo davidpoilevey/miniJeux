@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { DISTRICTS } from './atlasLayout';
+import { formatScoreDate } from '../pocketbaseScores';
 
 /* ---- Placeholder screenshot quand pas d'image ---- */
 function GameScreenPlaceholder({ game }) {
@@ -307,7 +308,7 @@ export function ScoresSheet({ open, onClose, selectedId, setSelectedId, games, s
                       <td className={`rank rank-${i + 1}`}>{String(i + 1).padStart(2, '0')}</td>
                       <td className="name">{s.user}</td>
                       <td className="score">{s.score.toLocaleString()}</td>
-                      <td className="date">{new Date(s.created).toLocaleDateString('fr-FR')}</td>
+                      <td className="date">{formatScoreDate(s.created)}</td>
                     </tr>
                   ))}
                 </tbody>

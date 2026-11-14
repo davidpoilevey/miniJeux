@@ -3,6 +3,7 @@ import { createTheme, ThemeProvider } from '@mui/material/styles';
 import CasinoIcon from '@mui/icons-material/Casino';
 import { HiScoreButton } from '../ChuckNorrisFact';
 import { useGlobalScores } from '../App';
+import { fetchGamesWithScores, GameTopButton } from '../pocketbaseScores';
 import { getRandomReview, useFilteredGames, useIsMobile, useTagsWithCounts } from '../hookGame';
 import { FAVORITES } from '../stitch/pages/FavoritesPage';
 import photoDavid from '../DSCN0013.jpg';
@@ -32,10 +33,11 @@ function GameImage({ game, className = '' }) {
   );
 }
 
-function GameCard({ game, index, score, onSelect, onTag }) {
+function GameCard({ game, index, score, topName, onSelect, onTag }) {
   const review = useMemo(() => getRandomReview(), []);
   return (
     <article className="atelier-card">
+      {topName && <span className="atelier-card-trophy"><GameTopButton gameName={topName} /></span>}
       <button className="atelier-card-launch" onClick={() => onSelect(game)} aria-label={`Jouer à ${game.name}`}>
         <span className="atelier-card-cover">
           <GameImage game={game} />
@@ -75,6 +77,9 @@ export default function AtelierPortal({ gamesData, searchQuery, onSearch, curren
   const tagCounts = useTagsWithCounts(gamesData, query, effectiveTags);
   const allGames = useMemo(() => gamesData.flatMap(group => group.jeux.map(game => ({ ...game, categorie: group.categorie }))), [gamesData]);
   const { getScoreByGame } = useGlobalScores();
+  const [gamesWithScores, setGamesWithScores] = useState(() => new Set());
+  // Selon les jeux, le score est publié sous game.id ou sous game.name
+  useEffect(() => { fetchGamesWithScores().then(setGamesWithScores).catch(() => {}); }, []);
   const favorites = FAVORITES.map(f => ({ ...f, game: allGames.find(g => g.id === f.matchId || g.name === f.matchId) })).filter(f => f.game);
   const covers = ['Civilization', 'echec', 'ezioTrip'].map(id => allGames.find(g => g.id === id || g.name === id)).filter(Boolean);
   const isFavorites = currentView === 'favorites';
@@ -149,7 +154,7 @@ export default function AtelierPortal({ gamesData, searchQuery, onSearch, curren
                 {tagCounts.map(({ tag, count }) => <button key={tag} aria-pressed={selectedTags.includes(tag)} disabled={count === 0 || (isMobile && tag === 'mobileFriendly')} onClick={() => toggleTag(tag)}>{tag}<span>{count}</span></button>)}
               </div>}
               {selectedTags.length > 0 && <div className="atelier-selected-tags">{selectedTags.map(tag => <button key={tag} onClick={() => toggleTag(tag)} aria-label={`Retirer le filtre ${tag}`}>{tag} ×</button>)}<button onClick={() => setSelectedTags([])}>Tout effacer</button></div>}
-              {filteredGames.length ? <div className="atelier-grid">{filteredGames.map(game => <GameCard key={game.id || game.name} game={game} index={allGames.findIndex(g => (g.id || g.name) === (game.id || game.name))} score={getScoreByGame(game.id || game.name)?.score} onSelect={onSelectGame} onTag={toggleTag} />)}</div> : <div className="atelier-empty"><span aria-hidden="true">✳</span><h3>Ce tiroir est encore vide.</h3><p>Essayez une autre recherche ou retirez quelques filtres.</p><button className="atelier-primary" onClick={() => { setSelectedTags([]); setMobileSearch(''); onSearch(''); }}>Revoir la collection</button></div>}
+              {filteredGames.length ? <div className="atelier-grid">{filteredGames.map(game => <GameCard key={game.id || game.name} game={game} index={allGames.findIndex(g => (g.id || g.name) === (game.id || game.name))} score={getScoreByGame(game.id || game.name)?.score} topName={[game.id, game.name].find(n => gamesWithScores.has(n))} onSelect={onSelectGame} onTag={toggleTag} />)}</div> : <div className="atelier-empty"><span aria-hidden="true">✳</span><h3>Ce tiroir est encore vide.</h3><p>Essayez une autre recherche ou retirez quelques filtres.</p><button className="atelier-primary" onClick={() => { setSelectedTags([]); setMobileSearch(''); onSearch(''); }}>Revoir la collection</button></div>}
             </>}
           </section>
         </main>

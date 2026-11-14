@@ -26,7 +26,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import PublishIcon from "@mui/icons-material/Publish";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import { useGlobalScores } from './App';
-import { PSEUDO_KEY, saveScoreToPocketBase, fetchTop10, fetchBestPerGame } from './pocketbaseScores';
+import { PSEUDO_KEY, saveScoreToPocketBase, fetchTop10, fetchBestPerGame, formatScoreDate } from './pocketbaseScores';
 
 const ChuckNorrisFact = ()=> {
   const [fact, setFact] = useState('');
@@ -535,7 +535,7 @@ export const HiScoreButton = React.forwardRef((props, ref) => {
                   {item.score}
                 </Typography>
                 <Typography variant="caption" sx={{ color: "#aaa", minWidth: 58, textAlign: "right" }}>
-                  {new Date(item.created).toLocaleDateString('fr-FR')}
+                  {formatScoreDate(item.created)}
                 </Typography>
               </Box>
             ))}

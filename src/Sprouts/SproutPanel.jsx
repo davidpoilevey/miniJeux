@@ -10,12 +10,14 @@ import { SproutCellule } from "./Organism";
 // ── Actions (gauche) ─────────────────────────────────────────────────────────
 
 const SproutActions = () => {
-    const { setOrganismes, reset, gridSize, setGridSize, setcoutDeLaVie, coutDeLaVie } = useSprout();
+    const { setOrganismes, reset, gridSize, setGridSize, setcoutDeLaVie, coutDeLaVie, frameWidth, frameHeight } = useSprout();
     const [nbSprout, setNbSprout] = useState(1);
 
+    // une case au hasard dans le terrain, hors bordure
+    const caseAuHasard = (taille) => gridSize * (1 + Math.floor(Math.random() * (Math.floor(taille / gridSize) - 2)));
     const createOrganisme = (id, adn) => ({
         id,
-        cellules: [{ type: 'sprout', position: { top: gridSize * Math.floor(Math.random() * 600 / gridSize), left: gridSize * Math.floor(Math.random() * 600 / gridSize) } }],
+        cellules: [{ type: 'sprout', position: { top: caseAuHasard(frameHeight), left: caseAuHasard(frameWidth) } }],
         adn,
         nrj: 60,
     });
@@ -155,6 +157,7 @@ export default SproutPanel;
 
 const CELLULE_TYPES = [
     { type: 'sprout', name: 'Tete' },
+    { type: 'apex', name: 'Apex (tete secondaire)' },
     { type: 'feuille', name: 'Feuille' },
     { type: 'bois', name: 'Bois' },
     { type: 'racine', name: 'Racine' },

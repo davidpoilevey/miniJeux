@@ -6,6 +6,7 @@
  */
 
 import PocketBase from 'pocketbase';
+import { pathToFileURL } from 'node:url';
 
 import generateWorld, { DEFAULT_SEA_LEVEL } from './sim/WorldGenerator.js';
 import { GRID_COLS, GRID_ROWS } from './sim/WorldGrid.js';
@@ -35,10 +36,10 @@ const WORLD_DEFS = [
 ];
 // ── État global ───────────────────────────────────────────────────────────────
 
-const pb     = new PocketBase(PB_URL);
+export const pb = new PocketBase(PB_URL);
 const engine = new PlantGrowthEngine();
 
-function makeWorldState(def) {
+export function makeWorldState(def) {
   return {
     id:              def.id,
     name:            def.name,
@@ -92,10 +93,10 @@ function decodePlant(data) {
 
 // ── PocketBase helpers ────────────────────────────────────────────────────────
 
-async function loadWorldState(w) {
+export async function loadWorldState(w) {
   try {
     const result = await pb.collection(COL).getList(1, 1, {
-      sort: '-updated', filter: `worldId = "${w.id}"`, requestKey: null,
+      sort: '-tick,id', filter: `worldId = "${w.id}"`, requestKey: null,
     });
     if (!result.items.length) return null;
     const rec = result.items[0];
@@ -107,10 +108,11 @@ async function loadWorldState(w) {
       geoHistory:     rec.geoHistory || [],
       plants:         (rec.plants || []).map(decodePlant),
       lastCmdSyncISO: rec.lastCmdSyncISO || null,
+      lastLikeSyncISO: rec.lastLikeSyncISO || null,
     };
   } catch (e) {
     console.error(`[C14:${w.id}] loadState error:`, e?.message);
-    return null;
+    throw e; // Une base indisponible n'est pas un monde absent.
   }
 }
 
@@ -131,6 +133,7 @@ async function saveWorldState(w) {
     geoHistory: w.geoHistory,
     plants: plantsData,
     lastCmdSyncISO: w.lastCmdSyncISO ?? null,
+    lastLikeSyncISO: w.lastLikeSyncISO ?? null,
   };
 
   try {
@@ -146,6 +149,7 @@ async function saveWorldState(w) {
     console.error(`[C14:${w.id}] saveState error:`, e?.message);
     if (e?.data)   console.error(`[C14:${w.id}] details:`, JSON.stringify(e.data));
     if (e?.status) console.error(`[C14:${w.id}] status:`, e.status);
+    throw e;
   }
 }
 
@@ -157,7 +161,7 @@ async function applyPendingLikes(w) {
     ].filter(Boolean).join(' && ');
 
     const result = await pb.collection(LIKES_COL).getList(1, 500, {
-      sort: 'created', filter, requestKey: null,
+      sort: 'created,id', filter, requestKey: null,
     });
     if (!result.items.length) return;
 
@@ -177,7 +181,7 @@ async function applyPendingLikes(w) {
   }
 }
 
-async function applyPendingCommands(w) {
+export async function applyPendingCommands(w) {
   const filter = [
     `worldId = "${w.id}"`,
     w.lastCmdSyncISO ? `created > "${w.lastCmdSyncISO}"` : '',
@@ -185,15 +189,21 @@ async function applyPendingCommands(w) {
 
   try {
     const result = await pb.collection(CMDS_COL).getList(1, 50, {
-      sort: 'created', filter, requestKey: null,
+      sort: 'created,id', filter, requestKey: null,
     });
     if (!result.items.length) return;
 
     w.lastCmdSyncISO = result.items.at(-1).created;
 
-    for (const cmd of result.items) {
+    // Un reset annule les commandes antérieures encore en attente.
+    const resetIndex = result.items.findLastIndex(cmd => cmd.type === 'resetWorld');
+    const commands = result.items.slice(Math.max(0, resetIndex));
+    for (const cmd of commands) {
       console.log(`[C14:${w.id}] GeoEvent "${cmd.type}" cellX=${cmd.cellX} cellY=${cmd.cellY}`);
-      if (cmd.type === GEO_EVENTS.DIVERSIFICATION) {
+      if (cmd.type === 'resetWorld') {
+        resetWorld(w);
+        w.lastLikeSyncISO = cmd.created;
+      } else if (cmd.type === GEO_EVENTS.DIVERSIFICATION) {
         const newPlants = spawnDiversification(w.grid, w.plants, w.seaLevel);
         w.plants.push(...newPlants);
         console.log(`[C14:${w.id}] Diversification — ${newPlants.length} nouvelles plantes`);
@@ -326,16 +336,28 @@ async function runTick() {
 
 // ── Initialisation d'un monde ─────────────────────────────────────────────────
 
-async function initWorld(w) {
+export function resetWorld(w) {
+  const previousSeed = w.worldSeed;
+  do { w.worldSeed = Math.floor(Math.random() * 100000); }
+  while (w.worldSeed === previousSeed);
+  w.seaLevel = DEFAULT_SEA_LEVEL;
+  w.geoHistory = [];
+  w.tick = 0;
+  w.grid = generateWorld(GRID_COLS, GRID_ROWS, w.worldSeed);
+  w.plants = seedInitialPlants(w.grid, w.seaLevel);
+}
+
+export async function initWorld(w) {
   const saved = await loadWorldState(w);
 
-  if (saved && saved.plants && saved.plants.length > 0) {
+  if (saved) {
     w.worldSeed       = saved.worldSeed;
     w.tick            = saved.tick;
     w.plants          = saved.plants;
     w.seaLevel        = saved.seaLevel;
     w.geoHistory      = saved.geoHistory;
     w.lastCmdSyncISO  = saved.lastCmdSyncISO;
+    w.lastLikeSyncISO = saved.lastLikeSyncISO;
     w.grid       = generateWorld(GRID_COLS, GRID_ROWS, w.worldSeed);
 
     let sl = DEFAULT_SEA_LEVEL;
@@ -344,10 +366,7 @@ async function initWorld(w) {
     }
     console.log(`[C14:${w.id}] restauré — seed ${w.worldSeed}, tick ${w.tick}, ${w.geoHistory.length} geoEvents, ${w.plants.filter(p=>p.alive).length} vivantes`);
   } else {
-    w.worldSeed = Math.floor(Math.random() * 100000);
-    w.grid      = generateWorld(GRID_COLS, GRID_ROWS, w.worldSeed);
-    w.plants    = seedInitialPlants(w.grid, w.seaLevel);
-    w.tick      = 0;
+    resetWorld(w);
     console.log(`[C14:${w.id}] nouveau monde — seed ${w.worldSeed}, ${w.plants.length} plantes initiales`);
     await saveWorldState(w);
   }
@@ -362,11 +381,23 @@ async function main() {
     await initWorld(w);
   }
 
-  setInterval(runTick, TICK_MS);
+  // Un tick lent ne doit pas chevaucher le suivant (commandes et sauvegardes).
+  const loop = async () => {
+    try {
+      await runTick();
+    } catch (e) {
+      console.error('[C14] Tick interrompu:', e?.message);
+    } finally {
+      setTimeout(loop, TICK_MS);
+    }
+  };
+  setTimeout(loop, TICK_MS);
   console.log(`[C14] Simulation active — tick toutes les ${TICK_MS / 1000}s`);
 }
 
-main().catch(e => {
-  console.error('[C14] Erreur fatale:', e);
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch(e => {
+    console.error('[C14] Erreur fatale:', e);
+    process.exit(1);
+  });
+}

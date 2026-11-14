@@ -60,10 +60,16 @@ function decodePlant(data) {
 export async function loadAllWorlds() {
   const pb = getPB();
   try {
-    const result = await pb.collection(COL).getList(1, 10, {
-      sort: 'worldId', requestKey: null,
+    const records = await pb.collection(COL).getFullList({
+      sort: '-tick,id', requestKey: null,
     });
-    return result.items.map(rec => ({
+    const worlds = new Map();
+    for (const rec of records) {
+      if (['pangee', 'gondwana', 'laurasie'].includes(rec.worldId) && !worlds.has(rec.worldId)) {
+        worlds.set(rec.worldId, rec);
+      }
+    }
+    return ['pangee', 'gondwana', 'laurasie'].filter(id => worlds.has(id)).map(id => worlds.get(id)).map(rec => ({
       worldId:    rec.worldId,
       worldSeed:  rec.worldSeed,
       tick:       rec.tick,

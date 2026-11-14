@@ -4,14 +4,17 @@ const CHROMOSOME_LENGTH = 4;
 const GENETIC_VALUES = ['A', 'T', 'G', 'C'];
 
 // CACHE pour hashString (évite recalcul constant)
+// borné : certains jeux fabriquent des clés avec le numéro de cycle, il grossirait sans fin
 const HASH_CACHE = new Map();
+const HASH_CACHE_MAX = 5000;
 
 function hashString(str) {
   // Utiliser le cache
   if (HASH_CACHE.has(str)) {
     return HASH_CACHE.get(str);
   }
-  
+  if (HASH_CACHE.size >= HASH_CACHE_MAX) HASH_CACHE.clear();
+
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     hash = (hash << 5) - hash + str.charCodeAt(i);
@@ -93,8 +96,8 @@ export class ADNHandler {
     return Math.ceil(asfloat * 10);
   }
 
-  mutatedVersion() {
-    return mutationADN(this.adn, TAUX_MUTATION);
+  mutatedVersion(tauxMutation = TAUX_MUTATION) {
+    return mutationADN(this.adn, tauxMutation);
   }
 
   getID(forAdn) {

@@ -2,8 +2,9 @@ import PocketBase from 'pocketbase';
 import React, { useState } from 'react';
 import {
   Box, Button, TextField, Typography, CircularProgress,
-  List, ListItem, Collapse,
+  List, ListItem, Collapse, IconButton, Popover, Stack, Divider,
 } from '@mui/material';
+import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import PublishIcon from '@mui/icons-material/Publish';
 import LeaderboardIcon from '@mui/icons-material/Leaderboard';
 
@@ -42,11 +43,21 @@ export const fetchBestPerGame = async () => {
     if (!best[item.gameName]) best[item.gameName] = item;
   }
   return Object.values(best).sort((a, b) => {
-    const dateDiff = new Date(b.created) - new Date(a.created);
+    const dateDiff = (Date.parse(b.created) || 0) - (Date.parse(a.created) || 0);
     if (dateDiff !== 0) return dateDiff;
     return a.gameName.localeCompare(b.gameName);
   });
 };
+
+// Noms des jeux ayant au moins un score publié.
+export const fetchGamesWithScores = async () => {
+  const result = await pb.collection('scores').getList(1, 500, { fields: 'gameName', requestKey: null });
+  return new Set(result.items.map(item => item.gameName));
+};
+
+// Les scores publiés avant l'ajout du champ autodate `created` n'ont pas de date.
+export const formatScoreDate = (created) =>
+  created ? new Date(created).toLocaleDateString('fr-FR') : '—';
 
 const medalColor = (i) => ['#FFD700', '#C0C0C0', '#CD7F32'][i] ?? '#aaa';
 
@@ -175,5 +186,78 @@ export const PublishScore = ({ gameName, score, darkMode = true }) => {
         )}
       </Collapse>
     </Box>
+  );
+};
+
+/**
+ * Trophée + popover "Top 10" d'un seul jeu (même look que HiScoreButton, sans la migration).
+ * Props : gameName (string), size ('small' | 'medium' | 'large', défaut 'small')
+ */
+export const GameTopButton = ({ gameName, size = 'small' }) => {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [top10, setTop10] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const handleOpen = async (event) => {
+    setAnchorEl(event.currentTarget);
+    setLoading(true);
+    try {
+      setTop10(await fetchTop10(gameName));
+    } catch {
+      setTop10([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <IconButton
+        onClick={handleOpen}
+        aria-label={`Afficher le top 10 de ${gameName}`}
+        color="primary"
+        size={size}
+        sx={{ backgroundColor: '#ffe082', '&:hover': { backgroundColor: '#ffca28' } }}
+      >
+        <EmojiEventsIcon fontSize="inherit" />
+      </IconButton>
+
+      <Popover
+        open={Boolean(anchorEl)}
+        anchorEl={anchorEl}
+        onClose={() => setAnchorEl(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        PaperProps={{ sx: { p: 2, minWidth: 300, backgroundColor: '#fefefe', boxShadow: 3, borderRadius: 2 } }}
+      >
+        <Typography variant="h6" gutterBottom color="primary">🏆 Top 10 — {gameName}</Typography>
+        <Divider sx={{ mb: 1 }} />
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>
+            <CircularProgress size={24} color="primary" />
+          </Box>
+        ) : (
+          <Stack spacing={0.5}>
+            {top10.length === 0 && (
+              <Typography variant="body2" color="text.secondary">Aucun score enregistré.</Typography>
+            )}
+            {top10.map((item, i) => (
+              <Box key={item.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, py: 0.25 }}>
+                <Typography variant="body2" sx={{ color: medalColor(i), fontWeight: 'bold', minWidth: 22 }}>{i + 1}.</Typography>
+                <Typography variant="body2" sx={{ color: '#333', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {item.user}
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 'bold', color: '#009688', minWidth: 40, textAlign: 'right' }}>
+                  {item.score}
+                </Typography>
+                <Typography variant="caption" sx={{ color: '#aaa', minWidth: 58, textAlign: 'right' }}>
+                  {formatScoreDate(item.created)}
+                </Typography>
+              </Box>
+            ))}
+          </Stack>
+        )}
+      </Popover>
+    </>
   );
 };
