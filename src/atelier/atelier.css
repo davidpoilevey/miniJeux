@@ -129,12 +129,34 @@
 .atelier-favorite div > p:not(.atelier-eyebrow) { color: var(--muted); font-size: 13px; line-height: 1.9; }
 .atelier .atelier-text-link { padding: 0 0 5px; border-bottom: 1px solid var(--rust); margin-top: 22px; font-size: 12px; color: var(--rust); }
 .atelier-text-link span { margin-left: 15px; }
+.atelier-ai { padding: 64px 0 50px; scroll-margin-top: 24px; }
+.atelier-ai-heading { text-align: center; max-width: 690px; margin: 0 auto 52px; }
+.atelier-ai-heading .atelier-eyebrow { color: var(--muted); margin-bottom: 24px; }
+.atelier .atelier-ai-heading h1 { font-size: clamp(58px, 6.6vw, 88px); line-height: 1.05; }
+.atelier-ai-lead { font: 28px/1.35 'Instrument Serif', Georgia, serif; margin-top: 24px !important; }
+.atelier-ai-intro { max-width: 565px; margin: 18px auto 0 !important; color: var(--muted); font-size: 12px; line-height: 1.9; }
+.atelier-ai-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 22px; }
+.atelier-ai-card { min-width: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line); padding-top: 16px; }
+.atelier .atelier-ai-cover { display: block; position: relative; width: 100%; aspect-ratio: 4 / 3; padding: 0; border-radius: 4px; overflow: hidden; }
+.atelier-ai-cover:hover img { transform: scale(1.045); }
+.atelier-ai-credit { min-height: 87px; padding: 18px 0 14px; color: var(--muted); font-size: 9px; }
+.atelier-ai-credit .atelier-ai-creator { color: var(--rust); font-size: 12px; font-weight: 600; margin-top: 3px; }
+.atelier-ai-level { font-size: 9px; margin-top: 2px !important; }
+.atelier .atelier-ai-card h2 { font-size: 29px; line-height: 1.15; letter-spacing: -.4px; min-height: 68px; }
+.atelier-ai-description { color: var(--muted); font-size: 11px; line-height: 1.85; margin-top: 12px !important; margin-bottom: 22px !important; }
+.atelier-ai-card .atelier-text-link { align-self: flex-start; margin-top: auto; font-size: 11px; }
+.atelier-ai-colophon { display: flex; justify-content: center; align-items: center; gap: 16px; border-top: 1px solid var(--line); margin-top: 50px !important; padding-top: 28px; color: var(--muted); font-size: 10px; }
+.atelier-ai-colophon > span { color: var(--rust); font-size: 25px; }
 .atelier-footer { max-width: 1296px; margin: 0 auto; padding: 30px 0 40px; border-top: 1px solid var(--line); display: flex; gap: 25px; align-items: center; }
 .atelier-footer-brand { font-size: 25px; }
 .atelier-footer p { font-size: 10px; color: var(--muted); }
 .atelier-footer button { margin-left: auto; font-size: 10px; }
 @media (min-width: 1441px) { .atelier-footer { width: 90%; } }
 @media (max-width: 1200px) {
+  .atelier-header { flex-wrap: wrap; }
+  .atelier-header nav { order: 3; width: 100%; margin: 0; }
+  .atelier-header-actions { margin-left: auto; }
+  .atelier-ai-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 36px 24px; }
   .atelier-header { gap: 20px; }
   .atelier-header nav { gap: 18px; }
   .atelier-header-actions { gap: 10px; }
@@ -168,6 +190,18 @@
   .atelier-search { width: 300px; }
 }
 @media (max-width: 700px) {
+  .atelier-header nav { justify-content: space-between; gap: 10px; }
+  .atelier-header nav button { font-size: 10px; }
+  .atelier-header nav button span { display: none; }
+  .atelier-ai { padding-top: 42px; }
+  .atelier-ai-heading { margin-bottom: 36px; }
+  .atelier .atelier-ai-heading h1 { font-size: clamp(43px, 9vw, 62px); letter-spacing: -1.5px; }
+  .atelier-ai-heading .atelier-eyebrow { font-size: 8px; }
+  .atelier-ai-lead { font-size: 25px; }
+  .atelier-ai-intro { font-size: 11px; }
+  .atelier-ai-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 18px; }
+  .atelier .atelier-ai-card h2 { font-size: 27px; min-height: 62px; }
+  .atelier-ai-colophon { align-items: flex-start; font-size: 10px; }
   .atelier main { padding: 0 6%; }
   .atelier-header { padding-left: 6%; padding-right: 6%; }
   .atelier-hero { grid-template-columns: 1fr; padding-top: 40px; padding-bottom: 35px; }
@@ -202,6 +236,10 @@
   .atelier-footer p { order: 3; width: 100%; }
 }
 @media (max-width: 420px) {
+  .atelier-ai-grid { grid-template-columns: 1fr; }
+  .atelier .atelier-ai-card h2 { min-height: 0; font-size: 34px; }
+  .atelier-ai-credit { min-height: 0; }
+  .atelier-ai-description { font-size: 12px; }
   .atelier .atelier-brand { font-size: 23px; gap: 8px; }
   .atelier-brand small { font-size: 6px; letter-spacing: 1.5px; }
   .atelier-monogram { width: 35px; height: 35px; font-size: 31px; line-height: 32px; }

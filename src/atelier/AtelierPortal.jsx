@@ -21,6 +21,45 @@ const readSaved = (key, fallback) => {
   try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; }
 };
 const STATUS = { success: 'Disponible', warning: 'Bêta', info: 'À découvrir', error: 'En chantier' };
+const AI_CHOICES = [
+  { id: 'orbitales', creator: 'Claude Opus 5.5', blurb: 'Des planètes en mouvement, une étoile impitoyable et des flottes à envoyer au bon endroit. Au bon moment, surtout.' },
+  { id: 'minuit', creator: 'GPT-6.1 Sol', blurb: 'Neuf joyaux, trois salles et des gardiens à duper. Le casse parfait tient parfois à un seul pas de côté.' },
+  { id: 'bouillon', creator: 'GLM-5.3', blurb: 'Des microbes qui tombent, fusionnent et changent de forme. Une petite soupe où l’évolution ne tient pas en place.' },
+  { id: 'dejavu', creator: 'Fable-5.2', level: 'Medium', blurb: 'Chaque trajet devient un écho qui recommence à l’infini. Ton adversaire le plus tenace ? Toi, il y a quelques secondes.' },
+  { id: 'phareouest', creator: 'Fable-5.2', level: 'High', blurb: 'Un phare, des capitaines qui oublient et une mer pleine de récifs. À toi de décider où poser la lumière.' },
+];
+
+function AIChoicesPage({ games, onSelectGame }) {
+  return (
+    <section id="atelier-collection" className="atelier-ai" aria-labelledby="atelier-ai-title">
+      <div className="atelier-ai-heading">
+        <p className="atelier-eyebrow">LE DERNIER CHAPITRE DE L’ATELIER</p>
+        <h1 id="atelier-ai-title">Le choix <i>des IA.</i></h1>
+        <p className="atelier-ai-lead">Une même carte blanche.<br />Cinq façons de jouer.</p>
+        <p className="atelier-ai-intro">Pour les cinq derniers jeux de ce site, les IA ont pris les clés de l’atelier. Elles ont imaginé leur propre jeu, puis l’ont réalisé. Cinq idées, cinq signatures, une dernière collection à découvrir.</p>
+      </div>
+      <div className="atelier-ai-grid">
+        {AI_CHOICES.map(choice => {
+          const game = games.find(g => g.id === choice.id);
+          if (!game) return null;
+          return (
+            <article className="atelier-ai-card" key={choice.id}>
+              <button className="atelier-ai-cover" onClick={() => onSelectGame(game)} aria-label={`Jouer à ${game.name}`}>
+                <GameImage game={game} />
+                <span className="atelier-play" aria-hidden="true">↗</span>
+              </button>
+              <div className="atelier-ai-credit"><p>Imaginé & réalisé par</p><p className="atelier-ai-creator">{choice.creator}</p>{choice.level && <p className="atelier-ai-level">Niveau {choice.level}</p>}</div>
+              <h2>{game.name}</h2>
+              <p className="atelier-ai-description">{choice.blurb}</p>
+              <button className="atelier-text-link" onClick={() => onSelectGame(game)}>À vous de jouer <span aria-hidden="true">↗</span></button>
+            </article>
+          );
+        })}
+      </div>
+      <p className="atelier-ai-colophon"><span aria-hidden="true">✳</span> La curiosité humaine a ouvert cet atelier. Cinq curiosités artificielles en signent la dernière page.</p>
+    </section>
+  );
+}
 
 function GameImage({ game, className = '' }) {
   const [failed, setFailed] = useState(false);
@@ -83,6 +122,8 @@ export default function AtelierPortal({ gamesData, searchQuery, onSearch, curren
   const favorites = FAVORITES.map(f => ({ ...f, game: allGames.find(g => g.id === f.matchId || g.name === f.matchId) })).filter(f => f.game);
   const covers = ['Civilization', 'echec', 'ezioTrip'].map(id => allGames.find(g => g.id === id || g.name === id)).filter(Boolean);
   const isFavorites = currentView === 'favorites';
+  const isAIChoices = currentView === 'ai-choices';
+  const isLibrary = !isFavorites && !isAIChoices;
   const toggleTag = tag => setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   const goToLibrary = () => {
     onChangeView('library');
@@ -101,8 +142,9 @@ export default function AtelierPortal({ gamesData, searchQuery, onSearch, curren
             <span>L’Atelier <i>de David</i><small>JEUX & AUTRES CURIOSITÉS</small></span>
           </button>
           <nav aria-label="Navigation principale">
-            <button className={!isFavorites ? 'is-active' : ''} aria-current={!isFavorites ? 'page' : undefined} onClick={() => onChangeView('library')}>La collection</button>
+            <button className={isLibrary ? 'is-active' : ''} aria-current={isLibrary ? 'page' : undefined} onClick={() => onChangeView('library')}>La collection</button>
             <button className={isFavorites ? 'is-active' : ''} aria-current={isFavorites ? 'page' : undefined} onClick={() => onChangeView('favorites')}>La sélection maison <span>✳</span></button>
+            <button className={isAIChoices ? 'is-active' : ''} aria-current={isAIChoices ? 'page' : undefined} onClick={() => onChangeView('ai-choices')}>Le choix des IA</button>
           </nav>
           <div className="atelier-header-actions">
             <span className="atelier-score-button" title="Classement mondial"><HiScoreButton /></span>
@@ -111,7 +153,7 @@ export default function AtelierPortal({ gamesData, searchQuery, onSearch, curren
         </header>
 
         <main>
-          {!isFavorites && <section className="atelier-hero" aria-labelledby="atelier-title">
+          {isLibrary && <section className="atelier-hero" aria-labelledby="atelier-title">
             <div className="atelier-hero-copy">
               <p className="atelier-eyebrow"><span /> UN PETIT COIN D’INTERNET, FAIT MAISON</p>
               <h1 id="atelier-title">Des jeux.<br />Des idées.<br /><i>Et si on jouait ?</i></h1>
@@ -129,7 +171,7 @@ export default function AtelierPortal({ gamesData, searchQuery, onSearch, curren
             </div>
           </section>}
 
-          <section id="atelier-collection" className="atelier-collection" aria-labelledby="atelier-collection-title">
+          {isAIChoices ? <AIChoicesPage games={allGames} onSelectGame={onSelectGame} /> : <section id="atelier-collection" className="atelier-collection" aria-labelledby="atelier-collection-title">
             <div className="atelier-section-heading">
               <div><p className="atelier-eyebrow">{isFavorites ? 'LES COUPS DE CŒUR DU CRÉATEUR' : 'IL Y A FORCÉMENT UN JEU POUR VOUS'}</p>
                 <h2 id="atelier-collection-title">{isFavorites ? <>La sélection <i>maison.</i></> : <>La boîte à <i>jeux.</i></>}</h2>
@@ -156,7 +198,7 @@ export default function AtelierPortal({ gamesData, searchQuery, onSearch, curren
               {selectedTags.length > 0 && <div className="atelier-selected-tags">{selectedTags.map(tag => <button key={tag} onClick={() => toggleTag(tag)} aria-label={`Retirer le filtre ${tag}`}>{tag} ×</button>)}<button onClick={() => setSelectedTags([])}>Tout effacer</button></div>}
               {filteredGames.length ? <div className="atelier-grid">{filteredGames.map(game => <GameCard key={game.id || game.name} game={game} index={allGames.findIndex(g => (g.id || g.name) === (game.id || game.name))} score={getScoreByGame(game.id || game.name)?.score} topName={[game.id, game.name].find(n => gamesWithScores.has(n))} onSelect={onSelectGame} onTag={toggleTag} />)}</div> : <div className="atelier-empty"><span aria-hidden="true">✳</span><h3>Ce tiroir est encore vide.</h3><p>Essayez une autre recherche ou retirez quelques filtres.</p><button className="atelier-primary" onClick={() => { setSelectedTags([]); setMobileSearch(''); onSearch(''); }}>Revoir la collection</button></div>}
             </>}
-          </section>
+          </section>}
         </main>
 
         <footer className="atelier-footer"><span className="atelier-footer-brand">L’Atelier <i>de David.</i></span><p>Des jeux, du code, et le plaisir de faire.</p><button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>Retour en haut ↑</button></footer>
