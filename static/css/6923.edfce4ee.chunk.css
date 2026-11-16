@@ -1,0 +1,2 @@
+.grille{flex:1 1;flex-wrap:wrap;position:relative;width:100%}.game-containerLife,.grille{display:flex;overflow:hidden}.game-containerLife{flex-direction:column;height:100dvh}.cellLife{border:1px solid #ccc;height:10px;position:absolute;width:10px}.alive{background-color:#2ecc71}.dead{background-color:#fff}.surchauffe{background-color:#eb410d}.malade{background-color:#678309}
+/*# sourceMappingURL=6923.edfce4ee.chunk.css.map*/
