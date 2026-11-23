@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#171e1d">
+    <title>Village · Aperçu du seuil</title>
+    <link rel="stylesheet" crossorigin href="../village/village-CoeZUcSW.css">
+  </head>
+  <body>
+    <main class="threshold">
+      <p id="glyphe" style="font-size:4rem;margin:0">🚪</p>
+      <h1 id="titre">Seuil</h1>
+      <p id="texte">Cette porte n’ouvre pas encore. Revenez bientôt !</p>
+      <nav aria-label="Retour au village">
+        <a class="button-link" id="retour" href="../">Revenir devant la porte</a>
+        <a class="text-link" href="../">Village</a>
+      </nav>
+    </main>
+    <script>
+      const lieux = {
+        pivot: ['π', 'Maison Pivot', 'En travaux : la démo de Pivot ouvre bientôt ses portes.'],
+        biblio: ['❦', 'La Bibliothèque', 'Ici s’ouvriront les nouvelles de Viviel d’Adyope.'],
+        arcade: ['👾', 'Arcade', 'Les Mini Jeux.'],
+        garage: ['⛽', 'Garage', 'Les utilitaires : SP95 autour de Haguenau, trafic Haguenau → Strasbourg.'],
+        poste: ['✉️', 'Poste', 'Le livre d’or.'],
+        usine: ['⚙️', 'Usine · bureau d’embauche', 'Le CV.'],
+        banque: ['🔒', 'Banque', 'Accès privé : homelab, Hub familial, Paperless, Vault. Connexion requise.'],
+        studio: ['🔒', 'Studio photo', 'Accès privé : Immich. Connexion requise.'],
+        dojo: ['🎬', 'Vous l’avez mérité', 'La vidéo de l’ancien accueil, en hommage à Chuck Norris.'],
+      };
+      const id = new URLSearchParams(location.search).get('lieu');
+      if (lieux[id]) {
+        const [g, t, x] = lieux[id];
+        document.getElementById('glyphe').textContent = g;
+        document.getElementById('titre').textContent = t;
+        document.getElementById('texte').textContent = x;
+        document.title = `${t} · Aperçu du seuil`;
+        document.getElementById('retour').href = `../?retour=${id}`;
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Garage · Le village de David Poilevey</title>
+  <script src="https://cdn.jsdelivr.net/npm/pocketbase/dist/pocketbase.umd.js"></script>
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-C34SK04MZ0"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-C34SK04MZ0');
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f1a;
+      color: white;
+      min-height: 100vh;
+    }
+
+    /* HERO */
+    .hero {
+      background: url('assets/imgMaison.jpg') center/cover no-repeat;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem;
+      position: relative;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 15, 26, 0.65);
+    }
+
+    .hero > * { position: relative; z-index: 1; }
+
+    .hero img {
+      width: 240px;
+      height: 240px;
+      border-radius: 50%;
+      border: 4px solid #7c3aed;
+      margin-bottom: 1.25rem;
+      object-fit: cover;
+    }
+
+    .hero h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      background: linear-gradient(135deg, #7c3aed, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .tagline {
+      font-size: 0.95rem;
+      color: #cbd5e1;
+      max-width: 340px;
+      line-height: 1.5;
+      font-style: italic;
+      min-height: 3em;
+    }
+
+    .chuck-credit {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 0.5rem;
+    }
+
+    /* LINKS */
+    .section {
+      padding: 2rem 1.25rem;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    .section h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #64748b;
+      margin-bottom: 1rem;
+    }
+
+    .card {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      background: #1e1e2e;
+      border-radius: 16px;
+      margin-bottom: 0.75rem;
+      text-decoration: none;
+      color: white;
+      border: 1px solid #2d2d3f;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+
+    .card:active { transform: scale(0.97); }
+    .card:hover { border-color: #7c3aed; }
+
+    .card-icon {
+      font-size: 1.75rem;
+      width: 48px;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      flex-shrink: 0;
+    }
+
+    .card-text { flex: 1; }
+    .card-title { font-weight: 600; font-size: 1rem; }
+    .card-sub { font-size: 0.8rem; color: #94a3b8; margin-top: 2px; }
+
+    .badge-private {
+      font-size: 0.65rem;
+      background: #7c3aed22;
+      color: #a78bfa;
+      border: 1px solid #7c3aed44;
+      padding: 2px 8px;
+      border-radius: 99px;
+      flex-shrink: 0;
+    }
+
+    .c-purple { background: #7c3aed22; }
+    .c-blue   { background: #2563eb22; }
+    .c-green  { background: #16a34a22; }
+    .c-orange { background: #ea580c22; }
+    .c-pink   { background: #db277722; }
+    .c-yellow { background: #ca8a0422; }
+
+    /* NEWS */
+    .news-card {
+      background: #1e1e2e;
+      border: 1px solid #2d2d3f;
+      border-radius: 16px;
+      padding: 1.25rem;
+    }
+
+    .news-empty {
+      color: #475569;
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 1rem 0;
+    }
+
+    /* VIDEO */
+    .video-section {
+      padding: 2rem 1.25rem 3rem;
+      max-width: 480px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .video-section h2 {
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #64748b;
+      margin-bottom: 1rem;
+    }
+
+    .video-section p {
+      font-size: 0.8rem;
+      color: #475569;
+      margin-bottom: 1rem;
+    }
+
+    video {
+      width: 100%;
+      border-radius: 16px;
+      border: 1px solid #2d2d3f;
+    }
+
+    .rip {
+      margin-top: 2rem;
+      font-size: 0.75rem;
+      color: #334155;
+      font-style: italic;
+    }
+  </style>
+
+  <style>
+    .retour-village { display:inline-block; margin:1.2rem 0 0 1.2rem; color:#edbd81; text-decoration:none; font-size:14px; }
+    .retour-village:hover { text-decoration:underline; }
+  </style>
+</head>
+<body>
+  <a class="retour-village" href="../?retour=garage">← Retour au village</a>
+  <!-- UTILITAIRES -->
+  <section class="section">
+    <h2>⚡ Utilitaires</h2>
+
+    <a class="card" href="https://www.google.com/maps/dir/?api=1&origin=Haguenau&destination=Strasbourg&travelmode=driving" target="_blank">
+      <div class="card-icon c-blue">🚗</div>
+      <div class="card-text">
+        <div class="card-title">Trafic Haguenau → Strasbourg</div>
+        <div class="card-sub" id="traffic-sub">Chargement de l'info trafic…</div>
+      </div>
+    </a>
+
+    <div class="card" style="cursor: default;">
+      <div class="card-icon c-pink">⛽</div>
+      <div class="card-text">
+        <div class="card-title">SP95 autour de Haguenau</div>
+        <div class="card-sub" id="fuel-sub">Chargement des prix…</div>
+      </div>
+    </div>
+  </section>
+  <script>
+// Prix SP95 autour de Haguenau — open data gouv (sans clé, CORS ouvert)
+    async function loadFuelPrices() {
+      const el = document.getElementById('fuel-sub');
+      const nice = s => (s || '').toLowerCase().replace(/(^|[\s'-])\w/g, c => c.toUpperCase());
+      try {
+        const params = new URLSearchParams({
+          where: "within_distance(geom, geom'POINT(7.7905 48.8156)', 10km) AND sp95_prix IS NOT NULL",
+          select: 'adresse,ville,sp95_prix',
+          order_by: 'sp95_prix',
+          limit: '3',
+        });
+        const res = await fetch('https://data.economie.gouv.fr/api/explore/v2.1/catalog/datasets/prix-des-carburants-en-france-flux-instantane-v2/records?' + params);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (!data.results?.length) throw new Error('aucune station');
+        el.innerHTML = data.results.map(s => {
+          const q = encodeURIComponent(`${s.adresse} ${s.ville}`);
+          return `<a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" style="display:block; color:inherit; text-decoration:none; padding:2px 0;">
+            <strong>${Number(s.sp95_prix).toFixed(3).replace('.', ',')} €</strong> — ${escapeHtml(nice(s.adresse))}, ${escapeHtml(nice(s.ville))} 📍
+          </a>`;
+        }).join('');
+      } catch (err) {
+        console.log('Erreur prix carburants:', err);
+        el.innerHTML = '<a href="https://www.prix-carburants.gouv.fr" target="_blank" style="color:inherit;">Prix indisponibles — voir le site officiel</a>';
+      }
+    }
+    loadFuelPrices();
+
+    // Info trafic Haguenau → Strasbourg — TomTom (2500 req/jour gratuites)
+    const TOMTOM_KEY = 'p2Vip45dscw8ksXw9YfneoiIQRIMhRBh';
+
+    async function loadTraffic() {
+      const el = document.getElementById('traffic-sub');
+      if (TOMTOM_KEY === 'TA_CLE_TOMTOM_ICI') {
+        el.textContent = 'Clé TomTom manquante — clic pour Google Maps';
+        return;
+      }
+
+      // Corridor Haguenau → Strasbourg (A340/A35)
+      const routeUrl = `https://api.tomtom.com/routing/1/calculateRoute/48.8156,7.7905:48.5734,7.7521/json?key=${TOMTOM_KEY}&traffic=true`;
+      const fields = encodeURIComponent('{incidents{properties{iconCategory,from,to,events{description}}}}');
+      const incidentsUrl = `https://api.tomtom.com/traffic/services/5/incidentDetails?key=${TOMTOM_KEY}&bbox=7.65,48.52,7.90,48.85&language=fr-FR&categoryFilter=1,6,8,9,14&timeValidityFilter=present&fields=${fields}`;
+
+      const [route, inc] = await Promise.allSettled([
+        fetch(routeUrl).then(r => r.json()),
+        fetch(incidentsUrl).then(r => r.json()),
+      ]);
+
+      let html = '';
+
+      if (route.status === 'fulfilled' && route.value.routes?.length) {
+        const s = route.value.routes[0].summary;
+        const min = Math.round(s.travelTimeInSeconds / 60);
+        const delay = Math.round((s.trafficDelayInSeconds || 0) / 60);
+        const etat = delay >= 15 ? '🔴 trafic très perturbé' : delay >= 5 ? '🟠 trafic chargé' : '🟢 trafic fluide';
+        html += `<div><strong>${min} min</strong>${delay > 0 ? ` (+${delay} min)` : ''} · ${etat}</div>`;
+      }
+
+      if (inc.status === 'fulfilled' && inc.value.incidents?.length) {
+        const icons = { 1: '🚨', 6: '🐌', 8: '⛔', 9: '🚧', 14: '🔧' };
+        const priorite = { 1: 0, 6: 1, 14: 2, 9: 3, 8: 4 }; // accident > bouchon > panne > travaux > fermeture
+        const fr = {
+          'Closed': 'Route fermée', 'Roadworks': 'Travaux', 'Queuing traffic': 'Bouchon',
+          'Stationary traffic': 'Trafic à l\'arrêt', 'Slow traffic': 'Trafic ralenti',
+          'Accident': 'Accident', 'Broken down vehicle': 'Véhicule en panne',
+        };
+        // Ne garder que le corridor Haguenau → Strasbourg
+        const corridor = /\b(A4|A35|A340|N63|N1063|D263)\b|Haguenau|Brumath|H(œ|oe)rdt|Vendenheim|Reichstett|Mundolsheim|Souffelweyersheim|Schiltigheim|Bischheim/i;
+        const vus = new Set();
+        const pertinents = inc.value.incidents
+          .filter(i => {
+            const p = i.properties || {};
+            const zone = `${p.from || ''} ${p.to || ''}`;
+            if (!corridor.test(zone)) return false;
+            const cle = [p.from, p.to].sort().join('|'); // doublons aller/retour
+            if (vus.has(cle)) return false;
+            vus.add(cle);
+            return true;
+          })
+          .sort((a, b) => (priorite[a.properties?.iconCategory] ?? 9) - (priorite[b.properties?.iconCategory] ?? 9));
+
+        html += pertinents.slice(0, 3).map(i => {
+          const p = i.properties || {};
+          const brut = p.events?.[0]?.description || 'Incident';
+          const desc = fr[brut] || brut;
+          const zone = p.from && p.to ? ` — entre ${p.from} et ${p.to}` : (p.from ? ` — ${p.from}` : '');
+          return `<div>${icons[p.iconCategory] || '⚠️'} ${escapeHtml(desc)}${escapeHtml(zone)}</div>`;
+        }).join('');
+      }
+
+      el.innerHTML = html || 'Info trafic indisponible — clic pour Google Maps';
+    }
+    loadTraffic();
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+  </script>
+</body>
+</html>

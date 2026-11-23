@@ -1,0 +1,22 @@
+{
+  "name": "poilevey-village",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 3027 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 3027 --strictPort",
+    "test": "node --test src/*.test.js",
+    "www": "node -e \"require('fs').rmSync('../../www/village',{recursive:true,force:true})\" && vite build --outDir ../../www --emptyOutDir false"
+  },
+  "dependencies": {
+    "konva": "9.3.22",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-konva": "18.2.16"
+  },
+  "devDependencies": {
+    "vite": "7.3.6"
+  }
+}

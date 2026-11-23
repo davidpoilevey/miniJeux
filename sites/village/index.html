@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#171e1d">
+    <title>Le village de David Poilevey</title>
+    <meta name="description" content="Promenez-vous dans le village de David Poilevey : jeux, nouvelles, CV, livre d’or.">
+    <link rel="icon" href="./favicon.svg">
+    <script src="https://cdn.jsdelivr.net/npm/pocketbase/dist/pocketbase.umd.js"></script>
+    <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-C34SK04MZ0"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-C34SK04MZ0');
+  </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+    <script>
+    // Statistiques de visite, reprises de l'ancien accueil (ignorées si le CDN PocketBase ne répond pas).
+    if (window.PocketBase) {
+    // PocketBase (utilisé par logVisitor ET les commentaires)
+    const pb = new PocketBase('https://bdd.poilevey.org');
+
+    // Logging visiteur → collection "visitors" (champs: ip, pays, region, org, ua, count)
+    // La ville est conservée mais souvent fausse en IPv6 résidentiel (géoloc approximative)
+    async function logVisitor() {
+      try {
+        const geo = await fetch('https://ipapi.co/json/').then(r => r.json());
+        const ip = (geo.ip || '').replace(/"/g, '');
+        const today = new Date().toISOString().slice(0, 10);
+
+        let existing = null;
+        try {
+          existing = await pb.collection('visitors').getFirstListItem(
+            `ip = "${ip}" && created >= "${today} 00:00:00.000Z"`
+          );
+        } catch { /* 404 = nouvelle visite */ }
+
+        if (existing) {
+          await pb.collection('visitors').update(existing.id, {
+            count: (existing.count || 1) + 1,
+          });
+        } else {
+          await pb.collection('visitors').create({
+            ip,
+            pays:   geo.country_name || '',
+            ville:  geo.city         || '',
+            region: geo.region       || '',
+            org:    geo.org          || '',
+            ua:     navigator.userAgent.substring(0, 250),
+            count:  1,
+          });
+        }
+      } catch(err) {
+        console.log('Error logging visitor:', err);
+      }
+    }
+    logVisitor();
+    }
+    </script>
+  </body>
+</html>
