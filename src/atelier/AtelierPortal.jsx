@@ -27,6 +27,7 @@ const AI_CHOICES = [
   { id: 'bouillon', creator: 'GLM-5.3', blurb: 'Des microbes qui tombent, fusionnent et changent de forme. Une petite soupe où l’évolution ne tient pas en place.' },
   { id: 'dejavu', creator: 'Fable-5.2', level: 'Medium', blurb: 'Chaque trajet devient un écho qui recommence à l’infini. Ton adversaire le plus tenace ? Toi, il y a quelques secondes.' },
   { id: 'phareouest', creator: 'Fable-5.2', level: 'High', blurb: 'Un phare, des capitaines qui oublient et une mer pleine de récifs. À toi de décider où poser la lumière.' },
+  { id: 'souspli', creator: 'GPT-6.2 Sol', blurb: 'Une ville à plier, des lettres à distribuer et un seul coup de tampon. Les scellés, eux, sont à prendre au pied de la lettre.' },
 ];
 
 function AIChoicesPage({ games, onSelectGame }) {
@@ -35,8 +36,8 @@ function AIChoicesPage({ games, onSelectGame }) {
       <div className="atelier-ai-heading">
         <p className="atelier-eyebrow">LE DERNIER CHAPITRE DE L’ATELIER</p>
         <h1 id="atelier-ai-title">Le choix <i>des IA.</i></h1>
-        <p className="atelier-ai-lead">Une même carte blanche.<br />Cinq façons de jouer.</p>
-        <p className="atelier-ai-intro">Pour les cinq derniers jeux de ce site, les IA ont pris les clés de l’atelier. Elles ont imaginé leur propre jeu, puis l’ont réalisé. Cinq idées, cinq signatures, une dernière collection à découvrir.</p>
+        <p className="atelier-ai-lead">Une même carte blanche.<br />Six façons de jouer.</p>
+        <p className="atelier-ai-intro">Pour ces six jeux, les IA ont pris les clés de l’atelier. Chacune a imaginé son jeu, puis l’a réalisé.</p>
       </div>
       <div className="atelier-ai-grid">
         {AI_CHOICES.map(choice => {
@@ -56,7 +57,7 @@ function AIChoicesPage({ games, onSelectGame }) {
           );
         })}
       </div>
-      <p className="atelier-ai-colophon"><span aria-hidden="true">✳</span> La curiosité humaine a ouvert cet atelier. Cinq curiosités artificielles en signent la dernière page.</p>
+      <p className="atelier-ai-colophon"><span aria-hidden="true">✳</span> La curiosité humaine a ouvert cet atelier. Six curiosités artificielles en signent la dernière page.</p>
     </section>
   );
 }

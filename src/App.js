@@ -102,7 +102,7 @@ const App = () => {
         <div className="center-panel">
           <Regles regle={selectedApp?.regle} />
 
-          <AppPanel selectedApp={selectedApp} handleSelectApp={(app) => {
+          <AppPanel selectedApp={selectedApp} returnBack={returnBack} handleSelectApp={(app) => {
             if (window.gtag) {
               window.gtag('event', 'jeu_selectionne', {
                 'event_category': 'nouveauJeu',
@@ -121,7 +121,7 @@ const App = () => {
 export default App;
 
 
-const AppPanel = ({ selectedApp, handleSelectApp }) => {
+const AppPanel = ({ selectedApp, handleSelectApp, returnBack }) => {
   const [showMain, setShowMain] = useState(!selectedApp);
   const [showGame, setShowGame] = useState(!!selectedApp);
 
@@ -192,7 +192,7 @@ const AppPanel = ({ selectedApp, handleSelectApp }) => {
         >
          {SelectedComponent ? (
     <Suspense fallback={<div>Chargement du jeu...</div>}>
-      <SelectedComponent />
+      <SelectedComponent onReturnToLibrary={returnBack} />
     </Suspense>
   ) : (
     <div className="app-panel">

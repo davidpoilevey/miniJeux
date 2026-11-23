@@ -135,7 +135,7 @@
 .atelier .atelier-ai-heading h1 { font-size: clamp(58px, 6.6vw, 88px); line-height: 1.05; }
 .atelier-ai-lead { font: 28px/1.35 'Instrument Serif', Georgia, serif; margin-top: 24px !important; }
 .atelier-ai-intro { max-width: 565px; margin: 18px auto 0 !important; color: var(--muted); font-size: 12px; line-height: 1.9; }
-.atelier-ai-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 22px; }
+.atelier-ai-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 22px; }
 .atelier-ai-card { min-width: 0; display: flex; flex-direction: column; border-top: 1px solid var(--line); padding-top: 16px; }
 .atelier .atelier-ai-cover { display: block; position: relative; width: 100%; aspect-ratio: 4 / 3; padding: 0; border-radius: 4px; overflow: hidden; }
 .atelier-ai-cover:hover img { transform: scale(1.045); }

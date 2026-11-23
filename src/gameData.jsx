@@ -19,6 +19,7 @@ const Minuit = lazy(() => import('./minuit/Minuit'));
 const Orbitales = lazy(() => import('./orbitales/Orbitales'));
 const Dejavu = lazy(() => import('./dejavu/Dejavu'));
 const PhareOuest = lazy(() => import('./phare/PhareOuest'));
+const SousPli = lazy(() => import('./sousPli/SousPli'));
 const Lemmings = lazy(() => import('./lemmings/Lemmings'));
 
 const Bactery9 = lazy(() => import( './b9/Bactery9'));
@@ -699,6 +700,17 @@ export const GAMES_DATA = [
   {
     categorie: 'Creation originales',
     jeux: [
+      {
+        name: 'Sous Pli',
+        id: 'souspli',
+        component: SousPli,
+        noBackButton: true,
+        icon: 'MailOutline',
+        image: `${process.env.PUBLIC_URL}/sous-pli.webp`,
+        description: 'Plie un plan de ville pour empiler les boîtes aux lettres. Un seul coup de tampon pour tout livrer, avec des scellés à épargner.',
+        status: 'info',
+        tags: ['casse-tete', 'mobileFriendly', 'clavier', 'souris'],
+      },
       {
         name: 'Phare Ouest',
         id: 'phareouest',

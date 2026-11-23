@@ -67,6 +67,12 @@ const AppStitch = ({ Portal }) => {
       const url = `?${params}`;
       window.history.pushState({ minijeuxGame: true }, '', url);
       const onPop = () => {
+        const destination = new URL(window.location.href);
+        const game = destination.searchParams.get('game');
+        if (game && (game === selectedApp.id || game === selectedApp.name)) {
+          destination.searchParams.delete('game');
+          window.history.replaceState(window.history.state, '', destination);
+        }
         sendCloseEvent(selectedApp);
         setSelectedApp(null);
       };
@@ -189,7 +195,7 @@ const AppStitch = ({ Portal }) => {
                 <CircularProgress color="primary" />
               </Box>
             }>
-              <SelectedComponent />
+              <SelectedComponent onReturnToLibrary={returnBack} />
             </Suspense>
           ) : selectedApp ? (
             <Box sx={{ p: 4 }}>

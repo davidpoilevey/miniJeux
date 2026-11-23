@@ -1,0 +1,293 @@
+.sous-pli {
+  --petrole: #19383a;
+  --encre: #1f3c3d;
+  --creme: #f7efdc;
+  --rouille: #a53520;
+  --filet: #d2c3a5;
+  min-height: 100%;
+  color: var(--encre);
+  background: radial-gradient(ellipse at 45% 0, #fff8e9, transparent 60%), #efe4cf;
+  font-family: "Trebuchet MS", system-ui, sans-serif;
+  text-align: left;
+}
+
+.sous-pli button { font: inherit; cursor: pointer; }
+.sous-pli button:disabled { cursor: default; }
+.sous-pli button:focus-visible, .pli-plan:focus-visible { outline: 3px solid #ed9b44; outline-offset: 3px; }
+.pli-wrap { max-width: 1130px; margin: auto; padding: 22px 30px 44px; }
+.pli-header { margin-bottom: 22px; }
+.sous-pli .pli-link {
+  padding: 6px 0;
+  border: 0;
+  color: var(--encre);
+  background: transparent;
+  font-size: .82rem;
+  font-weight: 700;
+}
+.pli-link span { margin-right: 7px; }
+.pli-link:hover { text-decoration: underline; }
+.pli-title { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; }
+.pli-title h1 {
+  margin: 0;
+  font: 400 clamp(4.1rem, 9vw, 7.45rem)/.95 Georgia, serif;
+  letter-spacing: -.085em;
+}
+.pli-title em { color: var(--rouille); font-weight: 400; }
+.pli-title p { margin: 14px 0 2px; font-size: clamp(.85rem, 2.3vw, 1.08rem); }
+.pli-cover {
+  display: block;
+  width: clamp(110px, 25vw, 245px);
+  aspect-ratio: 2 / 1;
+  object-fit: cover;
+  border: 4px solid #fbf3df;
+  box-shadow: 0 1px 0 #c9b79b, 0 5px 14px #40260b24;
+  transform: rotate(2deg);
+  filter: saturate(.89);
+}
+.pli-workspace { display: grid; grid-template-columns: minmax(0, 2.15fr) minmax(260px, 1fr); gap: 16px; align-items: start; }
+.pli-desk {
+  min-width: 0;
+  padding: 20px 23px 15px;
+  color: var(--creme);
+  background: radial-gradient(ellipse at 54% 30%, #2b4c49, var(--petrole) 77%);
+  border: 1px solid #0f3132;
+  border-radius: 4px;
+  box-shadow: 0 10px 25px #28231520, inset 0 0 0 4px #f2deb60f;
+}
+.pli-desk-heading { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.pli-desk-heading h2 { margin: 0; font: 400 clamp(1.15rem, 2.6vw, 1.65rem)/1.05 Georgia, serif; }
+.pli-budget {
+  flex: none;
+  padding: 4px 8px;
+  border: 1px solid #cbb8946b;
+  border-radius: 2px;
+  color: #ffe1a5;
+  font: 600 .76rem/1.15 ui-monospace, monospace;
+}
+.pli-instructions { margin: 8px 0 0; color: #e4d9bf; font-size: .83rem; }
+.pli-plan-space { padding: 40px 0 8px 34px; }
+.pli-plan {
+  position: relative;
+  width: min(100%, 540px);
+  aspect-ratio: var(--colonnes) / var(--lignes);
+  margin: 0 auto;
+  perspective: 870px;
+  border-radius: 3px;
+  outline: 1px dashed #d5e1c156;
+  background: #112d30;
+}
+.pli-coordinate {
+  position: absolute;
+  color: #dfd5b9;
+  font: .74rem/1 ui-monospace, monospace;
+  pointer-events: none;
+}
+.pli-coordinate-x { top: -28px; transform: translateX(-50%); }
+.pli-coordinate-y { left: -29px; transform: translateY(-50%); }
+.sous-pli .pli-fold {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid #886a3d;
+  border-radius: 3px;
+  background: #f3d8a2;
+  color: #41301a;
+  font-size: 1.12rem;
+  line-height: 1;
+  box-shadow: 0 2px 1px #101b1a75;
+}
+.sous-pli .pli-fold:not(:disabled):hover, .sous-pli .pli-fold:focus-visible { background: #ffebb8; }
+.sous-pli .pli-fold-guide:not(:disabled) { outline: 2px solid #ffd677; outline-offset: 2px; }
+.pli-fold-x { top: -33px; left: var(--position); transform: translateX(-50%); }
+.pli-fold-y { top: var(--position); left: -33px; transform: translateY(-50%); }
+.pli-fold:disabled { opacity: .5; }
+.pli-crease { position: absolute; z-index: 4; pointer-events: none; border-color: #b7341b; border-style: dashed; }
+.pli-crease-x { inset: 0 auto 0 var(--origine); border-width: 0 0 0 2px; }
+.pli-crease-y { inset: var(--origine) 0 auto 0; border-width: 2px 0 0; }
+
+.sous-pli .pli-tile, .pli-wing-case {
+  position: absolute;
+  width: calc(100% / var(--colonnes));
+  height: calc(100% / var(--lignes));
+}
+.sous-pli .pli-tile {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: var(--creme);
+  color: var(--encre);
+}
+.pli-tile-paper {
+  position: absolute;
+  inset: 0;
+  background-image: url('./plan.webp');
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+.pli-tile::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  box-shadow: inset 0 0 0 .5px #143d4170;
+  pointer-events: none;
+}
+.sous-pli button.pli-tile:not(:disabled):hover::after { background: #fff8e869; }
+.sous-pli .pli-tile-lifted::after { background: #f0bd5757; }
+.sous-pli .pli-tile-guide::after { box-shadow: inset 0 0 0 2px #88621c, inset 0 0 0 4px #ffdf8e; }
+.sous-pli .pli-tile[aria-pressed="true"] { z-index: 2; }
+.sous-pli .pli-tile[aria-pressed="true"]::after {
+  background: #ffebc04d;
+  box-shadow: inset 0 0 0 2px #9d351f, inset 0 0 0 4px #ffe2ac;
+}
+.pli-tile:focus-visible { z-index: 5; }
+.pli-tile-inflight { visibility: hidden; }
+.pli-marks { display: flex; justify-content: center; align-items: center; gap: 2px; z-index: 2; }
+.pli-letter, .pli-lock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  padding: 3px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px #fff1d9, 0 1px 4px #18281e80;
+  color: #fff9e9;
+  font: 700 .7rem/1 ui-monospace, monospace;
+}
+.pli-letter { background: var(--rouille); }
+.pli-lock { background: #234e56; }
+.pli-marks svg { font-size: clamp(.64rem, 2vw, 1rem); }
+.pli-layers {
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  z-index: 2;
+  min-width: 1.22em;
+  text-align: center;
+  border-radius: 2px;
+  background: #e2d5b5;
+  font: 700 .66rem/1.15 ui-monospace, monospace;
+}
+.pli-imprint {
+  position: absolute;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 86%;
+  aspect-ratio: 1;
+  max-width: 65px;
+  border: 4px double currentColor;
+  border-radius: 50%;
+  background: #fff3d7ee;
+  color: var(--rouille);
+  font-size: clamp(1rem, 4vw, 2rem);
+  transform: rotate(-13deg);
+  animation: pli-stamp 190ms ease-out both;
+}
+.pli-imprint[data-resultat="reussi"] { color: #23564a; }
+.pli-wing { position: absolute; z-index: 2; inset: 0; pointer-events: none; }
+.pli-wing, .pli-wing-case { transform-style: preserve-3d; }
+.sous-pli .pli-wing-face { inset: 0; width: 100%; height: 100%; backface-visibility: hidden; }
+.pli-wing-x .pli-wing-verso { transform: rotateY(180deg); }
+.pli-wing-y .pli-wing-verso { transform: rotateX(180deg); }
+.pli-wing-x { transform-origin: var(--origine) 50%; animation: pli-flip-x 380ms ease-in-out both; }
+.pli-wing-y { transform-origin: 50% var(--origine); animation: pli-flip-y 380ms ease-in-out both; }
+@keyframes pli-flip-x { to { transform: rotateY(var(--angle)); } }
+@keyframes pli-flip-y { to { transform: rotateX(var(--angle)); } }
+@keyframes pli-stamp { from { opacity: 0; transform: scale(1.75) rotate(-13deg); } }
+
+.pli-tools { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.sous-pli .pli-tools button {
+  min-height: 35px;
+  padding: 4px 9px;
+  border: 1px solid #b1b6a16b;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--creme);
+  font-size: .8rem;
+}
+.pli-tools button:not(:disabled):hover { background: #ffffff15; }
+.pli-tools button[aria-pressed="true"] { border-color: #ffd677; color: #ffd677; }
+.pli-tools button:disabled { opacity: .5; }
+.pli-tools span { margin-right: 3px; }
+.pli-aide { margin: 9px 0 1px; color: #e4d9bf; font-size: .83rem; }
+.pli-aide strong { color: #ffe1a5; }
+
+.pli-slip {
+  padding: 20px 19px 17px;
+  border: 1px solid var(--filet);
+  border-top: 4px solid var(--rouille);
+  border-radius: 3px;
+  background: #fcf6e8;
+  box-shadow: 0 5px 14px #40260b13;
+}
+.pli-label { margin: 0 0 6px; color: #765e47; font: 700 .73rem/1.4 ui-monospace, monospace; text-transform: uppercase; letter-spacing: .1em; }
+.pli-slip h2 { margin: 0; font: 400 clamp(1.45rem, 3vw, 2rem)/1.1 Georgia, serif; }
+.pli-addresses { margin: 19px 0; }
+.pli-addresses p { display: flex; align-items: center; gap: 6px; margin: 0 0 5px; font-size: .82rem; font-weight: 700; }
+.pli-addresses .pli-regle-scelles { display: block; margin: 7px 0 0; color: #4f554c; font-weight: 400; }
+.pli-addresses svg { font-size: 1rem; color: var(--rouille); }
+.pli-addresses ul + p svg { color: #234e56; }
+.pli-addresses ul { list-style: none; display: flex; flex-wrap: wrap; gap: 5px; padding: 0; margin: 0 0 11px; }
+.pli-addresses li {
+  padding: 3px 5px;
+  border: 1px solid #d9c9a9;
+  border-radius: 2px;
+  background: #f6edd8;
+  font: 700 .78rem/1.1 ui-monospace, monospace;
+}
+.pli-addresses .pli-address-hit { background: var(--rouille); border-color: var(--rouille); color: white; }
+.pli-addresses .pli-address-alert { background: #234e56; border-color: #234e56; color: white; text-decoration: underline; }
+.pli-readout { min-height: 98px; padding-top: 12px; border-top: 1px dashed #bca886; }
+.pli-readout strong { font: 700 1.04rem/1.2 Georgia, serif; }
+.pli-readout p { margin: 4px 0 0; color: #4f554c; font-size: .82rem; }
+.sous-pli .pli-primary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  padding: 7px 11px;
+  border: 1px solid #8d2b18;
+  border-radius: 3px;
+  background: var(--rouille);
+  color: #fff8e8;
+  font-size: .92rem;
+  font-weight: 700;
+  text-align: left;
+}
+.pli-primary:not(:disabled):hover { filter: brightness(.9); }
+.sous-pli .pli-primary:disabled { color: #6d604e; border-color: #d9c9a9; background: #efe4ce; }
+
+@media (max-width: 720px) {
+  .pli-wrap { padding: 10px 12px 26px; }
+  .pli-header { margin-bottom: 14px; }
+  .pli-title p { margin-top: 9px; }
+  .pli-cover { width: 23%; border-width: 2px; }
+  .pli-workspace { grid-template-columns: minmax(0, 1fr); gap: 11px; }
+  .pli-desk { padding: 12px 9px 9px; }
+  .pli-plan-space { padding-top: 37px; }
+  .pli-slip { padding: 12px 13px; }
+  .pli-addresses { margin: 12px 0; }
+  .pli-readout { min-height: 76px; padding-bottom: 8px; }
+}
+
+@media (max-width: 380px) {
+  .pli-wrap { padding-inline: 8px; }
+  .pli-letter, .pli-lock { min-width: 13px; padding: 2px; }
+  .pli-marks { gap: 1px; }
+}
+
+@media (max-width: 350px) {
+  .sous-pli .pli-fold { width: 23px; height: 24px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pli-wing, .pli-imprint { animation: none; }
+}
